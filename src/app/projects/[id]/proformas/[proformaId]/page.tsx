@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 
 // Mock data for a proforma
 const defaultProforma = {
@@ -62,15 +62,16 @@ const defaultProforma = {
 export default function ProformaEditorPage({
   params,
 }: {
-  params: { id: string; proformaId: string }
+  params: Promise<{ id: string; proformaId: string }>
 }) {
+  const { id, proformaId } = use(params)
   const [proforma, setProforma] = useState(defaultProforma)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // In a real app, we would fetch the proforma data here
     setLoading(false)
-  }, [params.id, params.proformaId])
+  }, [id, proformaId])
 
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
@@ -82,7 +83,7 @@ export default function ProformaEditorPage({
         <h1 className="text-3xl font-bold">{proforma.name}</h1>
         <div className="flex gap-4">
           <Button variant="outline">Export to PDF</Button>
-          <Link href={`/projects/${params.id}`}>
+          <Link href={`/projects/${id}`}>
             <Button variant="outline">Back to Project</Button>
           </Link>
         </div>

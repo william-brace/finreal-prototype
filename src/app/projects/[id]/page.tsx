@@ -4,21 +4,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { getProject } from "@/lib/mock-data"
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
 
 export default function ProjectDetailsPage({
-  params,
+  params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = use(params)
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const data = await getProject(params.id)
+        const data = await getProject(id)
         setProject(data || null)
       } catch (error) {
         console.error("Error fetching project:", error)
@@ -28,7 +29,7 @@ export default function ProjectDetailsPage({
     }
 
     fetchProject()
-  }, [params.id])
+  }, [id])
 
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
@@ -43,10 +44,10 @@ export default function ProjectDetailsPage({
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{project.name}</h1>
         <div className="flex gap-4">
-          <Link href={`/projects/${params.id}/edit`}>
+          <Link href={`/projects/${id}/edit`}>
             <Button variant="outline">Edit Project</Button>
           </Link>
-          <Link href={`/projects/${params.id}/proformas/new`}>
+          <Link href={`/projects/${id}/proformas/new`}>
             <Button>New Proforma</Button>
           </Link>
         </div>
