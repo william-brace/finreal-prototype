@@ -12,11 +12,7 @@ class MockDataStore {
             location: "Toronto, ON",
             address: "123 Main St",
             proformaType: "Residential",
-            stories: 30,
-            gba: 250000,
             landCost: 15000000,
-            projectLength: 36,
-            absorptionPeriod: 12,
             notes: "Prime downtown location with excellent transit access.",
             proformas: [
                 {
@@ -26,6 +22,55 @@ class MockDataStore {
                     totalCost: 75000000,
                     netProfit: 25000000,
                     roi: 33.3,
+                    gba: 250000,
+                    stories: 30,
+                    projectLength: 36,
+                    absorptionPeriod: 12,
+                    unitMix: [
+                        {
+                            type: "1 Bedroom",
+                            sqft: 750,
+                            pricePerSqft: 1000,
+                            quantity: 50,
+                            totalValue: 37500000,
+                        },
+                        {
+                            type: "2 Bedroom",
+                            sqft: 1100,
+                            pricePerSqft: 900,
+                            quantity: 30,
+                            totalValue: 29700000,
+                        },
+                        {
+                            type: "3 Bedroom",
+                            sqft: 1500,
+                            pricePerSqft: 800,
+                            quantity: 20,
+                            totalValue: 24000000,
+                        },
+                    ],
+                    sources: {
+                        constructionDebt: 70,
+                        equity: 30,
+                        interestRate: 5.5,
+                    },
+                    uses: {
+                        legalCosts: 5000,
+                        quantitySurveyorCosts: 8000,
+                        realtorFee: 2.5,
+                        hardCostContingency: 10,
+                        softCostContingency: 5,
+                        additionalCosts: [
+                            { name: "Permit Fees", amount: 250000 },
+                            { name: "Development Charges", amount: 1500000 },
+                        ],
+                    },
+                    results: {
+                        totalProjectCost: 75000000,
+                        netProfit: 25000000,
+                        roi: 33.3,
+                        costPerUnit: 750000,
+                    },
                 },
                 {
                     id: "2",
@@ -34,6 +79,55 @@ class MockDataStore {
                     totalCost: 70000000,
                     netProfit: 30000000,
                     roi: 42.9,
+                    gba: 250000,
+                    stories: 30,
+                    projectLength: 36,
+                    absorptionPeriod: 12,
+                    unitMix: [
+                        {
+                            type: "1 Bedroom",
+                            sqft: 750,
+                            pricePerSqft: 1000,
+                            quantity: 50,
+                            totalValue: 37500000,
+                        },
+                        {
+                            type: "2 Bedroom",
+                            sqft: 1100,
+                            pricePerSqft: 900,
+                            quantity: 30,
+                            totalValue: 29700000,
+                        },
+                        {
+                            type: "3 Bedroom",
+                            sqft: 1500,
+                            pricePerSqft: 800,
+                            quantity: 20,
+                            totalValue: 24000000,
+                        },
+                    ],
+                    sources: {
+                        constructionDebt: 70,
+                        equity: 30,
+                        interestRate: 5.5,
+                    },
+                    uses: {
+                        legalCosts: 5000,
+                        quantitySurveyorCosts: 8000,
+                        realtorFee: 2.5,
+                        hardCostContingency: 10,
+                        softCostContingency: 5,
+                        additionalCosts: [
+                            { name: "Permit Fees", amount: 250000 },
+                            { name: "Development Charges", amount: 1500000 },
+                        ],
+                    },
+                    results: {
+                        totalProjectCost: 70000000,
+                        netProfit: 30000000,
+                        roi: 42.9,
+                        costPerUnit: 700000,
+                    },
                 },
                 {
                     id: "3",
@@ -42,6 +136,55 @@ class MockDataStore {
                     totalCost: 80000000,
                     netProfit: 20000000,
                     roi: 25.0,
+                    gba: 250000,
+                    stories: 30,
+                    projectLength: 36,
+                    absorptionPeriod: 12,
+                    unitMix: [
+                        {
+                            type: "1 Bedroom",
+                            sqft: 750,
+                            pricePerSqft: 1000,
+                            quantity: 50,
+                            totalValue: 37500000,
+                        },
+                        {
+                            type: "2 Bedroom",
+                            sqft: 1100,
+                            pricePerSqft: 900,
+                            quantity: 30,
+                            totalValue: 29700000,
+                        },
+                        {
+                            type: "3 Bedroom",
+                            sqft: 1500,
+                            pricePerSqft: 800,
+                            quantity: 20,
+                            totalValue: 24000000,
+                        },
+                    ],
+                    sources: {
+                        constructionDebt: 70,
+                        equity: 30,
+                        interestRate: 5.5,
+                    },
+                    uses: {
+                        legalCosts: 5000,
+                        quantitySurveyorCosts: 8000,
+                        realtorFee: 2.5,
+                        hardCostContingency: 10,
+                        softCostContingency: 5,
+                        additionalCosts: [
+                            { name: "Permit Fees", amount: 250000 },
+                            { name: "Development Charges", amount: 1500000 },
+                        ],
+                    },
+                    results: {
+                        totalProjectCost: 80000000,
+                        netProfit: 20000000,
+                        roi: 25.0,
+                        costPerUnit: 800000,
+                    },
                 },
             ],
         }
@@ -101,11 +244,7 @@ export type Project = {
     location: string
     address: string
     proformaType: string
-    stories: number
-    gba: number
     landCost: number
-    projectLength: number
-    absorptionPeriod: number
     notes?: string
     proformas: Proforma[]
 }
@@ -117,6 +256,39 @@ export type Proforma = {
     totalCost: number
     netProfit: number
     roi: number
+    gba: number
+    stories: number
+    projectLength: number
+    absorptionPeriod: number
+    unitMix: {
+        type: string
+        sqft: number
+        pricePerSqft: number
+        quantity: number
+        totalValue: number
+    }[]
+    sources: {
+        constructionDebt: number
+        equity: number
+        interestRate: number
+    }
+    uses: {
+        legalCosts: number
+        quantitySurveyorCosts: number
+        realtorFee: number
+        hardCostContingency: number
+        softCostContingency: number
+        additionalCosts: {
+            name: string
+            amount: number
+        }[]
+    }
+    results: {
+        totalProjectCost: number
+        netProfit: number
+        roi: number
+        costPerUnit: number
+    }
 }
 
 // API functions

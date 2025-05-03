@@ -74,32 +74,16 @@ export default function ProjectDetailsPage({
                   <p className="font-medium">{project.proformaType}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Stories</p>
-                  <p className="font-medium">{project.stories}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">GBA (sqft)</p>
-                  <p className="font-medium">{project.gba.toLocaleString()}</p>
-                </div>
-                <div>
                   <p className="text-sm text-muted-foreground">Land Cost</p>
                   <p className="font-medium">${project.landCost.toLocaleString()}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Project Length (months)</p>
-                  <p className="font-medium">{project.projectLength}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Absorption Period (months)</p>
-                  <p className="font-medium">{project.absorptionPeriod}</p>
-                </div>
+                {project.notes && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Notes</p>
+                    <p className="font-medium">{project.notes}</p>
+                  </div>
+                )}
               </div>
-              {project.notes && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="font-medium">{project.notes}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -114,7 +98,7 @@ export default function ProjectDetailsPage({
                 {project.proformas.map((proforma) => (
                   <Link
                     key={proforma.id}
-                    href={`/projects/${params.id}/proformas/${proforma.id}`}
+                    href={`/projects/${id}/proformas/${proforma.id}`}
                     className="block"
                   >
                     <Card className="hover:bg-accent transition-colors">
