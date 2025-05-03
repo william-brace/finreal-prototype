@@ -19,11 +19,7 @@ const projectSchema = z.object({
   province: z.string().min(1, "Province is required"),
   address: z.string().min(1, "Address is required"),
   proformaType: z.string().min(1, "Proforma type is required"),
-  stories: z.number().min(1, "Number of stories must be at least 1"),
-  gba: z.number().min(1, "GBA must be greater than 0"),
   landCost: z.number().min(0, "Land cost must be greater than or equal to 0"),
-  projectLength: z.number().min(1, "Project length must be at least 1 month"),
-  absorptionPeriod: z.number().min(0, "Absorption period must be greater than or equal to 0"),
 })
 
 type ProjectFormData = z.infer<typeof projectSchema>
@@ -35,11 +31,7 @@ const testData: ProjectFormData = {
   province: "on",
   address: "123 Douglas Street",
   proformaType: "residential",
-  stories: 30,
-  gba: 250000,
   landCost: 15000000,
-  projectLength: 36,
-  absorptionPeriod: 12,
 }
 
 export default function NewProjectPage() {
@@ -53,11 +45,7 @@ export default function NewProjectPage() {
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      stories: 1,
-      gba: 0,
       landCost: 0,
-      projectLength: 36,
-      absorptionPeriod: 12,
       province: "on", // Default to Ontario
       proformaType: "residential", // Default to Residential
     },
@@ -159,93 +147,42 @@ export default function NewProjectPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Proforma Type</label>
-                  <Controller
-                    name="proformaType"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="residential">Residential</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                          <SelectItem value="mixed">Mixed Use</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.proformaType && (
-                    <p className="text-sm text-destructive">{errors.proformaType.message}</p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Proforma Type</label>
+                <Controller
+                  name="proformaType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="mixed">Mixed Use</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Number of Stories</label>
-                  <Input 
-                    type="number" 
-                    min={1} 
-                    {...register("stories", { valueAsNumber: true })}
-                  />
-                  {errors.stories && (
-                    <p className="text-sm text-destructive">{errors.stories.message}</p>
-                  )}
-                </div>
+                />
+                {errors.proformaType && (
+                  <p className="text-sm text-destructive">{errors.proformaType.message}</p>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Land Cost ($)</label>
-                  <Input 
-                    type="number" 
-                    min={0} 
-                    {...register("landCost", { valueAsNumber: true })}
-                  />
-                  {errors.landCost && (
-                    <p className="text-sm text-destructive">{errors.landCost.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Gross Buildable Area (sqft)</label>
-                  <Input 
-                    type="number" 
-                    min={0} 
-                    {...register("gba", { valueAsNumber: true })}
-                  />
-                  {errors.gba && (
-                    <p className="text-sm text-destructive">{errors.gba.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Project Length (months)</label>
-                  <Input 
-                    type="number" 
-                    min={1} 
-                    {...register("projectLength", { valueAsNumber: true })}
-                  />
-                  {errors.projectLength && (
-                    <p className="text-sm text-destructive">{errors.projectLength.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Absorption Period (months)</label>
-                  <Input 
-                    type="number" 
-                    min={0} 
-                    {...register("absorptionPeriod", { valueAsNumber: true })}
-                  />
-                  {errors.absorptionPeriod && (
-                    <p className="text-sm text-destructive">{errors.absorptionPeriod.message}</p>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Land Cost ($)</label>
+                <Input 
+                  type="number" 
+                  min={0} 
+                  {...register("landCost", { valueAsNumber: true })}
+                />
+                {errors.landCost && (
+                  <p className="text-sm text-destructive">{errors.landCost.message}</p>
+                )}
               </div>
 
               <div className="flex justify-between items-center">
