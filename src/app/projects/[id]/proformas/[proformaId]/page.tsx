@@ -31,6 +31,7 @@ const defaultProforma = {
   projectLength: 36,
   absorptionPeriod: 12,
   unitMix: [] as UnitType[],
+  otherIncome: [] as OtherIncome[],
   sources: {
     constructionDebt: 70,
     equity: 30,
@@ -70,6 +71,16 @@ interface UnitType {
   units: Unit[];
 }
 
+interface OtherIncome {
+  id: string;
+  name: string;
+  description: string;
+  value: number;
+  unitType: string;
+  numberOfUnits: number;
+  valuePerUnit: number;
+}
+
 export default function ProformaEditorPage({
   params,
 }: {
@@ -93,6 +104,17 @@ export default function ProformaEditorPage({
   const [expandedUnitTypes, setExpandedUnitTypes] = useState<Record<string, boolean>>({})
   const [editingField, setEditingField] = useState<{ section: string; field: string; value: string } | null>(null)
   const [newAdditionalCost, setNewAdditionalCost] = useState({ name: '', amount: '' })
+  const [newOtherIncome, setNewOtherIncome] = useState({ 
+    name: '', 
+    description: '', 
+    value: '',
+    unitType: '',
+    numberOfUnits: '1',
+    valuePerUnit: '',
+    customUnitType: ''
+  })
+  const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
+  const [editingOtherIncome, setEditingOtherIncome] = useState<{ id: string; field: string; value: string } | null>(null)
 
   useEffect(() => {
     // In a real app, we would fetch the proforma data here
@@ -229,6 +251,59 @@ export default function ProformaEditorPage({
     }))
   }
 
+  const handleAddOtherIncome = () => {
+    const unitType = newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType;
+    const totalValue = parseInt(newOtherIncome.numberOfUnits) * parseInt(newOtherIncome.valuePerUnit);
+    
+    const newOtherIncomeObj: OtherIncome = {
+      id: Date.now().toString(),
+      name: newOtherIncome.name,
+      description: newOtherIncome.description,
+      value: totalValue,
+      unitType: unitType,
+      numberOfUnits: parseInt(newOtherIncome.numberOfUnits),
+      valuePerUnit: parseInt(newOtherIncome.valuePerUnit)
+    }
+    setProforma(prev => ({
+      ...prev,
+      otherIncome: [...prev.otherIncome, newOtherIncomeObj]
+    }))
+    setNewOtherIncome({ 
+      name: '', 
+      description: '', 
+      value: '',
+      unitType: '',
+      numberOfUnits: '1',
+      valuePerUnit: '',
+      customUnitType: ''
+    })
+    setIsOtherIncomeDialogOpen(false)
+  }
+
+  const handleOtherIncomeUpdate = (id: string, field: string, value: string) => {
+    setProforma(prev => ({
+      ...prev,
+      otherIncome: prev.otherIncome.map(item => 
+        item.id === id 
+          ? { 
+              ...item, 
+              [field]: field === 'value' || field === 'numberOfUnits' || field === 'valuePerUnit' 
+                ? parseInt(value) || 0 
+                : value 
+            }
+          : item
+      )
+    }))
+    setEditingOtherIncome(null)
+  }
+
+  const handleDeleteOtherIncome = (id: string) => {
+    setProforma(prev => ({
+      ...prev,
+      otherIncome: prev.otherIncome.filter(item => item.id !== id)
+    }))
+  }
+
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
   }
@@ -248,9 +323,10 @@ export default function ProformaEditorPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
+              <TabsTrigger value="other-income">Other Income</TabsTrigger>
               <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="info">Info</TabsTrigger>
@@ -1010,6 +1086,217 @@ export default function ProformaEditorPage({
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="other-income">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Other Income</CardTitle>
+                      <CardDescription>Add additional income sources like parking, storage, etc.</CardDescription>
+                    </div>
+                    <Dialog open={isOtherIncomeDialogOpen} onOpenChange={setIsOtherIncomeDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>Add Income Source</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Income Source</DialogTitle>
+                          <DialogDescription>
+                            Add a new income source with its details
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <label htmlFor="income-name">Name</label>
+                            <Input
+                              id="income-name"
+                              value={newOtherIncome.name}
+                              onChange={(e) => setNewOtherIncome(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="e.g., Parking Revenue"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label htmlFor="income-description">Description</label>
+                            <Input
+                              id="income-description"
+                              value={newOtherIncome.description}
+                              onChange={(e) => setNewOtherIncome(prev => ({ ...prev, description: e.target.value }))}
+                              placeholder="e.g., Revenue from sale of parking spaces"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label htmlFor="income-unit-type">Unit Type</label>
+                            <select
+                              id="income-unit-type"
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              value={newOtherIncome.unitType}
+                              onChange={(e) => setNewOtherIncome(prev => ({ ...prev, unitType: e.target.value }))}
+                            >
+                              <option value="">Select a unit type</option>
+                              <option value="parking">Parking Space</option>
+                              <option value="storage">Storage Unit</option>
+                              <option value="retail">Retail Space</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                          {newOtherIncome.unitType === 'other' && (
+                            <div className="grid gap-2">
+                              <label htmlFor="income-custom-unit-type">Custom Unit Type</label>
+                              <Input
+                                id="income-custom-unit-type"
+                                value={newOtherIncome.customUnitType}
+                                onChange={(e) => setNewOtherIncome(prev => ({ ...prev, customUnitType: e.target.value }))}
+                                placeholder="Enter custom unit type"
+                              />
+                            </div>
+                          )}
+                          <div className="grid gap-2">
+                            <label htmlFor="income-number-of-units">Number of Units</label>
+                            <Input
+                              id="income-number-of-units"
+                              type="number"
+                              min="1"
+                              value={newOtherIncome.numberOfUnits}
+                              onChange={(e) => setNewOtherIncome(prev => ({ ...prev, numberOfUnits: e.target.value }))}
+                              placeholder="Enter number of units"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label htmlFor="income-value-per-unit">Value per {newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType || 'unit'} ($)</label>
+                            <Input
+                              id="income-value-per-unit"
+                              type="number"
+                              value={newOtherIncome.valuePerUnit}
+                              onChange={(e) => setNewOtherIncome(prev => ({ ...prev, valuePerUnit: e.target.value }))}
+                              placeholder="Enter value per unit"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsOtherIncomeDialogOpen(false)}>Cancel</Button>
+                          <Button onClick={handleAddOtherIncome}>Add Income Source</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {proforma.otherIncome.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[800px]">
+                          <thead className="sticky top-0 bg-background z-10 shadow-sm">
+                            <tr className="border-b">
+                              <th className="text-left p-3">Name</th>
+                              <th className="text-left p-3">Description</th>
+                              <th className="text-left p-3">Annual Value ($)</th>
+                              <th className="text-left p-3 w-[100px]">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {proforma.otherIncome.map((item) => (
+                              <tr key={item.id} className="border-b hover:bg-muted/50">
+                                <td className="p-3 min-w-[200px]">
+                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'name' ? (
+                                    <Input
+                                      autoFocus
+                                      value={editingOtherIncome.value}
+                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
+                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'name', editingOtherIncome.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleOtherIncomeUpdate(item.id, 'name', editingOtherIncome.value)
+                                        }
+                                      }}
+                                      className="h-8 w-full"
+                                    />
+                                  ) : (
+                                    <div 
+                                      className="cursor-pointer truncate"
+                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'name', value: item.name })}
+                                      title={item.name}
+                                    >
+                                      {item.name}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3 min-w-[300px]">
+                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'description' ? (
+                                    <Input
+                                      autoFocus
+                                      value={editingOtherIncome.value}
+                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
+                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'description', editingOtherIncome.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleOtherIncomeUpdate(item.id, 'description', editingOtherIncome.value)
+                                        }
+                                      }}
+                                      className="h-8 w-full"
+                                    />
+                                  ) : (
+                                    <div 
+                                      className="cursor-pointer truncate"
+                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'description', value: item.description })}
+                                      title={item.description}
+                                    >
+                                      {item.description}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3 min-w-[150px]">
+                                  <div className="text-sm">
+                                    {item.numberOfUnits} {item.unitType}(s) @ ${item.valuePerUnit.toLocaleString()} each
+                                  </div>
+                                </td>
+                                <td className="p-3 min-w-[150px]">
+                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'value' ? (
+                                    <Input
+                                      autoFocus
+                                      type="number"
+                                      value={editingOtherIncome.value}
+                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
+                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'value', editingOtherIncome.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleOtherIncomeUpdate(item.id, 'value', editingOtherIncome.value)
+                                        }
+                                      }}
+                                      className="h-8 w-full"
+                                    />
+                                  ) : (
+                                    <div 
+                                      className="cursor-pointer"
+                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'value', value: item.value.toString() })}
+                                    >
+                                      ${item.value.toLocaleString()}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteOtherIncome(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No other income sources added yet. Click "Add Income Source" to get started.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -1020,32 +1307,77 @@ export default function ProformaEditorPage({
               <CardDescription>Key metrics and totals</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Units</p>
-                  <p className="text-lg font-medium">
-                    {proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0)}
-                  </p>
+              {/* Key Metrics */}
+              <div className="space-y-4 border-b pb-4 mb-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div className="flex justify-between"><span>ROI</span><span className="font-semibold">{proforma.results.roi}%</span></div>
+                  <div className="flex justify-between"><span>Annualized ROI</span><span className="font-semibold">25%</span></div>
+                  <div className="flex justify-between"><span>Levered IRR</span><span className="font-semibold">20%</span></div>
+                  <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">2.5x</span></div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Value</p>
-                  <p className="text-lg font-medium">
-                    ${proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0).toLocaleString()}
-                  </p>
+              </div>
+
+              {/* Revenue */}
+              <div className="mb-4 border-b pb-4">
+                <div className="font-bold mb-2">Revenue</div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Gross Sales Revenue</span>
+                  <span className="font-semibold">${proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0).toLocaleString()}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Average Price per Sqft</p>
-                  <p className="text-lg font-medium">
-                    ${(
-                      proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) /
-                      proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0)
-                    ).toFixed(2)}
-                  </p>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Other Income</span>
+                  <span className="font-semibold">${proforma.otherIncome.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Projected ROI</p>
-                  <p className="text-lg font-medium">{proforma.results.roi}%</p>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Total Expenses</span>
+                  <span className="font-semibold border-b-2 border-black">${(
+                    (proforma.uses.legalCosts || 0) +
+                    (proforma.uses.quantitySurveyorCosts || 0) +
+                    (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
+                  ).toLocaleString()}</span>
                 </div>
+                <div className="flex justify-between text-base font-bold mt-2">
+                  <span>Gross Profit</span>
+                  <span className="font-bold">${(
+                    proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) +
+                    proforma.otherIncome.reduce((sum, item) => sum + item.value, 0) -
+                    ((proforma.uses.legalCosts || 0) +
+                    (proforma.uses.quantitySurveyorCosts || 0) +
+                    (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0))
+                  ).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Unit Summary */}
+              <div className="mb-4 border-b pb-4">
+                <div className="font-bold mb-2">Unit Summary</div>
+                <div className="flex justify-between text-sm font-semibold mb-1">
+                  <span className="underline">Total Units</span>
+                  <span className="underline">Avg $/SF</span>
+                  <span className="underline">Total Value</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0)}</span>
+                  <span>${(
+                    proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) /
+                    Math.max(1, proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.area, 0), 0))
+                  ).toFixed(0)}</span>
+                  <span>${proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Expenses Breakdown */}
+              <div>
+                <div className="font-bold mb-2">Expenses Breakdown</div>
+                <div className="flex justify-between text-sm mb-1"><span>Land Cost</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm mb-1"><span>Hard Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('hard'))?.amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm mb-1"><span>Soft Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('soft'))?.amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm mb-1"><span>Contingency</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('contingency'))?.amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm font-semibold mt-2"><span>Total Expenses</span><span className="border-b-2 border-black">${(
+                  (proforma.uses.legalCosts || 0) +
+                  (proforma.uses.quantitySurveyorCosts || 0) +
+                  (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
+                ).toLocaleString()}</span></div>
               </div>
             </CardContent>
           </Card>
