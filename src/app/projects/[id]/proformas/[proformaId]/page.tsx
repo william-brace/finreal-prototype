@@ -115,6 +115,13 @@ export default function ProformaEditorPage({
   })
   const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
   const [editingOtherIncome, setEditingOtherIncome] = useState<{ id: string; field: string; value: string } | null>(null)
+  const [editingOtherIncomeDialog, setEditingOtherIncomeDialog] = useState<OtherIncome | null>(null)
+
+  const unitTypeDisplayNames: Record<string, string> = {
+    parking: 'Parking Space',
+    storage: 'Storage Unit',
+    retail: 'Retail Space',
+  };
 
   useEffect(() => {
     // In a real app, we would fetch the proforma data here
@@ -251,12 +258,12 @@ export default function ProformaEditorPage({
     }))
   }
 
-  const handleAddOtherIncome = () => {
+  const handleAddOrEditOtherIncome = () => {
     const unitType = newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType;
     const totalValue = parseInt(newOtherIncome.numberOfUnits) * parseInt(newOtherIncome.valuePerUnit);
-    
+
     const newOtherIncomeObj: OtherIncome = {
-      id: Date.now().toString(),
+      id: editingOtherIncomeDialog ? editingOtherIncomeDialog.id : Date.now().toString(),
       name: newOtherIncome.name,
       description: newOtherIncome.description,
       value: totalValue,
@@ -266,7 +273,9 @@ export default function ProformaEditorPage({
     }
     setProforma(prev => ({
       ...prev,
-      otherIncome: [...prev.otherIncome, newOtherIncomeObj]
+      otherIncome: editingOtherIncomeDialog
+        ? prev.otherIncome.map(item => item.id === editingOtherIncomeDialog.id ? newOtherIncomeObj : item)
+        : [...prev.otherIncome, newOtherIncomeObj]
     }))
     setNewOtherIncome({ 
       name: '', 
@@ -278,23 +287,21 @@ export default function ProformaEditorPage({
       customUnitType: ''
     })
     setIsOtherIncomeDialogOpen(false)
+    setEditingOtherIncomeDialog(null)
   }
 
-  const handleOtherIncomeUpdate = (id: string, field: string, value: string) => {
-    setProforma(prev => ({
-      ...prev,
-      otherIncome: prev.otherIncome.map(item => 
-        item.id === id 
-          ? { 
-              ...item, 
-              [field]: field === 'value' || field === 'numberOfUnits' || field === 'valuePerUnit' 
-                ? parseInt(value) || 0 
-                : value 
-            }
-          : item
-      )
-    }))
-    setEditingOtherIncome(null)
+  const openEditOtherIncomeDialog = (item: OtherIncome) => {
+    setNewOtherIncome({
+      name: item.name,
+      description: item.description,
+      value: item.value.toString(),
+      unitType: ['parking','storage','retail'].includes(item.unitType) ? item.unitType : 'other',
+      numberOfUnits: item.numberOfUnits.toString(),
+      valuePerUnit: item.valuePerUnit.toString(),
+      customUnitType: ['parking','storage','retail'].includes(item.unitType) ? '' : item.unitType
+    })
+    setEditingOtherIncomeDialog(item)
+    setIsOtherIncomeDialogOpen(true)
   }
 
   const handleDeleteOtherIncome = (id: string) => {
@@ -1095,15 +1102,41 @@ export default function ProformaEditorPage({
                       <CardTitle>Other Income</CardTitle>
                       <CardDescription>Add additional income sources like parking, storage, etc.</CardDescription>
                     </div>
-                    <Dialog open={isOtherIncomeDialogOpen} onOpenChange={setIsOtherIncomeDialogOpen}>
+                    <Dialog open={isOtherIncomeDialogOpen} onOpenChange={(open) => {
+                      setIsOtherIncomeDialogOpen(open)
+                      if (!open) {
+                        setEditingOtherIncomeDialog(null)
+                        setNewOtherIncome({ 
+                          name: '', 
+                          description: '', 
+                          value: '',
+                          unitType: '',
+                          numberOfUnits: '1',
+                          valuePerUnit: '',
+                          customUnitType: ''
+                        })
+                      }
+                    }}>
                       <DialogTrigger asChild>
-                        <Button>Add Income Source</Button>
+                        <Button onClick={() => {
+                          setEditingOtherIncomeDialog(null)
+                          setNewOtherIncome({ 
+                            name: '', 
+                            description: '', 
+                            value: '',
+                            unitType: '',
+                            numberOfUnits: '1',
+                            valuePerUnit: '',
+                            customUnitType: ''
+                          })
+                          setIsOtherIncomeDialogOpen(true)
+                        }}>Add Income Source</Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Add New Income Source</DialogTitle>
+                          <DialogTitle>{editingOtherIncomeDialog ? 'Edit Income Source' : 'Add New Income Source'}</DialogTitle>
                           <DialogDescription>
-                            Add a new income source with its details
+                            {editingOtherIncomeDialog ? 'Edit the details for this income source' : 'Add a new income source with its details'}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -1163,7 +1196,11 @@ export default function ProformaEditorPage({
                             />
                           </div>
                           <div className="grid gap-2">
-                            <label htmlFor="income-value-per-unit">Value per {newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType || 'unit'} ($)</label>
+                            <label htmlFor="income-value-per-unit">
+                              Value per {newOtherIncome.unitType === 'other'
+                                ? newOtherIncome.customUnitType || 'unit'
+                                : unitTypeDisplayNames[newOtherIncome.unitType] || 'unit'} ($)
+                            </label>
                             <Input
                               id="income-value-per-unit"
                               type="number"
@@ -1174,8 +1211,11 @@ export default function ProformaEditorPage({
                           </div>
                         </div>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsOtherIncomeDialogOpen(false)}>Cancel</Button>
-                          <Button onClick={handleAddOtherIncome}>Add Income Source</Button>
+                          <Button variant="outline" onClick={() => {
+                            setIsOtherIncomeDialogOpen(false)
+                            setEditingOtherIncomeDialog(null)
+                          }}>Cancel</Button>
+                          <Button onClick={handleAddOrEditOtherIncome}>{editingOtherIncomeDialog ? 'Save Changes' : 'Add Income Source'}</Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
@@ -1197,82 +1237,19 @@ export default function ProformaEditorPage({
                           <tbody>
                             {proforma.otherIncome.map((item) => (
                               <tr key={item.id} className="border-b hover:bg-muted/50">
-                                <td className="p-3 min-w-[200px]">
-                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'name' ? (
-                                    <Input
-                                      autoFocus
-                                      value={editingOtherIncome.value}
-                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
-                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'name', editingOtherIncome.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleOtherIncomeUpdate(item.id, 'name', editingOtherIncome.value)
-                                        }
-                                      }}
-                                      className="h-8 w-full"
-                                    />
-                                  ) : (
-                                    <div 
-                                      className="cursor-pointer truncate"
-                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'name', value: item.name })}
-                                      title={item.name}
-                                    >
-                                      {item.name}
-                                    </div>
-                                  )}
+                                <td className="p-3 min-w-[200px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                  {item.name}
                                 </td>
-                                <td className="p-3 min-w-[300px]">
-                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'description' ? (
-                                    <Input
-                                      autoFocus
-                                      value={editingOtherIncome.value}
-                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
-                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'description', editingOtherIncome.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleOtherIncomeUpdate(item.id, 'description', editingOtherIncome.value)
-                                        }
-                                      }}
-                                      className="h-8 w-full"
-                                    />
-                                  ) : (
-                                    <div 
-                                      className="cursor-pointer truncate"
-                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'description', value: item.description })}
-                                      title={item.description}
-                                    >
-                                      {item.description}
-                                    </div>
-                                  )}
+                                <td className="p-3 min-w-[300px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                  {item.description}
                                 </td>
-                                <td className="p-3 min-w-[150px]">
-                                  <div className="text-sm">
+                                <td className="p-3 min-w-[150px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                  <div className="font-semibold">
+                                    ${ (item.numberOfUnits * item.valuePerUnit).toLocaleString() }
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
                                     {item.numberOfUnits} {item.unitType}(s) @ ${item.valuePerUnit.toLocaleString()} each
                                   </div>
-                                </td>
-                                <td className="p-3 min-w-[150px]">
-                                  {editingOtherIncome?.id === item.id && editingOtherIncome.field === 'value' ? (
-                                    <Input
-                                      autoFocus
-                                      type="number"
-                                      value={editingOtherIncome.value}
-                                      onChange={(e) => setEditingOtherIncome(prev => ({ ...prev!, value: e.target.value }))}
-                                      onBlur={() => handleOtherIncomeUpdate(item.id, 'value', editingOtherIncome.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleOtherIncomeUpdate(item.id, 'value', editingOtherIncome.value)
-                                        }
-                                      }}
-                                      className="h-8 w-full"
-                                    />
-                                  ) : (
-                                    <div 
-                                      className="cursor-pointer"
-                                      onClick={() => setEditingOtherIncome({ id: item.id, field: 'value', value: item.value.toString() })}
-                                    >
-                                      ${item.value.toLocaleString()}
-                                    </div>
-                                  )}
                                 </td>
                                 <td className="p-3">
                                   <Button
