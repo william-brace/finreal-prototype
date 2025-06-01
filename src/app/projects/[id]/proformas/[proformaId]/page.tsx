@@ -54,6 +54,14 @@ const defaultProforma = {
     roi: 33.3,
     costPerUnit: 750000,
   },
+  metrics: {
+    grossRevenue: 0,
+    totalExpenses: 0,
+    grossProfit: 0,
+    roi: 0,
+    annualizedRoi: 0,
+    leveredEmx: 0,
+  }
 }
 
 // New types for unit mix
@@ -310,6 +318,61 @@ export default function ProformaEditorPage({
       otherIncome: prev.otherIncome.filter(item => item.id !== id)
     }))
   }
+
+  const calculateMetrics = (proformaData: typeof defaultProforma) => {
+    const grossRevenue = proformaData.unitMix.reduce((sum, unitType) => 
+      sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) +
+      proformaData.otherIncome.reduce((sum, item) => sum + item.value, 0);
+    
+    const totalExpenses = (proformaData.uses.legalCosts || 0) +
+      (proformaData.uses.quantitySurveyorCosts || 0) +
+      (proformaData.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0);
+    
+    const grossProfit = grossRevenue - totalExpenses;
+    const roi = totalExpenses > 0 ? (grossProfit / totalExpenses) * 100 : 0;
+    const annualizedRoi = proformaData.projectLength > 0 ? (roi / proformaData.projectLength) * 12 : 0;
+    const leveredEmx = totalExpenses > 0 ? grossRevenue / totalExpenses : 0;
+
+    // Calculate total units and cost per unit
+    const totalUnits = proformaData.unitMix.reduce((sum, unitType) => 
+      sum + unitType.units.length, 0);
+    const costPerUnit = totalUnits > 0 ? totalExpenses / totalUnits : 0;
+
+    return {
+      grossRevenue,
+      totalExpenses,
+      grossProfit,
+      roi,
+      annualizedRoi,
+      leveredEmx,
+      totalUnits,
+      costPerUnit,
+    };
+  };
+
+  // Update metrics and results whenever relevant data changes
+  useEffect(() => {
+    setProforma(prev => {
+      const metrics = calculateMetrics(prev);
+      return {
+        ...prev,
+        metrics,
+        results: {
+          totalProjectCost: metrics.totalExpenses,
+          netProfit: metrics.grossProfit,
+          roi: metrics.roi,
+          costPerUnit: metrics.costPerUnit,
+        }
+      };
+    });
+  }, [
+    proforma.unitMix,
+    proforma.otherIncome,
+    proforma.uses.legalCosts,
+    proforma.uses.quantitySurveyorCosts,
+    proforma.uses.additionalCosts,
+    proforma.projectLength
+  ]);
 
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
@@ -1287,10 +1350,10 @@ export default function ProformaEditorPage({
               {/* Key Metrics */}
               <div className="space-y-4 border-b pb-4 mb-4">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                  <div className="flex justify-between"><span>ROI</span><span className="font-semibold">{proforma.results.roi}%</span></div>
-                  <div className="flex justify-between"><span>Annualized ROI</span><span className="font-semibold">25%</span></div>
+                  <div className="flex justify-between"><span>ROI</span><span className="font-semibold">{proforma.metrics.roi.toFixed(1)}%</span></div>
+                  <div className="flex justify-between"><span>Annualized ROI</span><span className="font-semibold">{proforma.metrics.annualizedRoi.toFixed(1)}%</span></div>
                   <div className="flex justify-between"><span>Levered IRR</span><span className="font-semibold">20%</span></div>
-                  <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">2.5x</span></div>
+                  <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">{proforma.metrics.leveredEmx.toFixed(1)}x</span></div>
                 </div>
               </div>
 
