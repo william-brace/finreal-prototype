@@ -122,7 +122,6 @@ export default function ProformaEditorPage({
     customUnitType: ''
   })
   const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
-  const [editingOtherIncome, setEditingOtherIncome] = useState<{ id: string; field: string; value: string } | null>(null)
   const [editingOtherIncomeDialog, setEditingOtherIncomeDialog] = useState<OtherIncome | null>(null)
 
   const unitTypeDisplayNames: Record<string, string> = {
@@ -1330,7 +1329,7 @@ export default function ProformaEditorPage({
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
-                        No other income sources added yet. Click "Add Income Source" to get started.
+                        No other income sources added yet. Click &apos;Add Income Source&apos; to get started.
                       </div>
                     )}
                   </div>
