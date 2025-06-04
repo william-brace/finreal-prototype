@@ -12,8 +12,9 @@ export default function HomePage() {
               <Link href="/" className="text-sm font-medium">Dashboard</Link>
             </nav>
           </div>
-          <div className="flex items-center">
-            <span className="text-sm">a</span>
+          <div className="flex items-center gap-2">
+            <img src="/placeholder-logo.png" alt="Logo" className="h-8 w-8 rounded-full" />
+            <span className="text-sm font-medium">John Doe</span>
           </div>
         </div>
       </header>

@@ -87,6 +87,7 @@ interface OtherIncome {
   unitType: string;
   numberOfUnits: number;
   valuePerUnit: number;
+  customUnitType?: string;
 }
 
 export default function ProformaEditorPage({
@@ -97,7 +98,6 @@ export default function ProformaEditorPage({
   const { id, proformaId } = use(params)
   const [proforma, setProforma] = useState(defaultProforma)
   const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
   const [newUnitType, setNewUnitType] = useState({ name: '', description: '' })
   const [newUnit, setNewUnit] = useState({ 
     name: '', 
@@ -123,6 +123,12 @@ export default function ProformaEditorPage({
   })
   const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
   const [editingOtherIncomeDialog, setEditingOtherIncomeDialog] = useState<OtherIncome | null>(null)
+  const [gbaValue, setGbaValue] = useState<string>(proforma.gba?.toString() ?? '')
+  const [storiesValue, setStoriesValue] = useState<string>(proforma.stories?.toString() ?? '')
+  const [projectLengthValue, setProjectLengthValue] = useState<string>(proforma.projectLength?.toString() ?? '')
+  const [absorptionPeriodValue, setAbsorptionPeriodValue] = useState<string>(proforma.absorptionPeriod?.toString() ?? '')
+  const [editingUnitGroup, setEditingUnitGroup] = useState<{ unitTypeId: string, groupKey: string } | null>(null)
+  const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -135,6 +141,13 @@ export default function ProformaEditorPage({
     setLoading(false)
   }, [id, proformaId])
 
+  useEffect(() => {
+    setGbaValue(proforma.gba?.toString() ?? '')
+    setStoriesValue(proforma.stories?.toString() ?? '')
+    setProjectLengthValue(proforma.projectLength?.toString() ?? '')
+    setAbsorptionPeriodValue(proforma.absorptionPeriod?.toString() ?? '')
+  }, [proforma.gba, proforma.stories, proforma.projectLength, proforma.absorptionPeriod])
+
   const handleInputChange = (field: string, value: string | number) => {
     setProforma(prev => ({
       ...prev,
@@ -144,7 +157,6 @@ export default function ProformaEditorPage({
 
   const handleSave = () => {
     // In a real app, we would save the changes to the backend here
-    setIsEditing(false)
   }
 
   const handleAddUnitType = () => {
@@ -163,27 +175,48 @@ export default function ProformaEditorPage({
   }
 
   const handleAddUnits = (unitTypeId: string) => {
-    const unitType = proforma.unitMix.find(ut => ut.id === unitTypeId)
-    if (!unitType) return
-
-    const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
-      id: `${unitTypeId}-${Date.now()}-${i}`,
-      name: newUnit.name,
-      area: parseInt(newUnit.area) || 0,
-      value: parseInt(newUnit.value) || 0
-    }))
-
-    setProforma(prev => ({
-      ...prev,
-      unitMix: prev.unitMix.map(ut => 
-        ut.id === unitTypeId 
-          ? { ...ut, units: [...ut.units, ...newUnits] }
-          : ut
-      )
-    }))
-    setNewUnit({ name: '', area: '', value: '', quantity: '1' })
-    setIsUnitDialogOpen(false)
-  }
+    if (editingUnitGroup && editingUnitGroup.unitTypeId === unitTypeId) {
+      // Edit mode: update all units in the group
+      setProforma(prev => ({
+        ...prev,
+        unitMix: prev.unitMix.map(ut => {
+          if (ut.id !== unitTypeId) return ut;
+          const groupKey = editingUnitGroup.groupKey;
+          const [name, area, value] = groupKey.split('|');
+          const filteredUnits = ut.units.filter(u => `${u.name}|${u.area}|${u.value}` !== groupKey);
+          const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
+            id: `${unitTypeId}-${Date.now()}-${i}`,
+            name: newUnit.name,
+            area: parseInt(newUnit.area) || 0,
+            value: parseInt(newUnit.value) || 0
+          }));
+          return { ...ut, units: [...filteredUnits, ...newUnits] };
+        })
+      }));
+      setEditingUnitGroup(null);
+    } else {
+      // Add mode: add new units as before
+      const unitType = proforma.unitMix.find(ut => ut.id === unitTypeId);
+      if (!unitType) return;
+      const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
+        id: `${unitTypeId}-${Date.now()}-${i}`,
+        name: newUnit.name,
+        area: parseInt(newUnit.area) || 0,
+        value: parseInt(newUnit.value) || 0
+      }));
+      setProforma(prev => ({
+        ...prev,
+        unitMix: prev.unitMix.map(ut => 
+          ut.id === unitTypeId 
+            ? { ...ut, units: [...ut.units, ...newUnits] }
+            : ut
+        )
+      }));
+    }
+    setExpandedUnitTypes(prev => ({ ...prev, [unitTypeId]: true }));
+    setNewUnit({ name: '', area: '', value: '', quantity: '1' });
+    setIsUnitDialogOpen(false);
+  };
 
   const handleUnitUpdate = (unitTypeId: string, unitId: string, field: string, value: string) => {
     setProforma(prev => ({
@@ -373,6 +406,21 @@ export default function ProformaEditorPage({
     proforma.projectLength
   ]);
 
+  // Helper to collate units by name, area, value
+  function collateUnits(units: Unit[]): Array<Unit & { quantity: number; ids: string[], groupKey: string }> {
+    const map = new Map<string, Unit & { quantity: number; ids: string[], groupKey: string }>();
+    units.forEach((unit: Unit) => {
+      const key = `${unit.name}|${unit.area}|${unit.value}`;
+      if (map.has(key)) {
+        map.get(key)!.quantity += 1;
+        map.get(key)!.ids.push(unit.id);
+      } else {
+        map.set(key, { ...unit, quantity: 1, ids: [unit.id], groupKey: key });
+      }
+    });
+    return Array.from(map.values());
+  }
+
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
   }
@@ -407,17 +455,7 @@ export default function ProformaEditorPage({
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle>General Information</CardTitle>
-                      <CardDescription>Basic project details and timeline</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      {isEditing ? (
-                        <>
-                          <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                          <Button onClick={handleSave}>Save Changes</Button>
-                        </>
-                      ) : (
-                        <Button onClick={() => setIsEditing(true)}>Edit</Button>
-                      )}
+                      <CardDescription>Salient project details</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -426,37 +464,38 @@ export default function ProformaEditorPage({
                     <div>
                       <label className="text-sm font-medium">GBA (sqft)</label>
                       <Input 
-                        value={proforma.gba?.toLocaleString() || ''} 
-                        onChange={(e) => handleInputChange('gba', parseInt(e.target.value.replace(/,/g, '')) || 0)}
-                        readOnly={!isEditing}
-                        className={!isEditing ? "bg-muted" : ""}
+                        type="number"
+                        step="any"
+                        value={gbaValue}
+                        onChange={e => setGbaValue(e.target.value)}
+                        onBlur={e => handleInputChange('gba', parseFloat(gbaValue) || 0)}
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Stories</label>
                       <Input 
-                        value={proforma.stories || ''} 
-                        onChange={(e) => handleInputChange('stories', parseInt(e.target.value) || 0)}
-                        readOnly={!isEditing}
-                        className={!isEditing ? "bg-muted" : ""}
+                        type="number"
+                        value={storiesValue}
+                        onChange={e => setStoriesValue(e.target.value)}
+                        onBlur={e => handleInputChange('stories', parseInt(storiesValue) || 0)}
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Project Length (months)</label>
                       <Input 
-                        value={proforma.projectLength || ''} 
-                        onChange={(e) => handleInputChange('projectLength', parseInt(e.target.value) || 0)}
-                        readOnly={!isEditing}
-                        className={!isEditing ? "bg-muted" : ""}
+                        type="number"
+                        value={projectLengthValue}
+                        onChange={e => setProjectLengthValue(e.target.value)}
+                        onBlur={e => handleInputChange('projectLength', parseInt(projectLengthValue) || 0)}
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Absorption Period (months)</label>
                       <Input 
-                        value={proforma.absorptionPeriod || ''} 
-                        onChange={(e) => handleInputChange('absorptionPeriod', parseInt(e.target.value) || 0)}
-                        readOnly={!isEditing}
-                        className={!isEditing ? "bg-muted" : ""}
+                        type="number"
+                        value={absorptionPeriodValue}
+                        onChange={e => setAbsorptionPeriodValue(e.target.value)}
+                        onBlur={e => handleInputChange('absorptionPeriod', parseInt(absorptionPeriodValue) || 0)}
                       />
                     </div>
                   </div>
@@ -543,15 +582,22 @@ export default function ProformaEditorPage({
                           }}>
                             <DialogTrigger asChild>
                               <Button variant="outline" onClick={() => {
-                                setIsUnitDialogOpen(true)
-                                setSelectedUnitTypeId(unitType.id)
+                                setSelectedUnitTypeId(unitType.id);
+                                setUnitDialogMode('add');
+                                if (unitType.units.length > 0) {
+                                  setEditingUnitGroup({ unitTypeId: unitType.id, groupKey: `${unitType.name}|${unitType.units[0].area}|${unitType.units[0].value}` });
+                                } else {
+                                  setEditingUnitGroup(null);
+                                }
                               }}>
                                 Add Units
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Add Units to {unitType.name}</DialogTitle>
+                                <DialogTitle>
+                                  {unitDialogMode === 'edit' ? 'Edit Units' : 'Add Units'}
+                                </DialogTitle>
                                 <DialogDescription>
                                   Specify the details for the new units
                                 </DialogDescription>
@@ -577,14 +623,19 @@ export default function ProformaEditorPage({
                                   />
                                 </div>
                                 <div className="grid gap-2">
-                                  <label htmlFor="value">Value per Unit ($)</label>
+                                  <label htmlFor="value">Price per Square Foot ($)</label>
                                   <Input
                                     id="value"
                                     type="number"
                                     value={newUnit.value}
                                     onChange={(e) => setNewUnit(prev => ({ ...prev, value: e.target.value }))}
-                                    placeholder="Enter value"
+                                    placeholder="Enter price per sqft"
                                   />
+                                  {newUnit.area && newUnit.value && !isNaN(Number(newUnit.area)) && !isNaN(Number(newUnit.value)) && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      Total Value: {(Number(newUnit.area) * Number(newUnit.value)).toLocaleString(undefined, { style: 'currency', currency: 'USD' })} ({newUnit.area} sqft × ${newUnit.value}/sqft)
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="grid gap-2">
                                   <label htmlFor="quantity">Number of Units</label>
@@ -599,8 +650,11 @@ export default function ProformaEditorPage({
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsUnitDialogOpen(false)}>Cancel</Button>
-                                <Button onClick={() => handleAddUnits(unitType.id)}>Create Units</Button>
+                                <Button variant="outline" onClick={() => {
+                                  setIsUnitDialogOpen(false);
+                                  setEditingUnitGroup(null);
+                                }}>Cancel</Button>
+                                <Button onClick={() => handleAddUnits(unitType.id)}>{unitDialogMode === 'edit' ? 'Save Changes' : 'Create Units'}</Button>
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
@@ -618,94 +672,39 @@ export default function ProformaEditorPage({
                                     <tr className="border-b">
                                       <th className="text-left p-3">Unit Name</th>
                                       <th className="text-left p-3">Area (sqft)</th>
-                                      <th className="text-left p-3">Value ($)</th>
-                                      <th className="text-left p-3">Value per Sqft</th>
+                                      <th className="text-left p-3">Price per Sqft ($)</th>
+                                      <th className="text-left p-3">Quantity</th>
+                                      <th className="text-left p-3">Total Value</th>
                                       <th className="text-left p-3 w-[100px]">Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {unitType.units.map((unit) => (
-                                      <tr key={unit.id} className="border-b hover:bg-muted/50">
-                                        <td className="p-3 min-w-[200px]">
-                                          {editingUnit?.id === unit.id && editingUnit.field === 'name' ? (
-                                            <Input
-                                              autoFocus
-                                              value={editingUnit.value}
-                                              onChange={(e) => setEditingUnit(prev => ({ ...prev!, value: e.target.value }))}
-                                              onBlur={() => handleUnitUpdate(unitType.id, unit.id, 'name', editingUnit.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleUnitUpdate(unitType.id, unit.id, 'name', editingUnit.value)
-                                                }
-                                              }}
-                                              className="h-8 w-full"
-                                            />
-                                          ) : (
-                                            <div 
-                                              className="cursor-pointer truncate"
-                                              onClick={() => setEditingUnit({ id: unit.id, field: 'name', value: unit.name })}
-                                              title={unit.name}
-                                            >
-                                              {unit.name}
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="p-3 min-w-[150px]">
-                                          {editingUnit?.id === unit.id && editingUnit.field === 'area' ? (
-                                            <Input
-                                              autoFocus
-                                              type="number"
-                                              value={editingUnit.value}
-                                              onChange={(e) => setEditingUnit(prev => ({ ...prev!, value: e.target.value }))}
-                                              onBlur={() => handleUnitUpdate(unitType.id, unit.id, 'area', editingUnit.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleUnitUpdate(unitType.id, unit.id, 'area', editingUnit.value)
-                                                }
-                                              }}
-                                              className="h-8 w-full"
-                                            />
-                                          ) : (
-                                            <div 
-                                              className="cursor-pointer"
-                                              onClick={() => setEditingUnit({ id: unit.id, field: 'area', value: unit.area.toString() })}
-                                            >
-                                              {unit.area.toLocaleString()}
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="p-3 min-w-[200px]">
-                                          {editingUnit?.id === unit.id && editingUnit.field === 'value' ? (
-                                            <Input
-                                              autoFocus
-                                              type="number"
-                                              value={editingUnit.value}
-                                              onChange={(e) => setEditingUnit(prev => ({ ...prev!, value: e.target.value }))}
-                                              onBlur={() => handleUnitUpdate(unitType.id, unit.id, 'value', editingUnit.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleUnitUpdate(unitType.id, unit.id, 'value', editingUnit.value)
-                                                }
-                                              }}
-                                              className="h-8 w-full"
-                                            />
-                                          ) : (
-                                            <div 
-                                              className="cursor-pointer"
-                                              onClick={() => setEditingUnit({ id: unit.id, field: 'value', value: unit.value.toString() })}
-                                            >
-                                              ${unit.value.toLocaleString()}
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="p-3 min-w-[150px]">
-                                          ${(unit.value / unit.area).toFixed(2)}
-                                        </td>
+                                    {collateUnits(unitType.units).map((unit) => (
+                                      <tr key={unit.ids.join('-')} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => {
+                                        setSelectedUnitTypeId(unitType.id);
+                                        setNewUnit({
+                                          name: unit.name,
+                                          area: unit.area.toString(),
+                                          value: unit.value.toString(),
+                                          quantity: unit.quantity.toString()
+                                        });
+                                        setEditingUnitGroup({ unitTypeId: unitType.id, groupKey: unit.groupKey });
+                                        setUnitDialogMode('edit');
+                                        setIsUnitDialogOpen(true);
+                                      }}>
+                                        <td className="p-3 min-w-[200px]">{unit.name}</td>
+                                        <td className="p-3 min-w-[150px]">{unit.area.toLocaleString()}</td>
+                                        <td className="p-3 min-w-[150px]">${unit.value.toLocaleString()}</td>
+                                        <td className="p-3 min-w-[100px]">{unit.quantity}</td>
+                                        <td className="p-3 min-w-[150px]">${(unit.area * unit.value * unit.quantity).toLocaleString()}</td>
                                         <td className="p-3 min-w-[100px]">
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDeleteUnit(unitType.id, unit.id)}
+                                            onClick={e => {
+                                              e.stopPropagation();
+                                              unit.ids.forEach((id: string) => handleDeleteUnit(unitType.id, id));
+                                            }}
                                             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                           >
                                             <Trash2 className="h-4 w-4" />
@@ -1297,33 +1296,44 @@ export default function ProformaEditorPage({
                             </tr>
                           </thead>
                           <tbody>
-                            {proforma.otherIncome.map((item) => (
-                              <tr key={item.id} className="border-b hover:bg-muted/50">
-                                <td className="p-3 min-w-[200px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
-                                  {item.name}
-                                </td>
-                                <td className="p-3 min-w-[300px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
-                                  {item.description}
-                                </td>
-                                <td className="p-3 min-w-[150px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
-                                  <div className="font-semibold">
-                                    ${ (item.numberOfUnits * item.valuePerUnit).toLocaleString() }
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {item.numberOfUnits} {item.unitType}(s) @ ${item.valuePerUnit.toLocaleString()} each
-                                  </div>
-                                </td>
-                                <td className="p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteOtherIncome(item.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
+                            {proforma.otherIncome.map((item) => {
+                              // Determine display name for unit type
+                              let displayUnitType = item.unitType;
+                              if (item.unitType === 'other') {
+                                displayUnitType = item.customUnitType || 'unit';
+                              } else {
+                                displayUnitType = unitTypeDisplayNames[item.unitType] || item.unitType;
+                              }
+                              // Pluralize if needed
+                              const plural = Number(item.numberOfUnits) === 1 ? displayUnitType : displayUnitType + 's';
+                              return (
+                                <tr key={item.id} className="border-b hover:bg-muted/50">
+                                  <td className="p-3 min-w-[200px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                    {item.name}
+                                  </td>
+                                  <td className="p-3 min-w-[300px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                    {item.description}
+                                  </td>
+                                  <td className="p-3 min-w-[150px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
+                                    <div className="font-semibold">
+                                      ${ (item.numberOfUnits * item.valuePerUnit).toLocaleString() }
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {item.numberOfUnits} {plural} @ ${item.valuePerUnit.toLocaleString()} each
+                                    </div>
+                                  </td>
+                                  <td className="p-3">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteOtherIncome(item.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

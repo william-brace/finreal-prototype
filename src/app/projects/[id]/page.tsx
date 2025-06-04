@@ -7,6 +7,20 @@ import { getProject } from "@/lib/mock-data"
 import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
 
+const formatLocation = (location: string) => {
+  const parts = location.split(',')
+  if (parts.length === 2) {
+    return parts[0].trim() + ', ' + parts[1].trim().toUpperCase()
+  }
+  return location
+}
+
+const formatProformaType = (type: string) => {
+  return type.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ')
+}
+
 export default function ProjectDetailsPage({
   params
 }: {
@@ -63,7 +77,7 @@ export default function ProjectDetailsPage({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Location</p>
-                  <p className="font-medium">{project.location}</p>
+                  <p className="font-medium">{formatLocation(project.location)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
@@ -71,7 +85,7 @@ export default function ProjectDetailsPage({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Proforma Type</p>
-                  <p className="font-medium">{project.proformaType}</p>
+                  <p className="font-medium">{formatProformaType(project.proformaType)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Land Cost</p>

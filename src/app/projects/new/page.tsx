@@ -30,7 +30,7 @@ const testData: ProjectFormData = {
   city: "Toronto",
   province: "on",
   address: "123 Douglas Street",
-  proformaType: "residential",
+  proformaType: "condo",
   landCost: 15000000,
 }
 
@@ -74,7 +74,7 @@ export default function NewProjectPage() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Create New Project</CardTitle>
-            <p className="text-sm text-muted-foreground">Enter the details for your new development project.</p>
+            <p className="text-sm text-muted-foreground">Enter the details for your project.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -158,12 +158,12 @@ export default function NewProjectPage() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a type" />
+                        <SelectValue placeholder="Pick a selection" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                        <SelectItem value="mixed">Mixed Use</SelectItem>
+                        <SelectItem value="condo">Condo</SelectItem>
+                        <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
+                        <SelectItem value="land-development">Land Development</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
