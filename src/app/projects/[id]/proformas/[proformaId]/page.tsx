@@ -83,6 +83,8 @@ export default function ProformaEditorPage({
   const [absorptionPeriodValue, setAbsorptionPeriodValue] = useState<string>('')
   const [editingUnitGroup, setEditingUnitGroup] = useState<{ unitTypeId: string, groupKey: string } | null>(null)
   const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [proformaName, setProformaName] = useState('')
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -96,6 +98,8 @@ export default function ProformaEditorPage({
         const data = getProforma(id, proformaId)
         if (data) {
           setProforma(data)
+          setProformaName(data.name)
+          setIsEditingName(data.name === "New Proforma")
           setGbaValue(data.gba?.toString() ?? '')
           setStoriesValue(data.stories?.toString() ?? '')
           setProjectLengthValue(data.projectLength?.toString() ?? '')
@@ -453,6 +457,20 @@ export default function ProformaEditorPage({
     return Array.from(map.values());
   }
 
+  const handleNameChange = (newName: string) => {
+    if (!proforma) return
+    setProformaName(newName)
+    const updatedProforma: Proforma = {
+      ...proforma,
+      name: newName
+    }
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
+    saveProforma(id, updatedProforma)
+  }
+
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
   }
@@ -464,7 +482,25 @@ export default function ProformaEditorPage({
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">{proforma.name}</h1>
+        <div className="flex-1 max-w-2xl">
+          {isEditingName ? (
+            <Input
+              value={proformaName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onBlur={() => setIsEditingName(false)}
+              className="text-3xl font-bold h-12 px-2"
+              autoFocus={proformaName === "New Proforma"}
+              placeholder="Enter proforma name"
+            />
+          ) : (
+            <h1 
+              className="text-3xl font-bold cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
+              onClick={() => setIsEditingName(true)}
+            >
+              {proformaName || "Untitled Proforma"}
+            </h1>
+          )}
+        </div>
         <div className="flex gap-4">
           <Button variant="outline">Export to PDF</Button>
           <Link href={`/projects/${id}`}>

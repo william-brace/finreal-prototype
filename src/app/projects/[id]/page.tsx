@@ -169,18 +169,32 @@ export default function ProjectDetailsPage({
                   >
                     <Card className="hover:bg-accent transition-colors">
                       <CardContent className="pt-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">{proforma.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Last updated: {proforma.lastUpdated}
-                            </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-lg">{proforma.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Last updated: {proforma.lastUpdated}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium text-xl">${proforma.results?.totalProjectCost?.toLocaleString() ?? proforma.totalCost?.toLocaleString() ?? '—'}</p>
+                              <p className="text-xs text-muted-foreground">Total Cost</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">${proforma.totalCost.toLocaleString()}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ROI: {proforma.roi}%
-                            </p>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div>
+                              <span className="block text-xs text-muted-foreground">Net Profit</span>
+                              <span className="font-semibold">${proforma.results?.netProfit?.toLocaleString() ?? proforma.netProfit?.toLocaleString() ?? '—'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-muted-foreground">ROI</span>
+                              <span className="font-semibold">{proforma.results?.roi?.toFixed(1) ?? proforma.roi?.toFixed(1) ?? '—'}%</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-muted-foreground">Cost per Unit</span>
+                              <span className="font-semibold">${proforma.results?.costPerUnit?.toLocaleString() ?? '—'}</span>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
