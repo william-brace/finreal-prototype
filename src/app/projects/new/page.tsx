@@ -10,7 +10,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
-import { createProject } from "@/lib/mock-data"
+import { saveProject } from "@/lib/session-storage"
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -53,10 +53,13 @@ export default function NewProjectPage() {
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
-      const project = await createProject({
+      const project = {
+        id: Date.now().toString(),
         ...data,
         location: `${data.city}, ${data.province}`,
-      })
+        proformas: [],
+      }
+      saveProject(project)
       router.push(`/projects/${project.id}`)
     } catch (error) {
       console.error("Failed to create project:", error)

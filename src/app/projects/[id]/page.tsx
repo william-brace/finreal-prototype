@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { getProject } from "@/lib/mock-data"
 import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
+import { getProject, getProformas } from "@/lib/session-storage"
+import { Proforma } from "@/lib/session-storage"
 
 const formatLocation = (location: string) => {
   const parts = location.split(',')
@@ -16,9 +17,10 @@ const formatLocation = (location: string) => {
 }
 
 const formatProformaType = (type: string) => {
-  return type.split(' ').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ')
+  return type
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 export default function ProjectDetailsPage({
@@ -28,21 +30,24 @@ export default function ProjectDetailsPage({
 }) {
   const { id } = use(params)
   const [project, setProject] = useState<Project | null>(null)
+  const [proformas, setProformas] = useState<Proforma[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchData = () => {
       try {
-        const data = await getProject(id)
-        setProject(data || null)
+        const projectData = getProject(id)
+        const proformasData = getProformas(id)
+        setProject(projectData || null)
+        setProformas(proformasData)
       } catch (error) {
-        console.error("Error fetching project:", error)
+        console.error("Error fetching data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProject()
+    fetchData()
   }, [id])
 
   if (loading) {
@@ -109,7 +114,7 @@ export default function ProjectDetailsPage({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {project.proformas.map((proforma) => (
+                {proformas.map((proforma) => (
                   <Link
                     key={proforma.id}
                     href={`/projects/${id}/proformas/${proforma.id}`}
@@ -135,7 +140,7 @@ export default function ProjectDetailsPage({
                     </Card>
                   </Link>
                 ))}
-                {project.proformas.length === 0 && (
+                {proformas.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No proformas yet. Create one to get started.
                   </p>

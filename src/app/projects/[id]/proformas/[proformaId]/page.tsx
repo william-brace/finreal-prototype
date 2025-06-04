@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
+import { getProforma, saveProforma, Proforma } from "@/lib/session-storage"
 
 // Mock data for a proforma
 const defaultProforma = {
@@ -96,7 +97,7 @@ export default function ProformaEditorPage({
   params: Promise<{ id: string; proformaId: string }>
 }) {
   const { id, proformaId } = use(params)
-  const [proforma, setProforma] = useState(defaultProforma)
+  const [proforma, setProforma] = useState<Proforma>(defaultProforma)
   const [loading, setLoading] = useState(true)
   const [newUnitType, setNewUnitType] = useState({ name: '', description: '' })
   const [newUnit, setNewUnit] = useState({ 
@@ -137,8 +138,20 @@ export default function ProformaEditorPage({
   };
 
   useEffect(() => {
-    // In a real app, we would fetch the proforma data here
-    setLoading(false)
+    const fetchProforma = () => {
+      try {
+        const data = getProforma(id, proformaId)
+        if (data) {
+          setProforma(data)
+        }
+      } catch (error) {
+        console.error("Error fetching proforma:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProforma()
   }, [id, proformaId])
 
   useEffect(() => {
@@ -149,14 +162,16 @@ export default function ProformaEditorPage({
   }, [proforma.gba, proforma.stories, proforma.projectLength, proforma.absorptionPeriod])
 
   const handleInputChange = (field: string, value: string | number) => {
-    setProforma(prev => ({
-      ...prev,
+    const updatedProforma = {
+      ...proforma,
       [field]: value
-    }))
+    }
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
   }
 
   const handleSave = () => {
-    // In a real app, we would save the changes to the backend here
+    saveProforma(id, proforma)
   }
 
   const handleAddUnitType = () => {
@@ -166,10 +181,12 @@ export default function ProformaEditorPage({
       description: newUnitType.description,
       units: []
     }
-    setProforma(prev => ({
-      ...prev,
-      unitMix: [...prev.unitMix, newUnitTypeObj]
-    }))
+    const updatedProforma = {
+      ...proforma,
+      unitMix: [...proforma.unitMix, newUnitTypeObj]
+    }
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
     setNewUnitType({ name: '', description: '' })
     setIsUnitTypeDialogOpen(false)
   }
@@ -177,9 +194,9 @@ export default function ProformaEditorPage({
   const handleAddUnits = (unitTypeId: string) => {
     if (editingUnitGroup && editingUnitGroup.unitTypeId === unitTypeId) {
       // Edit mode: update all units in the group
-      setProforma(prev => ({
-        ...prev,
-        unitMix: prev.unitMix.map(ut => {
+      const updatedProforma = {
+        ...proforma,
+        unitMix: proforma.unitMix.map(ut => {
           if (ut.id !== unitTypeId) return ut;
           const groupKey = editingUnitGroup.groupKey;
           const [name, area, value] = groupKey.split('|');
@@ -192,7 +209,9 @@ export default function ProformaEditorPage({
           }));
           return { ...ut, units: [...filteredUnits, ...newUnits] };
         })
-      }));
+      };
+      setProforma(updatedProforma)
+      saveProforma(id, updatedProforma)
       setEditingUnitGroup(null);
     } else {
       // Add mode: add new units as before
@@ -204,14 +223,16 @@ export default function ProformaEditorPage({
         area: parseInt(newUnit.area) || 0,
         value: parseInt(newUnit.value) || 0
       }));
-      setProforma(prev => ({
-        ...prev,
-        unitMix: prev.unitMix.map(ut => 
+      const updatedProforma = {
+        ...proforma,
+        unitMix: proforma.unitMix.map(ut => 
           ut.id === unitTypeId 
             ? { ...ut, units: [...ut.units, ...newUnits] }
             : ut
         )
-      }));
+      };
+      setProforma(updatedProforma)
+      saveProforma(id, updatedProforma)
     }
     setExpandedUnitTypes(prev => ({ ...prev, [unitTypeId]: true }));
     setNewUnit({ name: '', area: '', value: '', quantity: '1' });
@@ -219,9 +240,9 @@ export default function ProformaEditorPage({
   };
 
   const handleUnitUpdate = (unitTypeId: string, unitId: string, field: string, value: string) => {
-    setProforma(prev => ({
-      ...prev,
-      unitMix: prev.unitMix.map(ut => 
+    const updatedProforma = {
+      ...proforma,
+      unitMix: proforma.unitMix.map(ut => 
         ut.id === unitTypeId 
           ? {
               ...ut,
@@ -233,7 +254,9 @@ export default function ProformaEditorPage({
             }
           : ut
       )
-    }))
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
     setEditingUnit(null)
   }
 
@@ -245,9 +268,9 @@ export default function ProformaEditorPage({
   }
 
   const handleDeleteUnit = (unitTypeId: string, unitId: string) => {
-    setProforma(prev => ({
-      ...prev,
-      unitMix: prev.unitMix.map(ut => 
+    const updatedProforma = {
+      ...proforma,
+      unitMix: proforma.unitMix.map(ut => 
         ut.id === unitTypeId 
           ? {
               ...ut,
@@ -255,47 +278,55 @@ export default function ProformaEditorPage({
             }
           : ut
       )
-    }))
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
   }
 
   const handleSourcesUsesUpdate = (section: 'sources' | 'uses', field: string, value: string) => {
-    setProforma(prev => ({
-      ...prev,
+    const updatedProforma = {
+      ...proforma,
       [section]: {
-        ...prev[section],
+        ...proforma[section],
         [field]: field.includes('Rate') ? parseFloat(value) : parseInt(value) || 0
       }
-    }))
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
     setEditingField(null)
   }
 
   const handleAddAdditionalCost = () => {
     if (!newAdditionalCost.name || !newAdditionalCost.amount) return
 
-    setProforma(prev => ({
-      ...prev,
+    const updatedProforma = {
+      ...proforma,
       uses: {
-        ...prev.uses,
+        ...proforma.uses,
         additionalCosts: [
-          ...prev.uses.additionalCosts,
+          ...proforma.uses.additionalCosts,
           {
             name: newAdditionalCost.name,
             amount: parseInt(newAdditionalCost.amount) || 0
           }
         ]
       }
-    }))
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
     setNewAdditionalCost({ name: '', amount: '' })
   }
 
   const handleDeleteAdditionalCost = (index: number) => {
-    setProforma(prev => ({
-      ...prev,
+    const updatedProforma = {
+      ...proforma,
       uses: {
-        ...prev.uses,
-        additionalCosts: prev.uses.additionalCosts.filter((_, i) => i !== index)
+        ...proforma.uses,
+        additionalCosts: proforma.uses.additionalCosts.filter((_, i) => i !== index)
       }
-    }))
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
   }
 
   const handleAddOrEditOtherIncome = () => {
@@ -311,12 +342,14 @@ export default function ProformaEditorPage({
       numberOfUnits: parseInt(newOtherIncome.numberOfUnits),
       valuePerUnit: parseInt(newOtherIncome.valuePerUnit)
     }
-    setProforma(prev => ({
-      ...prev,
+    const updatedProforma = {
+      ...proforma,
       otherIncome: editingOtherIncomeDialog
-        ? prev.otherIncome.map(item => item.id === editingOtherIncomeDialog.id ? newOtherIncomeObj : item)
-        : [...prev.otherIncome, newOtherIncomeObj]
-    }))
+        ? proforma.otherIncome.map(item => item.id === editingOtherIncomeDialog.id ? newOtherIncomeObj : item)
+        : [...proforma.otherIncome, newOtherIncomeObj]
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
     setNewOtherIncome({ 
       name: '', 
       description: '', 
@@ -345,10 +378,12 @@ export default function ProformaEditorPage({
   }
 
   const handleDeleteOtherIncome = (id: string) => {
-    setProforma(prev => ({
-      ...prev,
-      otherIncome: prev.otherIncome.filter(item => item.id !== id)
-    }))
+    const updatedProforma = {
+      ...proforma,
+      otherIncome: proforma.otherIncome.filter(item => item.id !== id)
+    };
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
   }
 
   const calculateMetrics = (proformaData: typeof defaultProforma) => {
