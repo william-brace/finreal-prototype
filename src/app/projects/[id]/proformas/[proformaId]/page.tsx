@@ -18,53 +18,6 @@ import {
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { getProforma, saveProforma, Proforma } from "@/lib/session-storage"
 
-// Mock data for a proforma
-const defaultProforma = {
-  id: "1",
-  name: "Base Case",
-  projectId: "1",
-  lastUpdated: "2024-03-15",
-  totalCost: 75000000,
-  netProfit: 25000000,
-  roi: 33.3,
-  gba: 250000,
-  stories: 30,
-  projectLength: 36,
-  absorptionPeriod: 12,
-  unitMix: [] as UnitType[],
-  otherIncome: [] as OtherIncome[],
-  sources: {
-    constructionDebt: 70,
-    equity: 30,
-    interestRate: 5.5,
-  },
-  uses: {
-    legalCosts: 5000,
-    quantitySurveyorCosts: 8000,
-    realtorFee: 2.5,
-    hardCostContingency: 10,
-    softCostContingency: 5,
-    additionalCosts: [
-      { name: "Permit Fees", amount: 250000 },
-      { name: "Development Charges", amount: 1500000 },
-    ],
-  },
-  results: {
-    totalProjectCost: 75000000,
-    netProfit: 25000000,
-    roi: 33.3,
-    costPerUnit: 750000,
-  },
-  metrics: {
-    grossRevenue: 0,
-    totalExpenses: 0,
-    grossProfit: 0,
-    roi: 0,
-    annualizedRoi: 0,
-    leveredEmx: 0,
-  }
-}
-
 // New types for unit mix
 interface Unit {
   id: string;
@@ -97,7 +50,7 @@ export default function ProformaEditorPage({
   params: Promise<{ id: string; proformaId: string }>
 }) {
   const { id, proformaId } = use(params)
-  const [proforma, setProforma] = useState<Proforma>(defaultProforma)
+  const [proforma, setProforma] = useState<Proforma | null>(null)
   const [loading, setLoading] = useState(true)
   const [newUnitType, setNewUnitType] = useState({ name: '', description: '' })
   const [newUnit, setNewUnit] = useState({ 
@@ -124,10 +77,10 @@ export default function ProformaEditorPage({
   })
   const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
   const [editingOtherIncomeDialog, setEditingOtherIncomeDialog] = useState<OtherIncome | null>(null)
-  const [gbaValue, setGbaValue] = useState<string>(proforma.gba?.toString() ?? '')
-  const [storiesValue, setStoriesValue] = useState<string>(proforma.stories?.toString() ?? '')
-  const [projectLengthValue, setProjectLengthValue] = useState<string>(proforma.projectLength?.toString() ?? '')
-  const [absorptionPeriodValue, setAbsorptionPeriodValue] = useState<string>(proforma.absorptionPeriod?.toString() ?? '')
+  const [gbaValue, setGbaValue] = useState<string>('')
+  const [storiesValue, setStoriesValue] = useState<string>('')
+  const [projectLengthValue, setProjectLengthValue] = useState<string>('')
+  const [absorptionPeriodValue, setAbsorptionPeriodValue] = useState<string>('')
   const [editingUnitGroup, setEditingUnitGroup] = useState<{ unitTypeId: string, groupKey: string } | null>(null)
   const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
 
@@ -143,6 +96,10 @@ export default function ProformaEditorPage({
         const data = getProforma(id, proformaId)
         if (data) {
           setProforma(data)
+          setGbaValue(data.gba?.toString() ?? '')
+          setStoriesValue(data.stories?.toString() ?? '')
+          setProjectLengthValue(data.projectLength?.toString() ?? '')
+          setAbsorptionPeriodValue(data.absorptionPeriod?.toString() ?? '')
         }
       } catch (error) {
         console.error("Error fetching proforma:", error)
@@ -154,47 +111,50 @@ export default function ProformaEditorPage({
     fetchProforma()
   }, [id, proformaId])
 
-  useEffect(() => {
-    setGbaValue(proforma.gba?.toString() ?? '')
-    setStoriesValue(proforma.stories?.toString() ?? '')
-    setProjectLengthValue(proforma.projectLength?.toString() ?? '')
-    setAbsorptionPeriodValue(proforma.absorptionPeriod?.toString() ?? '')
-  }, [proforma.gba, proforma.stories, proforma.projectLength, proforma.absorptionPeriod])
-
   const handleInputChange = (field: string, value: string | number) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       [field]: value
     }
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
   }
 
   const handleSave = () => {
+    if (!proforma) return
     saveProforma(id, proforma)
   }
 
   const handleAddUnitType = () => {
+    if (!proforma) return
     const newUnitTypeObj: UnitType = {
       id: Date.now().toString(),
       name: newUnitType.name,
       description: newUnitType.description,
       units: []
     }
-    const updatedProforma = {
+    const updatedProforma: Proforma = {
       ...proforma,
       unitMix: [...proforma.unitMix, newUnitTypeObj]
     }
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
     setNewUnitType({ name: '', description: '' })
     setIsUnitTypeDialogOpen(false)
   }
 
   const handleAddUnits = (unitTypeId: string) => {
+    if (!proforma) return
     if (editingUnitGroup && editingUnitGroup.unitTypeId === unitTypeId) {
       // Edit mode: update all units in the group
-      const updatedProforma = {
+      const updatedProforma: Proforma = {
         ...proforma,
         unitMix: proforma.unitMix.map(ut => {
           if (ut.id !== unitTypeId) return ut;
@@ -210,7 +170,10 @@ export default function ProformaEditorPage({
           return { ...ut, units: [...filteredUnits, ...newUnits] };
         })
       };
-      setProforma(updatedProforma)
+      setProforma(prev => {
+        if (!prev) return prev;
+        return updatedProforma;
+      })
       saveProforma(id, updatedProforma)
       setEditingUnitGroup(null);
     } else {
@@ -223,7 +186,7 @@ export default function ProformaEditorPage({
         area: parseInt(newUnit.area) || 0,
         value: parseInt(newUnit.value) || 0
       }));
-      const updatedProforma = {
+      const updatedProforma: Proforma = {
         ...proforma,
         unitMix: proforma.unitMix.map(ut => 
           ut.id === unitTypeId 
@@ -231,7 +194,10 @@ export default function ProformaEditorPage({
             : ut
         )
       };
-      setProforma(updatedProforma)
+      setProforma(prev => {
+        if (!prev) return prev;
+        return updatedProforma;
+      })
       saveProforma(id, updatedProforma)
     }
     setExpandedUnitTypes(prev => ({ ...prev, [unitTypeId]: true }));
@@ -240,7 +206,8 @@ export default function ProformaEditorPage({
   };
 
   const handleUnitUpdate = (unitTypeId: string, unitId: string, field: string, value: string) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       unitMix: proforma.unitMix.map(ut => 
         ut.id === unitTypeId 
@@ -255,7 +222,10 @@ export default function ProformaEditorPage({
           : ut
       )
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
     setEditingUnit(null)
   }
@@ -268,7 +238,8 @@ export default function ProformaEditorPage({
   }
 
   const handleDeleteUnit = (unitTypeId: string, unitId: string) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       unitMix: proforma.unitMix.map(ut => 
         ut.id === unitTypeId 
@@ -279,27 +250,35 @@ export default function ProformaEditorPage({
           : ut
       )
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
   }
 
   const handleSourcesUsesUpdate = (section: 'sources' | 'uses', field: string, value: string) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       [section]: {
         ...proforma[section],
         [field]: field.includes('Rate') ? parseFloat(value) : parseInt(value) || 0
       }
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
     setEditingField(null)
   }
 
   const handleAddAdditionalCost = () => {
+    if (!proforma) return
     if (!newAdditionalCost.name || !newAdditionalCost.amount) return
 
-    const updatedProforma = {
+    const updatedProforma: Proforma = {
       ...proforma,
       uses: {
         ...proforma.uses,
@@ -312,24 +291,32 @@ export default function ProformaEditorPage({
         ]
       }
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
     setNewAdditionalCost({ name: '', amount: '' })
   }
 
   const handleDeleteAdditionalCost = (index: number) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       uses: {
         ...proforma.uses,
         additionalCosts: proforma.uses.additionalCosts.filter((_, i) => i !== index)
       }
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
   }
 
   const handleAddOrEditOtherIncome = () => {
+    if (!proforma) return
     const unitType = newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType;
     const totalValue = parseInt(newOtherIncome.numberOfUnits) * parseInt(newOtherIncome.valuePerUnit);
 
@@ -338,17 +325,20 @@ export default function ProformaEditorPage({
       name: newOtherIncome.name,
       description: newOtherIncome.description,
       value: totalValue,
-      unitType: unitType,
+      unitType: unitType || '',
       numberOfUnits: parseInt(newOtherIncome.numberOfUnits),
       valuePerUnit: parseInt(newOtherIncome.valuePerUnit)
     }
-    const updatedProforma = {
+    const updatedProforma: Proforma = {
       ...proforma,
       otherIncome: editingOtherIncomeDialog
         ? proforma.otherIncome.map(item => item.id === editingOtherIncomeDialog.id ? newOtherIncomeObj : item)
         : [...proforma.otherIncome, newOtherIncomeObj]
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
     setNewOtherIncome({ 
       name: '', 
@@ -378,22 +368,26 @@ export default function ProformaEditorPage({
   }
 
   const handleDeleteOtherIncome = (id: string) => {
-    const updatedProforma = {
+    if (!proforma) return
+    const updatedProforma: Proforma = {
       ...proforma,
       otherIncome: proforma.otherIncome.filter(item => item.id !== id)
     };
-    setProforma(updatedProforma)
+    setProforma(prev => {
+      if (!prev) return prev;
+      return updatedProforma;
+    })
     saveProforma(id, updatedProforma)
   }
 
-  const calculateMetrics = (proformaData: typeof defaultProforma) => {
-    const grossRevenue = proformaData.unitMix.reduce((sum, unitType) => 
-      sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) +
-      proformaData.otherIncome.reduce((sum, item) => sum + item.value, 0);
+  const calculateMetrics = (proformaData: Proforma) => {
+    const grossRevenue = proformaData.unitMix.reduce((sum: number, unitType: UnitType) => 
+      sum + unitType.units.reduce((sum: number, unit: Unit) => sum + unit.value, 0), 0) +
+      proformaData.otherIncome.reduce((sum: number, item: OtherIncome) => sum + item.value, 0);
     
     const totalExpenses = (proformaData.uses.legalCosts || 0) +
       (proformaData.uses.quantitySurveyorCosts || 0) +
-      (proformaData.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0);
+      (proformaData.uses.additionalCosts?.reduce((sum: number, c: { name: string; amount: number }) => sum + (c.amount || 0), 0) || 0);
     
     const grossProfit = grossRevenue - totalExpenses;
     const roi = totalExpenses > 0 ? (grossProfit / totalExpenses) * 100 : 0;
@@ -401,7 +395,7 @@ export default function ProformaEditorPage({
     const leveredEmx = totalExpenses > 0 ? grossRevenue / totalExpenses : 0;
 
     // Calculate total units and cost per unit
-    const totalUnits = proformaData.unitMix.reduce((sum, unitType) => 
+    const totalUnits = proformaData.unitMix.reduce((sum: number, unitType: UnitType) => 
       sum + unitType.units.length, 0);
     const costPerUnit = totalUnits > 0 ? totalExpenses / totalUnits : 0;
 
@@ -419,26 +413,29 @@ export default function ProformaEditorPage({
 
   // Update metrics and results whenever relevant data changes
   useEffect(() => {
+    if (!proforma) return;
+    const metrics = calculateMetrics(proforma);
+    const updatedProforma: Proforma = {
+      ...proforma,
+      metrics,
+      results: {
+        totalProjectCost: metrics.totalExpenses,
+        netProfit: metrics.grossProfit,
+        roi: metrics.roi,
+        costPerUnit: metrics.costPerUnit,
+      }
+    };
     setProforma(prev => {
-      const metrics = calculateMetrics(prev);
-      return {
-        ...prev,
-        metrics,
-        results: {
-          totalProjectCost: metrics.totalExpenses,
-          netProfit: metrics.grossProfit,
-          roi: metrics.roi,
-          costPerUnit: metrics.costPerUnit,
-        }
-      };
+      if (!prev) return prev;
+      return updatedProforma;
     });
   }, [
-    proforma.unitMix,
-    proforma.otherIncome,
-    proforma.uses.legalCosts,
-    proforma.uses.quantitySurveyorCosts,
-    proforma.uses.additionalCosts,
-    proforma.projectLength
+    proforma?.unitMix,
+    proforma?.otherIncome,
+    proforma?.uses.legalCosts,
+    proforma?.uses.quantitySurveyorCosts,
+    proforma?.uses.additionalCosts,
+    proforma?.projectLength
   ]);
 
   // Helper to collate units by name, area, value
@@ -458,6 +455,10 @@ export default function ProformaEditorPage({
 
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
+  }
+
+  if (!proforma) {
+    return <div className="container mx-auto py-8">Proforma not found</div>
   }
 
   return (
@@ -1072,26 +1073,32 @@ export default function ProformaEditorPage({
                                   onBlur={() => {
                                     const newCosts = [...proforma.uses.additionalCosts];
                                     newCosts[index].amount = parseInt(editingField.value) || 0;
-                                    setProforma(prev => ({
-                                      ...prev,
-                                      uses: {
-                                        ...prev.uses,
-                                        additionalCosts: newCosts
-                                      }
-                                    }));
+                                    setProforma(prev => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        uses: {
+                                          ...prev.uses,
+                                          additionalCosts: newCosts
+                                        }
+                                      };
+                                    });
                                     setEditingField(null);
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       const newCosts = [...proforma.uses.additionalCosts];
                                       newCosts[index].amount = parseInt(editingField.value) || 0;
-                                      setProforma(prev => ({
-                                        ...prev,
-                                        uses: {
-                                          ...prev.uses,
-                                          additionalCosts: newCosts
-                                        }
-                                      }));
+                                      setProforma(prev => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          uses: {
+                                            ...prev.uses,
+                                            additionalCosts: newCosts
+                                          }
+                                        };
+                                      });
                                       setEditingField(null);
                                     }
                                   }}

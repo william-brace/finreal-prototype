@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
-import { getProject, getProformas } from "@/lib/session-storage"
-import { Proforma } from "@/lib/session-storage"
+import { getProject, getProformas, saveProforma, Proforma } from "@/lib/session-storage"
+import { useRouter } from "next/navigation"
 
 const formatLocation = (location: string) => {
   const parts = location.split(',')
@@ -29,6 +29,7 @@ export default function ProjectDetailsPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
+  const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [proformas, setProformas] = useState<Proforma[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +51,54 @@ export default function ProjectDetailsPage({
     fetchData()
   }, [id])
 
+  const handleCreateProforma = () => {
+    const newProforma: Proforma = {
+      id: Date.now().toString(),
+      name: "New Proforma",
+      projectId: id,
+      lastUpdated: new Date().toISOString().split('T')[0],
+      totalCost: 0,
+      netProfit: 0,
+      roi: 0,
+      gba: 0,
+      stories: 0,
+      projectLength: 0,
+      absorptionPeriod: 0,
+      unitMix: [],
+      otherIncome: [],
+      sources: {
+        constructionDebt: 70,
+        equity: 30,
+        interestRate: 5.5,
+      },
+      uses: {
+        legalCosts: 0,
+        quantitySurveyorCosts: 0,
+        realtorFee: 2.5,
+        hardCostContingency: 10,
+        softCostContingency: 5,
+        additionalCosts: [],
+      },
+      results: {
+        totalProjectCost: 0,
+        netProfit: 0,
+        roi: 0,
+        costPerUnit: 0,
+      },
+      metrics: {
+        grossRevenue: 0,
+        totalExpenses: 0,
+        grossProfit: 0,
+        roi: 0,
+        annualizedRoi: 0,
+        leveredEmx: 0,
+      }
+    }
+
+    saveProforma(id, newProforma)
+    router.push(`/projects/${id}/proformas/${newProforma.id}`)
+  }
+
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
   }
@@ -66,9 +115,7 @@ export default function ProjectDetailsPage({
           <Link href={`/projects/${id}/edit`}>
             <Button variant="outline">Edit Project</Button>
           </Link>
-          <Link href={`/projects/${id}/proformas/new`}>
-            <Button>New Proforma</Button>
-          </Link>
+          <Button onClick={handleCreateProforma}>New Proforma</Button>
         </div>
       </div>
 
