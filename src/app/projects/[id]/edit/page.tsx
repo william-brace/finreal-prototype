@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { use } from "react"
 import { getProject, saveProject } from "@/lib/session-storage"
 import { useEffect, useState } from "react"
+import { Project } from "@/lib/mock-data"
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -34,7 +35,7 @@ export default function EditProjectPage({
   const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
 
   const {
     register,
@@ -76,10 +77,11 @@ export default function EditProjectPage({
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
-      const updatedProject = {
-        ...project,
+      const updatedProject: Project = {
+        ...project!,
         ...data,
         location: `${data.city}, ${data.province}`,
+        id: project!.id,
       }
       saveProject(updatedProject)
       router.push(`/projects/${id}`)
