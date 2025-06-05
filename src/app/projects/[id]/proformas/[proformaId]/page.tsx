@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { getProforma, saveProforma, Proforma } from "@/lib/session-storage"
+import { jsPDF } from 'jspdf'
 
 // New types for unit mix
 interface Unit {
@@ -443,6 +444,13 @@ export default function ProformaEditorPage({
     saveProforma(id, updatedProforma)
   }
 
+  const handleExportPDF = () => {
+    if (!proforma) return
+    const doc = new jsPDF()
+    doc.text("Hi this is a pdf", 10, 10)
+    doc.save(`${proforma.name}.pdf`)
+  }
+
   if (loading) {
     return <div className="container mx-auto py-8">Loading...</div>
   }
@@ -474,7 +482,7 @@ export default function ProformaEditorPage({
           )}
         </div>
         <div className="flex gap-4">
-          <Button variant="outline">Export to PDF</Button>
+          <Button variant="outline" onClick={handleExportPDF}>Export to PDF</Button>
           <Link href={`/projects/${id}`}>
             <Button variant="outline">Back to Project</Button>
           </Link>
