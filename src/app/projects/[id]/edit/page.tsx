@@ -10,7 +10,10 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
-import { saveProject } from "@/lib/session-storage"
+import { use } from "react"
+import { getProject, saveProject } from "@/lib/session-storage"
+import { useEffect, useState } from "react"
+import { Project } from "@/lib/mock-data"
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -24,18 +27,16 @@ const projectSchema = z.object({
 
 type ProjectFormData = z.infer<typeof projectSchema>
 
-const testData: ProjectFormData = {
-  name: "The Douglas Tower",
-  notes: "Prime downtown location with excellent transit access. Mixed-use development with retail on ground floor.",
-  city: "Toronto",
-  province: "on",
-  address: "123 Douglas Street",
-  proformaType: "condo",
-  landCost: 15000000,
-}
-
-export default function NewProjectPage() {
+export default function EditProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = use(params)
   const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [project, setProject] = useState<Project | null>(null)
+
   const {
     register,
     handleSubmit,
@@ -44,31 +45,79 @@ export default function NewProjectPage() {
     formState: { errors, isSubmitting },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      landCost: 0,
-      province: "on", // Default to Ontario
-      proformaType: "residential", // Default to Residential
-    },
   })
+
+  useEffect(() => {
+    const loadProject = () => {
+      try {
+        const projectData = getProject(id)
+        if (projectData) {
+          setProject(projectData)
+          // Split location into city and province
+          const [city, province] = projectData.location.split(',').map(s => s.trim())
+          reset({
+            name: projectData.name,
+            notes: projectData.notes || '',
+            city,
+            province: province.toLowerCase(),
+            address: projectData.address,
+            proformaType: projectData.proformaType,
+            landCost: projectData.landCost,
+          })
+        }
+      } catch (error) {
+        console.error("Error loading project:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProject()
+  }, [id, reset])
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
-      const project = {
-        id: Date.now().toString(),
+      const updatedProject: Project = {
+        ...project!,
         ...data,
         location: `${data.city}, ${data.province}`,
-        proformas: [],
+        id: project!.id,
       }
-      saveProject(project)
-      router.push(`/projects/${project.id}`)
+      saveProject(updatedProject)
+      router.push(`/projects/${id}`)
     } catch (error) {
-      console.error("Failed to create project:", error)
-      // In a real app, we would show an error message to the user
+      console.error("Failed to update project:", error)
     }
   }
 
-  const fillWithTestData = () => {
-    reset(testData)
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!project) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-6">
+            <p className="text-center text-gray-600">Project not found</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -76,8 +125,8 @@ export default function NewProjectPage() {
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle>Create New Project</CardTitle>
-            <p className="text-sm text-muted-foreground">Enter the details for your project.</p>
+            <CardTitle>Edit Project</CardTitle>
+            <p className="text-sm text-muted-foreground">Update the details for your project.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -188,22 +237,13 @@ export default function NewProjectPage() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={fillWithTestData}
-                >
-                  Fill with Test Data
+              <div className="flex justify-end gap-4">
+                <Button variant="outline" asChild>
+                  <Link href={`/projects/${id}`}>Cancel</Link>
                 </Button>
-                <div className="flex gap-4">
-                  <Button variant="outline" asChild>
-                    <Link href="/">Cancel</Link>
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Project"}
-                  </Button>
-                </div>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </form>
           </CardContent>
