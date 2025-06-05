@@ -8,11 +8,18 @@ import { Project } from "@/lib/mock-data"
 
 export default function HomePage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadProjects = () => {
-      const projects = getProjects()
-      setProjects(projects)
+      try {
+        const projects = getProjects()
+        setProjects(projects)
+      } catch (error) {
+        console.error("Error loading projects:", error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadProjects()
@@ -43,7 +50,15 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {projects.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-lg border p-12 text-center">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4 mx-auto"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+              <div className="h-10 bg-gray-200 rounded w-1/3 mx-auto"></div>
+            </div>
+          </div>
+        ) : projects.length === 0 ? (
           <div className="bg-white rounded-lg border p-12 text-center">
             <p className="text-lg text-gray-600 mb-4">No projects yet</p>
             <p className="text-sm text-gray-500 mb-6">Create your first project to get started.</p>
