@@ -62,7 +62,6 @@ export default function ProformaEditorPage({
   const [selectedUnitTypeId, setSelectedUnitTypeId] = useState<string | null>(null)
   const [isUnitTypeDialogOpen, setIsUnitTypeDialogOpen] = useState(false)
   const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false)
-  const [editingUnit, setEditingUnit] = useState<{ id: string; field: string; value: string } | null>(null)
   const [expandedUnitTypes, setExpandedUnitTypes] = useState<Record<string, boolean>>({})
   const [editingField, setEditingField] = useState<{ section: string; field: string; value: string } | null>(null)
   const [newAdditionalCost, setNewAdditionalCost] = useState({ name: '', amount: '' })
@@ -128,10 +127,6 @@ export default function ProformaEditorPage({
     saveProforma(id, updatedProforma)
   }
 
-  const handleSave = () => {
-    if (!proforma) return
-    saveProforma(id, proforma)
-  }
 
   const handleAddUnitType = () => {
     if (!proforma) return
@@ -163,7 +158,6 @@ export default function ProformaEditorPage({
         unitMix: proforma.unitMix.map(ut => {
           if (ut.id !== unitTypeId) return ut;
           const groupKey = editingUnitGroup.groupKey;
-          const [name, area, value] = groupKey.split('|');
           const filteredUnits = ut.units.filter(u => `${u.name}|${u.area}|${u.value}` !== groupKey);
           const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
             id: `${unitTypeId}-${Date.now()}-${i}`,
@@ -209,30 +203,7 @@ export default function ProformaEditorPage({
     setIsUnitDialogOpen(false);
   };
 
-  const handleUnitUpdate = (unitTypeId: string, unitId: string, field: string, value: string) => {
-    if (!proforma) return
-    const updatedProforma: Proforma = {
-      ...proforma,
-      unitMix: proforma.unitMix.map(ut => 
-        ut.id === unitTypeId 
-          ? {
-              ...ut,
-              units: ut.units.map(u => 
-                u.id === unitId 
-                  ? { ...u, [field]: field === 'name' ? value : parseInt(value) || 0 }
-                  : u
-              )
-            }
-          : ut
-      )
-    };
-    setProforma(prev => {
-      if (!prev) return prev;
-      return updatedProforma;
-    })
-    saveProforma(id, updatedProforma)
-    setEditingUnit(null)
-  }
+
 
   const toggleUnitType = (unitTypeId: string) => {
     setExpandedUnitTypes(prev => ({
@@ -433,6 +404,7 @@ export default function ProformaEditorPage({
       if (!prev) return prev;
       return updatedProforma;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     proforma?.unitMix,
     proforma?.otherIncome,
@@ -540,7 +512,7 @@ export default function ProformaEditorPage({
                         step="any"
                         value={gbaValue}
                         onChange={e => setGbaValue(e.target.value)}
-                        onBlur={e => handleInputChange('gba', parseFloat(gbaValue) || 0)}
+                        onBlur={() => handleInputChange('gba', parseFloat(gbaValue) || 0)}
                       />
                     </div>
                     <div>
@@ -549,7 +521,7 @@ export default function ProformaEditorPage({
                         type="number"
                         value={storiesValue}
                         onChange={e => setStoriesValue(e.target.value)}
-                        onBlur={e => handleInputChange('stories', parseInt(storiesValue) || 0)}
+                        onBlur={() => handleInputChange('stories', parseInt(storiesValue) || 0)}
                       />
                     </div>
                     <div>
@@ -558,7 +530,7 @@ export default function ProformaEditorPage({
                         type="number"
                         value={projectLengthValue}
                         onChange={e => setProjectLengthValue(e.target.value)}
-                        onBlur={e => handleInputChange('projectLength', parseInt(projectLengthValue) || 0)}
+                        onBlur={() => handleInputChange('projectLength', parseInt(projectLengthValue) || 0)}
                       />
                     </div>
                     <div>
@@ -567,7 +539,7 @@ export default function ProformaEditorPage({
                         type="number"
                         value={absorptionPeriodValue}
                         onChange={e => setAbsorptionPeriodValue(e.target.value)}
-                        onBlur={e => handleInputChange('absorptionPeriod', parseInt(absorptionPeriodValue) || 0)}
+                        onBlur={() => handleInputChange('absorptionPeriod', parseInt(absorptionPeriodValue) || 0)}
                       />
                     </div>
                   </div>
