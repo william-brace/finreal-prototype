@@ -496,7 +496,7 @@ export default function ProformaEditorPage({
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
               <TabsTrigger value="other-income">Other Income</TabsTrigger>
-              <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
+              <TabsTrigger value="sources-uses">Uses</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="info">Info</TabsTrigger>
             </TabsList>
@@ -785,310 +785,116 @@ export default function ProformaEditorPage({
             <TabsContent value="sources-uses">
               <Card>
                 <CardHeader>
-                  <CardTitle>Sources & Uses</CardTitle>
-                  <CardDescription>Configure the financial structure</CardDescription>
+                  <CardTitle>Uses</CardTitle>
+                  <CardDescription>Configure project costs and expenses</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Sources</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Construction Debt (%)</label>
-                          {editingField?.section === 'sources' && editingField.field === 'constructionDebt' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('sources', 'constructionDebt', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('sources', 'constructionDebt', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'sources', 
-                                field: 'constructionDebt', 
-                                value: proforma.sources.constructionDebt.toString() 
-                              })}
-                            >
-                              {proforma.sources.constructionDebt}%
-                            </div>
-                          )}
+                  <div className="space-y-8">
+                    {/* Project Summary */}
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                      <div>
+                        <div className="text-sm font-medium">Total GBA</div>
+                        <div className="text-lg font-semibold">
+                          {proforma.gba?.toLocaleString() || '0'} SF
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Equity (%)</label>
-                          {editingField?.section === 'sources' && editingField.field === 'equity' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('sources', 'equity', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('sources', 'equity', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'sources', 
-                                field: 'equity', 
-                                value: proforma.sources.equity.toString() 
-                              })}
-                            >
-                              {proforma.sources.equity}%
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Interest Rate (%)</label>
-                          {editingField?.section === 'sources' && editingField.field === 'interestRate' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              step="0.1"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('sources', 'interestRate', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('sources', 'interestRate', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'sources', 
-                                field: 'interestRate', 
-                                value: proforma.sources.interestRate.toString() 
-                              })}
-                            >
-                              {proforma.sources.interestRate}%
-                            </div>
-                          )}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Total Units</div>
+                        <div className="text-lg font-semibold">
+                          {proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0).toLocaleString()}
                         </div>
                       </div>
                     </div>
 
+                    {/* Land Costs Section */}
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">Uses</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="flex justify-between items-center mb-4">
                         <div>
-                          <label className="text-sm font-medium">Monthly Legal Costs ($)</label>
-                          {editingField?.section === 'uses' && editingField.field === 'legalCosts' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('uses', 'legalCosts', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('uses', 'legalCosts', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'uses', 
-                                field: 'legalCosts', 
-                                value: proforma.uses.legalCosts.toString() 
-                              })}
-                            >
-                              ${proforma.uses.legalCosts.toLocaleString()}
+                          <h3 className="text-lg font-semibold">Land Costs</h3>
+                          <p className="text-sm text-muted-foreground">Costs associated with land acquisition and related expenses</p>
                             </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Monthly QS Costs ($)</label>
-                          {editingField?.section === 'uses' && editingField.field === 'quantitySurveyorCosts' ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">Add Land Cost</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add Land Cost</DialogTitle>
+                              <DialogDescription>
+                                Add a new land cost item with its details
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <label htmlFor="land-cost-name">Cost Name</label>
                             <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('uses', 'quantitySurveyorCosts', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('uses', 'quantitySurveyorCosts', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'uses', 
-                                field: 'quantitySurveyorCosts', 
-                                value: proforma.uses.quantitySurveyorCosts.toString() 
-                              })}
-                            >
-                              ${proforma.uses.quantitySurveyorCosts.toLocaleString()}
+                                  id="land-cost-name"
+                                  value={newAdditionalCost.name}
+                                  onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                                  placeholder="e.g., Survey Costs"
+                                />
                             </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Realtor Fee (%)</label>
-                          {editingField?.section === 'uses' && editingField.field === 'realtorFee' ? (
+                              <div className="grid gap-2">
+                                <label htmlFor="land-cost-amount">Amount ($)</label>
                             <Input
-                              autoFocus
+                                  id="land-cost-amount"
                               type="number"
-                              step="0.1"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('uses', 'realtorFee', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('uses', 'realtorFee', editingField.value)
-                                }
-                              }}
-                              className="h-8"
+                                  value={newAdditionalCost.amount}
+                                  onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
+                                  placeholder="Enter amount"
                             />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'uses', 
-                                field: 'realtorFee', 
-                                value: proforma.uses.realtorFee.toString() 
-                              })}
-                            >
-                              {proforma.uses.realtorFee}%
                             </div>
-                          )}
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Hard Cost Contingency (%)</label>
-                          {editingField?.section === 'uses' && editingField.field === 'hardCostContingency' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('uses', 'hardCostContingency', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('uses', 'hardCostContingency', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'uses', 
-                                field: 'hardCostContingency', 
-                                value: proforma.uses.hardCostContingency.toString() 
-                              })}
-                            >
-                              {proforma.uses.hardCostContingency}%
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Soft Cost Contingency (%)</label>
-                          {editingField?.section === 'uses' && editingField.field === 'softCostContingency' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                              onBlur={() => handleSourcesUsesUpdate('uses', 'softCostContingency', editingField.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSourcesUsesUpdate('uses', 'softCostContingency', editingField.value)
-                                }
-                              }}
-                              className="h-8"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded hover:bg-muted"
-                              onClick={() => setEditingField({ 
-                                section: 'uses', 
-                                field: 'softCostContingency', 
-                                value: proforma.uses.softCostContingency.toString() 
-                              })}
-                            >
-                              {proforma.uses.softCostContingency}%
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                            <DialogFooter>
+                              <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                    </div>
 
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="text-sm font-medium">Additional Costs</h4>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">Add Cost</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add Additional Cost</DialogTitle>
-                                <DialogDescription>
-                                  Specify the name and amount for the additional cost
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                  <label htmlFor="cost-name">Cost Name</label>
-                                  <Input
-                                    id="cost-name"
-                                    value={newAdditionalCost.name}
-                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="e.g., Permit Fees"
-                                  />
-                                </div>
-                                <div className="grid gap-2">
-                                  <label htmlFor="cost-amount">Amount ($)</label>
-                                  <Input
-                                    id="cost-amount"
-                                    type="number"
-                                    value={newAdditionalCost.amount}
-                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
-                                    placeholder="Enter amount"
-                                  />
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        {proforma.uses.additionalCosts.map((cost, index) => (
-                          <div key={index} className="flex items-center justify-between gap-4 mb-2">
-                            <div className="flex-1">
-                              <label className="text-sm text-muted-foreground">{cost.name}</label>
-                              {editingField?.section === 'additionalCosts' && editingField.field === index.toString() ? (
-                                <Input
-                                  autoFocus
-                                  type="number"
-                                  value={editingField.value}
-                                  onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                                  onBlur={() => {
-                                    const newCosts = [...proforma.uses.additionalCosts];
-                                    newCosts[index].amount = parseInt(editingField.value) || 0;
+                      <div className="space-y-4">
+                        {/* Pre-populated Land Cost */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Land Cost</label>
+                            <div className="text-sm text-muted-foreground">Base land acquisition cost</div>
+                            </div>
+                          <div className="text-right">
+                            {editingField?.section === 'land' && editingField.field === 'landCost' ? (
+                            <Input
+                              autoFocus
+                              type="number"
+                              value={editingField.value}
+                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
+                                onBlur={() => {
+                                  const newCosts = [...(proforma.uses.additionalCosts || [])];
+                                  const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
+                                  if (landCostIndex >= 0) {
+                                    newCosts[landCostIndex].amount = parseInt(editingField.value) || 0;
+                                  } else {
+                                    newCosts.push({ name: 'Land Cost', amount: parseInt(editingField.value) || 0 });
+                                  }
+                                  setProforma(prev => {
+                                    if (!prev) return prev;
+                                    return {
+                                      ...prev,
+                                      uses: {
+                                        ...prev.uses,
+                                        additionalCosts: newCosts
+                                      }
+                                    };
+                                  });
+                                  setEditingField(null);
+                                }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const newCosts = [...(proforma.uses.additionalCosts || [])];
+                                    const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
+                                    if (landCostIndex >= 0) {
+                                      newCosts[landCostIndex].amount = parseInt(editingField.value) || 0;
+                                    } else {
+                                      newCosts.push({ name: 'Land Cost', amount: parseInt(editingField.value) || 0 });
+                                    }
                                     setProforma(prev => {
                                       if (!prev) return prev;
                                       return {
@@ -1100,11 +906,59 @@ export default function ProformaEditorPage({
                                       };
                                     });
                                     setEditingField(null);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const newCosts = [...proforma.uses.additionalCosts];
-                                      newCosts[index].amount = parseInt(editingField.value) || 0;
+                                }
+                              }}
+                                className="h-8 w-48"
+                            />
+                          ) : (
+                            <div 
+                              className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
+                              onClick={() => setEditingField({ 
+                                  section: 'land', 
+                                  field: 'landCost', 
+                                  value: (proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toString() 
+                              })}
+                            >
+                                ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                        {/* Pre-populated Closing Costs */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Closing Costs</label>
+                            <div className="text-sm text-muted-foreground">Based on land cost percentage</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            {editingField?.section === 'land' && editingField.field === 'closingCost' ? (
+                              <div className="flex items-center gap-4">
+                                <div className="text-sm text-muted-foreground">
+                                  ${(() => {
+                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                    const percentage = parseFloat(editingField.value) || 0;
+                                    return Math.round(landCost * percentage / 100).toLocaleString();
+                                  })()}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    autoFocus
+                                    type="number"
+                                    step="0.1"
+                                    value={editingField.value}
+                                    onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
+                                    onBlur={() => {
+                                      const newCosts = [...(proforma.uses.additionalCosts || [])];
+                                      const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
+                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                      const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
+                                      
+                                      if (closingCostIndex >= 0) {
+                                        newCosts[closingCostIndex].amount = closingCostAmount;
+                                      } else {
+                                        newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
+                                      }
                                       setProforma(prev => {
                                         if (!prev) return prev;
                                         return {
@@ -1116,22 +970,80 @@ export default function ProformaEditorPage({
                                         };
                                       });
                                       setEditingField(null);
-                                    }
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                <div 
-                                  className="cursor-pointer p-2 rounded hover:bg-muted"
-                                  onClick={() => setEditingField({ 
-                                    section: 'additionalCosts', 
-                                    field: index.toString(), 
-                                    value: cost.amount.toString() 
-                                  })}
-                                >
-                                  ${cost.amount.toLocaleString()}
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const newCosts = [...(proforma.uses.additionalCosts || [])];
+                                        const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
+                                        const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                        const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
+                                        
+                                        if (closingCostIndex >= 0) {
+                                          newCosts[closingCostIndex].amount = closingCostAmount;
+                                        } else {
+                                          newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
+                                        }
+                                        setProforma(prev => {
+                                          if (!prev) return prev;
+                                          return {
+                                            ...prev,
+                                            uses: {
+                                              ...prev.uses,
+                                              additionalCosts: newCosts
+                                            }
+                                          };
+                                        });
+                                        setEditingField(null);
+                                      }
+                                    }}
+                                    className="h-8 w-24"
+                                  />
+                                  <span className="text-sm">%</span>
                                 </div>
-                              )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-4">
+                                <div className="text-sm text-muted-foreground">
+                                  ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0).toLocaleString()}
+                                </div>
+                                <div 
+                                  className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
+                                  onClick={() => {
+                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                    const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
+                                    const percentage = landCost > 0 ? (closingCost / landCost * 100).toFixed(1) : '0';
+                                    setEditingField({ 
+                                      section: 'land', 
+                                      field: 'closingCost', 
+                                      value: percentage
+                                    });
+                                  }}
+                                >
+                                  {(() => {
+                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                    const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
+                                    return landCost > 0 ? `${(closingCost / landCost * 100).toFixed(1)}%` : '0%';
+                                  })()}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Additional Land Costs */}
+                        {proforma.uses.additionalCosts
+                          ?.filter(cost => 
+                            !cost.name.toLowerCase().includes('land') && 
+                            !cost.name.toLowerCase().includes('closing')
+                          )
+                          .map((cost, index) => (
+                            <div key={index} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                              <div className="flex-1">
+                                <label className="text-sm font-medium">{cost.name}</label>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="font-semibold">${cost.amount.toLocaleString()}</div>
                             </div>
                             <Button
                               variant="ghost"
@@ -1142,8 +1054,45 @@ export default function ProformaEditorPage({
                               <Trash2 className="h-4 w-4" />
                               <span className="sr-only">Delete cost</span>
                             </Button>
+                              </div>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Total Land Costs */}
+                      <div className="mt-6 pt-4 border-t">
+                        {/* Per Unit and Per SF Calculations */}
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Cost per Unit</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                return totalUnits > 0 ? Math.round(totalCost / totalUnits).toLocaleString() : '0';
+                              })()}
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Cost per SF</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                                const gba = proforma.gba || 0;
+                                return gba > 0 ? Math.round(totalCost / gba).toLocaleString() : '0';
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div className="text-lg font-semibold">Total Land Costs</div>
+                          <div className="text-lg font-bold">
+                            ${(
+                              (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
+                            ).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
