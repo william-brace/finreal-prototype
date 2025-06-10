@@ -85,6 +85,7 @@ export default function ProformaEditorPage({
   const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
   const [isEditingName, setIsEditingName] = useState(false)
   const [proformaName, setProformaName] = useState('')
+  const [isLandCostDialogOpen, setIsLandCostDialogOpen] = useState(false)
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -273,23 +274,26 @@ export default function ProformaEditorPage({
     })
     saveProforma(id, updatedProforma)
     setNewAdditionalCost({ name: '', amount: '' })
+    setIsLandCostDialogOpen(false)
   }
 
-  const handleDeleteAdditionalCost = (index: number) => {
-    if (!proforma) return
+  const handleDeleteAdditionalCost = (name: string) => {
+    if (!proforma) return;
     const updatedProforma: Proforma = {
       ...proforma,
       uses: {
         ...proforma.uses,
-        additionalCosts: proforma.uses.additionalCosts.filter((_, i) => i !== index)
+        additionalCosts: proforma.uses.additionalCosts.filter(
+          c => c.name !== name || ['land cost', 'closing costs'].includes(c.name.toLowerCase())
+        )
       }
     };
     setProforma(prev => {
       if (!prev) return prev;
       return updatedProforma;
-    })
-    saveProforma(id, updatedProforma)
-  }
+    });
+    saveProforma(id, updatedProforma);
+  };
 
   const handleAddOrEditOtherIncome = () => {
     if (!proforma) return
@@ -813,9 +817,9 @@ export default function ProformaEditorPage({
                           <h3 className="text-lg font-semibold">Land Costs</h3>
                           <p className="text-sm text-muted-foreground">Costs associated with land acquisition and related expenses</p>
                             </div>
-                        <Dialog>
+                        <Dialog open={isLandCostDialogOpen} onOpenChange={setIsLandCostDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">Add Land Cost</Button>
+                            <Button variant="outline" size="sm" onClick={() => setIsLandCostDialogOpen(true)}>Add Land Cost</Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
@@ -827,24 +831,24 @@ export default function ProformaEditorPage({
                             <div className="grid gap-4 py-4">
                               <div className="grid gap-2">
                                 <label htmlFor="land-cost-name">Cost Name</label>
-                            <Input
+                                <Input
                                   id="land-cost-name"
                                   value={newAdditionalCost.name}
                                   onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
                                   placeholder="e.g., Survey Costs"
                                 />
-                            </div>
+                              </div>
                               <div className="grid gap-2">
                                 <label htmlFor="land-cost-amount">Amount ($)</label>
-                            <Input
+                                <Input
                                   id="land-cost-amount"
-                              type="number"
+                                  type="number"
                                   value={newAdditionalCost.amount}
                                   onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
                                   placeholder="Enter amount"
-                            />
+                                />
+                              </div>
                             </div>
-                        </div>
                             <DialogFooter>
                               <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
                             </DialogFooter>
@@ -1036,27 +1040,27 @@ export default function ProformaEditorPage({
                             !cost.name.toLowerCase().includes('land') && 
                             !cost.name.toLowerCase().includes('closing')
                           )
-                          .map((cost, index) => (
-                            <div key={index} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          .map((cost) => (
+                            <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
                               <div className="flex-1">
                                 <label className="text-sm font-medium">{cost.name}</label>
                               </div>
                               <div className="flex items-center gap-4">
                                 <div className="text-right">
                                   <div className="font-semibold">${cost.amount.toLocaleString()}</div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteAdditionalCost(index)}
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete cost</span>
-                            </Button>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteAdditionalCost(cost.name)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete cost</span>
+                                </Button>
                               </div>
-                          </div>
-                        ))}
+                            </div>
+                          ))}
                       </div>
 
                       {/* Total Land Costs */}
@@ -1064,22 +1068,22 @@ export default function ProformaEditorPage({
                         {/* Per Unit and Per SF Calculations */}
                         <div className="space-y-2 mb-4">
                           <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Cost per Unit</div>
+                            <div className="text-sm font-medium">Total Cost per Unit</div>
                             <div className="text-sm font-semibold">
                               ${(() => {
                                 const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
                                 const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                                return totalUnits > 0 ? Math.round(totalCost / totalUnits).toLocaleString() : '0';
+                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                               })()}
                             </div>
                           </div>
                           <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Cost per SF</div>
+                            <div className="text-sm font-medium">Total Cost per SF</div>
                             <div className="text-sm font-semibold">
                               ${(() => {
                                 const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
                                 const gba = proforma.gba || 0;
-                                return gba > 0 ? Math.round(totalCost / gba).toLocaleString() : '0';
+                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                               })()}
                             </div>
                           </div>
