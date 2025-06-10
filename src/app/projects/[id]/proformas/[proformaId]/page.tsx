@@ -86,6 +86,11 @@ export default function ProformaEditorPage({
   const [isEditingName, setIsEditingName] = useState(false)
   const [proformaName, setProformaName] = useState('')
   const [isLandCostDialogOpen, setIsLandCostDialogOpen] = useState(false)
+  const [isHardCostDialogOpen, setIsHardCostDialogOpen] = useState(false)
+  const [newHardCost, setNewHardCost] = useState({ name: '', amount: '' })
+  const [hardCosts, setHardCosts] = useState<{ name: string; amount: number }[]>([])
+  const [constructionCost, setConstructionCost] = useState<number>(0)
+  const [hardCostContingencyPct, setHardCostContingencyPct] = useState<number>(0)
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -1095,6 +1100,153 @@ export default function ProformaEditorPage({
                             ${(
                               (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
                             ).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hard Costs Section */}
+                    <div className="mt-10">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Hard Costs</h3>
+                          <p className="text-sm text-muted-foreground">Costs associated with construction and related expenses</p>
+                        </div>
+                        <Dialog open={isHardCostDialogOpen} onOpenChange={setIsHardCostDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setIsHardCostDialogOpen(true)}>Add Hard Cost</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add Hard Cost</DialogTitle>
+                              <DialogDescription>
+                                Add a new hard cost item with its details
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <label htmlFor="hard-cost-name">Cost Name</label>
+                                <Input
+                                  id="hard-cost-name"
+                                  value={newHardCost.name}
+                                  onChange={(e) => setNewHardCost(prev => ({ ...prev, name: e.target.value }))}
+                                  placeholder="e.g., Site Work"
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <label htmlFor="hard-cost-amount">Amount ($)</label>
+                                <Input
+                                  id="hard-cost-amount"
+                                  type="number"
+                                  value={newHardCost.amount}
+                                  onChange={(e) => setNewHardCost(prev => ({ ...prev, amount: e.target.value }))}
+                                  placeholder="Enter amount"
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button onClick={() => {
+                                if (!newHardCost.name || !newHardCost.amount) return;
+                                setHardCosts(prev => [...prev, { name: newHardCost.name, amount: parseInt(newHardCost.amount) || 0 }]);
+                                setNewHardCost({ name: '', amount: '' });
+                                setIsHardCostDialogOpen(false);
+                              }}>Add Cost</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="space-y-4">
+                        {/* Construction Costs */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Construction Costs</label>
+                            <div className="text-sm text-muted-foreground">Base construction cost</div>
+                          </div>
+                          <div className="text-right">
+                            <Input
+                              type="number"
+                              value={constructionCost}
+                              onChange={e => setConstructionCost(Number(e.target.value) || 0)}
+                              className="h-8 w-48"
+                            />
+                          </div>
+                        </div>
+                        {/* Hard Cost Contingency */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Hard Cost Contingency</label>
+                            <div className="text-sm text-muted-foreground">Based on construction cost percentage</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${Math.round(constructionCost * (hardCostContingencyPct || 0) / 100).toLocaleString()}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={hardCostContingencyPct}
+                                onChange={e => setHardCostContingencyPct(Number(e.target.value) || 0)}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Additional Hard Costs */}
+                        {hardCosts.map((cost) => (
+                          <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">{cost.name}</label>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="font-semibold">${cost.amount.toLocaleString()}</div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setHardCosts(prev => prev.filter(c => c.name !== cost.name))}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete cost</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Totals for Hard Costs */}
+                      <div className="mt-6 pt-4 border-t">
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Total Cost per Unit</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                              })()}
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Total Cost per SF</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                const gba = proforma.gba || 0;
+                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-lg font-semibold">Total Hard Costs</div>
+                          <div className="text-lg font-bold">
+                            ${(() => {
+                              const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                              return totalCost.toLocaleString();
+                            })()}
                           </div>
                         </div>
                       </div>
