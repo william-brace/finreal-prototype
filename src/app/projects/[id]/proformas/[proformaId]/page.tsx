@@ -91,6 +91,19 @@ export default function ProformaEditorPage({
   const [hardCosts, setHardCosts] = useState<{ name: string; amount: number }[]>([])
   const [constructionCost, setConstructionCost] = useState<number>(0)
   const [hardCostContingencyPct, setHardCostContingencyPct] = useState<number>(0)
+  const [isSoftCostDialogOpen, setIsSoftCostDialogOpen] = useState(false)
+  const [newSoftCost, setNewSoftCost] = useState({ name: '', amount: '' })
+  const [softCosts, setSoftCosts] = useState<{ name: string; amount: number }[]>([])
+  const [softDev, setSoftDev] = useState<number>(0)
+  const [softConsultants, setSoftConsultants] = useState<number>(0)
+  const [adminMarketing, setAdminMarketing] = useState<number>(0)
+  const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(0)
+  // Add state for Sources section
+  const [equityPct, setEquityPct] = useState(30);
+  const [debtPct, setDebtPct] = useState(70);
+  // Add state for Financing Costs section
+  const [interestPct, setInterestPct] = useState(0);
+  const [brokerFeePct, setBrokerFeePct] = useState(0);
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -467,6 +480,19 @@ export default function ProformaEditorPage({
   if (!proforma) {
     return <div className="container mx-auto py-8">Proforma not found</div>
   }
+
+  // Calculate total project cost for sources section
+  const landCosts = proforma?.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+  const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
+  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
+  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
+  // Calculate Construction Debt dollar amount for financing cost calculations
+  const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
+  const projectLength = proforma?.projectLength || 0;
+  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
+  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
 
   return (
     <div className="container mx-auto py-8">
@@ -1247,6 +1273,318 @@ export default function ProformaEditorPage({
                               const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
                               return totalCost.toLocaleString();
                             })()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Soft Costs Section */}
+                    <div className="mt-10">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Soft Costs</h3>
+                          <p className="text-sm text-muted-foreground">Costs associated with development, consultants, admin, and marketing</p>
+                        </div>
+                        <Dialog open={isSoftCostDialogOpen} onOpenChange={setIsSoftCostDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setIsSoftCostDialogOpen(true)}>Add Soft Cost</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add Soft Cost</DialogTitle>
+                              <DialogDescription>
+                                Add a new soft cost item with its details
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <label htmlFor="soft-cost-name">Cost Name</label>
+                                <Input
+                                  id="soft-cost-name"
+                                  value={newSoftCost.name}
+                                  onChange={(e) => setNewSoftCost(prev => ({ ...prev, name: e.target.value }))}
+                                  placeholder="e.g., Legal Fees"
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <label htmlFor="soft-cost-amount">Amount ($)</label>
+                                <Input
+                                  id="soft-cost-amount"
+                                  type="number"
+                                  value={newSoftCost.amount}
+                                  onChange={(e) => setNewSoftCost(prev => ({ ...prev, amount: e.target.value }))}
+                                  placeholder="Enter amount"
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button onClick={() => {
+                                if (!newSoftCost.name || !newSoftCost.amount) return;
+                                setSoftCosts(prev => [...prev, { name: newSoftCost.name, amount: parseInt(newSoftCost.amount) || 0 }]);
+                                setNewSoftCost({ name: '', amount: '' });
+                                setIsSoftCostDialogOpen(false);
+                              }}>Add Cost</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="space-y-4">
+                        {/* SOFT COSTS - DEVELOPMENT */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">SOFT COSTS - DEVELOPMENT</label>
+                          </div>
+                          <div className="text-right">
+                            <Input
+                              type="number"
+                              value={softDev}
+                              onChange={e => setSoftDev(Number(e.target.value) || 0)}
+                              className="h-8 w-48"
+                            />
+                          </div>
+                        </div>
+                        {/* SOFT COSTS - CONSULTANTS */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">SOFT COSTS - CONSULTANTS</label>
+                          </div>
+                          <div className="text-right">
+                            <Input
+                              type="number"
+                              value={softConsultants}
+                              onChange={e => setSoftConsultants(Number(e.target.value) || 0)}
+                              className="h-8 w-48"
+                            />
+                          </div>
+                        </div>
+                        {/* ADMIN & MARKETING */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">ADMIN & MARKETING</label>
+                          </div>
+                          <div className="text-right">
+                            <Input
+                              type="number"
+                              value={adminMarketing}
+                              onChange={e => setAdminMarketing(Number(e.target.value) || 0)}
+                              className="h-8 w-48"
+                            />
+                          </div>
+                        </div>
+                        {/* Soft Cost Contingency */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Soft cost contingency</label>
+                            <div className="text-sm text-muted-foreground">Based on total of above categories</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100).toLocaleString()}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={softCostContingencyPct}
+                                onChange={e => setSoftCostContingencyPct(Number(e.target.value) || 0)}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Additional Soft Costs */}
+                        {softCosts.map((cost) => (
+                          <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">{cost.name}</label>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="font-semibold">${cost.amount.toLocaleString()}</div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete cost</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Totals for Soft Costs */}
+                      <div className="mt-6 pt-4 border-t">
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Total Cost per Unit</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                              })()}
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm font-medium">Total Cost per SF</div>
+                            <div className="text-sm font-semibold">
+                              ${(() => {
+                                const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                const gba = proforma.gba || 0;
+                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-lg font-semibold">Total Soft Costs</div>
+                          <div className="text-lg font-bold">
+                            ${(() => {
+                              const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                              return totalCost.toLocaleString();
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Project Cost Row */}
+                    <div className="mt-10">
+                      <div className="flex justify-between items-center border-t pt-6">
+                        <div className="text-xl font-bold">Total Project Cost</div>
+                        <div className="text-xl font-bold">
+                          ${(() => {
+                            // Land Costs
+                            const landCosts = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                            // Hard Costs
+                            const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                            // Soft Costs
+                            const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                            return (landCosts + hardCostsTotal + softCostsTotal).toLocaleString();
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* After the Total Project Cost Row */}
+                    <div className="mt-10">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Sources</h3>
+                          <p className="text-sm text-muted-foreground">How the project is financed</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {/* Equity */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Equity</label>
+                            <div className="text-sm text-muted-foreground">Owner/Investor capital</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${equityAmount}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={equityPct}
+                                onChange={e => {
+                                  const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                                  setEquityPct(val);
+                                  setDebtPct(100 - val);
+                                }}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Construction Debt */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Construction Debt</label>
+                            <div className="text-sm text-muted-foreground">Loan or construction financing</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${debtAmount}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={debtPct}
+                                onChange={e => {
+                                  const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                                  setDebtPct(val);
+                                  setEquityPct(100 - val);
+                                }}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financing Costs Section (place after Sources section) */}
+                    <div className="mt-10">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Financing Costs</h3>
+                          <p className="text-sm text-muted-foreground">Costs associated with financing the project</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {/* Interest Cost */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Interest cost</label>
+                            <div className="text-sm text-muted-foreground">Annual interest rate applied to construction debt</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${interestCostAmount}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={interestPct}
+                                onChange={e => setInterestPct(Number(e.target.value) || 0)}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Broker Fee */}
+                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium">Broker fee</label>
+                            <div className="text-sm text-muted-foreground">Fee as a percentage of construction debt</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              ${brokerFeeAmount}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={brokerFeePct}
+                                onChange={e => setBrokerFeePct(Number(e.target.value) || 0)}
+                                className="h-8 w-24"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
                           </div>
                         </div>
                       </div>
