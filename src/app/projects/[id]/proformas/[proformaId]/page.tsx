@@ -18,6 +18,10 @@ import {
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { getProforma, saveProforma, Proforma } from "@/lib/session-storage"
 import { jsPDF } from 'jspdf'
+import { CostRow } from "@/components/proforma/CostRow"
+import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
+import { ResultsTab } from "@/components/proforma/tabs/ResultsTab"
+import { PercentageRow } from "@/components/proforma/PercentageRow"
 
 // New types for unit mix
 interface Unit {
@@ -537,57 +541,17 @@ export default function ProformaEditorPage({
             </TabsList>
 
             <TabsContent value="general">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>General Information</CardTitle>
-                      <CardDescription>Salient project details</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">GBA (sqft)</label>
-                      <Input 
-                        type="number"
-                        step="any"
-                        value={gbaValue}
-                        onChange={e => setGbaValue(e.target.value)}
-                        onBlur={() => handleInputChange('gba', parseFloat(gbaValue) || 0)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Stories</label>
-                      <Input 
-                        type="number"
-                        value={storiesValue}
-                        onChange={e => setStoriesValue(e.target.value)}
-                        onBlur={() => handleInputChange('stories', parseInt(storiesValue) || 0)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Project Length (months)</label>
-                      <Input 
-                        type="number"
-                        value={projectLengthValue}
-                        onChange={e => setProjectLengthValue(e.target.value)}
-                        onBlur={() => handleInputChange('projectLength', parseInt(projectLengthValue) || 0)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Absorption Period (months)</label>
-                      <Input 
-                        type="number"
-                        value={absorptionPeriodValue}
-                        onChange={e => setAbsorptionPeriodValue(e.target.value)}
-                        onBlur={() => handleInputChange('absorptionPeriod', parseInt(absorptionPeriodValue) || 0)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <GeneralTab
+                gbaValue={gbaValue}
+                setGbaValue={setGbaValue}
+                storiesValue={storiesValue}
+                setStoriesValue={setStoriesValue}
+                projectLengthValue={projectLengthValue}
+                setProjectLengthValue={setProjectLengthValue}
+                absorptionPeriodValue={absorptionPeriodValue}
+                setAbsorptionPeriodValue={setAbsorptionPeriodValue}
+                handleInputChange={handleInputChange}
+              />
             </TabsContent>
 
             <TabsContent value="unit-mix">
@@ -1183,42 +1147,19 @@ export default function ProformaEditorPage({
                       </div>
                       <div className="space-y-4">
                         {/* Construction Costs */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Construction Costs</label>
-                            <div className="text-sm text-muted-foreground">Base construction cost</div>
-                          </div>
-                          <div className="text-right">
-                            <Input
-                              type="number"
-                              value={constructionCost}
-                              onChange={e => setConstructionCost(Number(e.target.value) || 0)}
-                              className="h-8 w-48"
-                            />
-                          </div>
-                        </div>
-                        {/* Hard Cost Contingency */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Hard Cost Contingency</label>
-                            <div className="text-sm text-muted-foreground">Based on construction cost percentage</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${Math.round(constructionCost * (hardCostContingencyPct || 0) / 100).toLocaleString()}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={hardCostContingencyPct}
-                                onChange={e => setHardCostContingencyPct(Number(e.target.value) || 0)}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <CostRow
+                          label="Construction Costs"
+                          description="Base construction cost"
+                          value={constructionCost}
+                          onChange={setConstructionCost}
+                        />
+                        <PercentageRow
+                          label="Hard Cost Contingency"
+                          description="Based on construction cost percentage"
+                          baseAmount={constructionCost}
+                          percentage={hardCostContingencyPct}
+                          onChange={setHardCostContingencyPct}
+                        />
                         {/* Additional Hard Costs */}
                         {hardCosts.map((cost) => (
                           <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
@@ -1330,69 +1271,30 @@ export default function ProformaEditorPage({
                       </div>
                       <div className="space-y-4">
                         {/* SOFT COSTS - DEVELOPMENT */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">SOFT COSTS - DEVELOPMENT</label>
-                          </div>
-                          <div className="text-right">
-                            <Input
-                              type="number"
-                              value={softDev}
-                              onChange={e => setSoftDev(Number(e.target.value) || 0)}
-                              className="h-8 w-48"
-                            />
-                          </div>
-                        </div>
+                        <CostRow
+                          label="SOFT COSTS - DEVELOPMENT"
+                          value={softDev}
+                          onChange={setSoftDev}
+                        />
                         {/* SOFT COSTS - CONSULTANTS */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">SOFT COSTS - CONSULTANTS</label>
-                          </div>
-                          <div className="text-right">
-                            <Input
-                              type="number"
-                              value={softConsultants}
-                              onChange={e => setSoftConsultants(Number(e.target.value) || 0)}
-                              className="h-8 w-48"
-                            />
-                          </div>
-                        </div>
+                        <CostRow
+                          label="SOFT COSTS - CONSULTANTS"
+                          value={softConsultants}
+                          onChange={setSoftConsultants}
+                        />
                         {/* ADMIN & MARKETING */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">ADMIN & MARKETING</label>
-                          </div>
-                          <div className="text-right">
-                            <Input
-                              type="number"
-                              value={adminMarketing}
-                              onChange={e => setAdminMarketing(Number(e.target.value) || 0)}
-                              className="h-8 w-48"
-                            />
-                          </div>
-                        </div>
-                        {/* Soft Cost Contingency */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Soft cost contingency</label>
-                            <div className="text-sm text-muted-foreground">Based on total of above categories</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100).toLocaleString()}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={softCostContingencyPct}
-                                onChange={e => setSoftCostContingencyPct(Number(e.target.value) || 0)}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <CostRow
+                          label="ADMIN & MARKETING"
+                          value={adminMarketing}
+                          onChange={setAdminMarketing}
+                        />
+                        <PercentageRow
+                          label="Soft cost contingency"
+                          description="Based on total of above categories"
+                          baseAmount={softDev + softConsultants + adminMarketing}
+                          percentage={softCostContingencyPct}
+                          onChange={setSoftCostContingencyPct}
+                        />
                         {/* Additional Soft Costs */}
                         {softCosts.map((cost) => (
                           <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
@@ -1595,32 +1497,7 @@ export default function ProformaEditorPage({
             </TabsContent>
 
             <TabsContent value="results">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Results</CardTitle>
-                  <CardDescription>Financial analysis and metrics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Total Project Cost</label>
-                      <Input value={`$${proforma.results.totalProjectCost.toLocaleString()}`} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Net Profit</label>
-                      <Input value={`$${proforma.results.netProfit.toLocaleString()}`} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">ROI</label>
-                      <Input value={`${proforma.results.roi}%`} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Cost per Unit</label>
-                      <Input value={`$${proforma.results.costPerUnit.toLocaleString()}`} readOnly />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ResultsTab proforma={proforma} />
             </TabsContent>
 
             <TabsContent value="info">
