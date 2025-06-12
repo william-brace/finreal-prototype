@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
-import { getProforma, saveProforma, Proforma } from "@/lib/session-storage"
+import { getProforma, saveProforma, Proforma, getProject, Project } from "@/lib/session-storage"
 import { jsPDF } from 'jspdf'
 import { CostRow } from "@/components/proforma/CostRow"
 import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
@@ -56,6 +56,7 @@ export default function ProformaEditorPage({
 }) {
   const { id, proformaId } = use(params)
   const [proforma, setProforma] = useState<Proforma | null>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [newUnitType, setNewUnitType] = useState({ name: '', description: '' })
   const [newUnit, setNewUnit] = useState({ 
@@ -116,26 +117,45 @@ export default function ProformaEditorPage({
   };
 
   useEffect(() => {
-    const fetchProforma = () => {
+    const fetchData = () => {
       try {
-        const data = getProforma(id, proformaId)
-        if (data) {
-          setProforma(data)
-          setProformaName(data.name)
-          setIsEditingName(data.name === "New Proforma")
-          setGbaValue(data.gba?.toString() ?? '')
-          setStoriesValue(data.stories?.toString() ?? '')
-          setProjectLengthValue(data.projectLength?.toString() ?? '')
-          setAbsorptionPeriodValue(data.absorptionPeriod?.toString() ?? '')
+        const proformaData = getProforma(id, proformaId)
+        const projectData = getProject(id)
+        if (proformaData) {
+          setProforma(proformaData)
+          setProformaName(proformaData.name)
+          setIsEditingName(proformaData.name === "New Proforma")
+          setGbaValue(proformaData.gba?.toString() ?? '')
+          setStoriesValue(proformaData.stories?.toString() ?? '')
+          setProjectLengthValue(proformaData.projectLength?.toString() ?? '')
+          setAbsorptionPeriodValue(proformaData.absorptionPeriod?.toString() ?? '')
+        }
+        if (projectData) {
+          setProject(projectData)
+          // Set the land cost from the project if it doesn't exist in the proforma
+          if (proformaData && !proformaData.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))) {
+            const updatedProforma = {
+              ...proformaData,
+              uses: {
+                ...proformaData.uses,
+                additionalCosts: [
+                  ...(proformaData.uses.additionalCosts || []),
+                  { name: 'Land Cost', amount: projectData.landCost }
+                ]
+              }
+            }
+            setProforma(updatedProforma)
+            saveProforma(id, updatedProforma)
+          }
         }
       } catch (error) {
-        console.error("Error fetching proforma:", error)
+        console.error("Error fetching data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProforma()
+    fetchData()
   }, [id, proformaId])
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -535,7 +555,7 @@ export default function ProformaEditorPage({
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
               <TabsTrigger value="other-income">Other Income</TabsTrigger>
-              <TabsTrigger value="sources-uses">Uses</TabsTrigger>
+              <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="info">Info</TabsTrigger>
             </TabsList>
@@ -784,11 +804,10 @@ export default function ProformaEditorPage({
             <TabsContent value="sources-uses">
               <Card>
                 <CardHeader>
-                  <CardTitle>Uses</CardTitle>
-                  <CardDescription>Configure project costs and expenses</CardDescription>
+                
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-8">
+                  <div className="space-y-12">
                     {/* Project Summary */}
                     <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                       <div>
@@ -805,173 +824,109 @@ export default function ProformaEditorPage({
                       </div>
                     </div>
 
-                    {/* Land Costs Section */}
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Land Costs</h3>
-                          <p className="text-sm text-muted-foreground">Costs associated with land acquisition and related expenses</p>
-                            </div>
-                        <Dialog open={isLandCostDialogOpen} onOpenChange={setIsLandCostDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setIsLandCostDialogOpen(true)}>Add Land Cost</Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add Land Cost</DialogTitle>
-                              <DialogDescription>
-                                Add a new land cost item with its details
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <label htmlFor="land-cost-name">Cost Name</label>
-                                <Input
-                                  id="land-cost-name"
-                                  value={newAdditionalCost.name}
-                                  onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
-                                  placeholder="e.g., Survey Costs"
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <label htmlFor="land-cost-amount">Amount ($)</label>
-                                <Input
-                                  id="land-cost-amount"
-                                  type="number"
-                                  value={newAdditionalCost.amount}
-                                  onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
-                                  placeholder="Enter amount"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                    </div>
-
-                      <div className="space-y-4">
-                        {/* Pre-populated Land Cost */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Land Cost</label>
-                            <div className="text-sm text-muted-foreground">Base land acquisition cost</div>
-                            </div>
-                          <div className="text-right">
-                            {editingField?.section === 'land' && editingField.field === 'landCost' ? (
-                            <Input
-                              autoFocus
-                              type="number"
-                              value={editingField.value}
-                              onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                                onBlur={() => {
-                                  const newCosts = [...(proforma.uses.additionalCosts || [])];
-                                  const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
-                                  if (landCostIndex >= 0) {
-                                    newCosts[landCostIndex].amount = parseInt(editingField.value) || 0;
-                                  } else {
-                                    newCosts.push({ name: 'Land Cost', amount: parseInt(editingField.value) || 0 });
-                                  }
-                                  setProforma(prev => {
-                                    if (!prev) return prev;
-                                    return {
-                                      ...prev,
-                                      uses: {
-                                        ...prev.uses,
-                                        additionalCosts: newCosts
-                                      }
-                                    };
-                                  });
-                                  setEditingField(null);
-                                }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    const newCosts = [...(proforma.uses.additionalCosts || [])];
-                                    const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
-                                    if (landCostIndex >= 0) {
-                                      newCosts[landCostIndex].amount = parseInt(editingField.value) || 0;
-                                    } else {
-                                      newCosts.push({ name: 'Land Cost', amount: parseInt(editingField.value) || 0 });
-                                    }
-                                    setProforma(prev => {
-                                      if (!prev) return prev;
-                                      return {
-                                        ...prev,
-                                        uses: {
-                                          ...prev.uses,
-                                          additionalCosts: newCosts
-                                        }
-                                      };
-                                    });
-                                    setEditingField(null);
-                                }
-                              }}
-                                className="h-8 w-48"
-                            />
-                          ) : (
-                            <div 
-                              className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
-                              onClick={() => setEditingField({ 
-                                  section: 'land', 
-                                  field: 'landCost', 
-                                  value: (proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toString() 
-                              })}
-                            >
-                                ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toLocaleString()}
-                            </div>
-                          )}
-                        </div>
+                    {/* USES SECTION */}
+                    <div className="space-y-8">
+                      <div className="border-b pb-4">
+                        <h2 className="text-2xl font-bold text-primary mb-2">Uses</h2>
+                        <p className="text-muted-foreground">Project costs and expenses breakdown</p>
                       </div>
 
-                        {/* Pre-populated Closing Costs */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Closing Costs</label>
-                            <div className="text-sm text-muted-foreground">Based on land cost percentage</div>
+                      {/* Land Costs Section */}
+                      <div className="bg-muted/30 p-6 rounded-lg space-y-6">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-semibold">Land Costs</h3>
+                            <p className="text-sm text-muted-foreground">Costs associated with land acquisition and related expenses</p>
                           </div>
-                          <div className="flex items-center gap-4">
-                            {editingField?.section === 'land' && editingField.field === 'closingCost' ? (
-                              <div className="flex items-center gap-4">
-                                <div className="text-sm text-muted-foreground">
-                                  ${(() => {
-                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                    const percentage = parseFloat(editingField.value) || 0;
-                                    return Math.round(landCost * percentage / 100).toLocaleString();
-                                  })()}
-                                </div>
-                                <div className="flex items-center gap-2">
+                          <Dialog open={isLandCostDialogOpen} onOpenChange={setIsLandCostDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setIsLandCostDialogOpen(true)}>Add Land Cost</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Add Land Cost</DialogTitle>
+                                <DialogDescription>
+                                  Add a new land cost item with its details
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <label htmlFor="land-cost-name">Cost Name</label>
                                   <Input
-                                    autoFocus
+                                    id="land-cost-name"
+                                    value={newAdditionalCost.name}
+                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Survey Costs"
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <label htmlFor="land-cost-amount">Amount ($)</label>
+                                  <Input
+                                    id="land-cost-amount"
                                     type="number"
-                                    step="0.1"
-                                    value={editingField.value}
-                                    onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                                    onBlur={() => {
-                                      const newCosts = [...(proforma.uses.additionalCosts || [])];
-                                      const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
+                                    value={newAdditionalCost.amount}
+                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Enter amount"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* Pre-populated Land Cost */}
+                          <CostRow
+                            label="Land Cost"
+                            description="Base land acquisition cost"
+                            value={proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0}
+                            onChange={val => {
+                              const newCosts = [...(proforma.uses.additionalCosts || [])];
+                              const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
+                              if (landCostIndex >= 0) {
+                                newCosts[landCostIndex].amount = val;
+                              } else {
+                                newCosts.push({ name: 'Land Cost', amount: val });
+                              }
+                              setProforma(prev => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  uses: {
+                                    ...prev.uses,
+                                    additionalCosts: newCosts
+                                  }
+                                };
+                              });
+                            }}
+                          />
+                          {/* Pre-populated Closing Costs (keep as is for now) */}
+                          <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">Closing Costs</label>
+                              <div className="text-sm text-muted-foreground">Based on land cost percentage</div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {editingField?.section === 'land' && editingField.field === 'closingCost' ? (
+                                <div className="flex items-center gap-4">
+                                  <div className="text-sm text-muted-foreground">
+                                    ${(() => {
                                       const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                      const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
-                                      
-                                      if (closingCostIndex >= 0) {
-                                        newCosts[closingCostIndex].amount = closingCostAmount;
-                                      } else {
-                                        newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
-                                      }
-                                      setProforma(prev => {
-                                        if (!prev) return prev;
-                                        return {
-                                          ...prev,
-                                          uses: {
-                                            ...prev.uses,
-                                            additionalCosts: newCosts
-                                          }
-                                        };
-                                      });
-                                      setEditingField(null);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
+                                      const percentage = parseFloat(editingField.value) || 0;
+                                      return Math.round(landCost * percentage / 100).toLocaleString();
+                                    })()}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      autoFocus
+                                      type="number"
+                                      step="0.1"
+                                      value={editingField.value}
+                                      onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
+                                      onBlur={() => {
                                         const newCosts = [...(proforma.uses.additionalCosts || [])];
                                         const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
                                         const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
@@ -993,49 +948,328 @@ export default function ProformaEditorPage({
                                           };
                                         });
                                         setEditingField(null);
-                                      }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const newCosts = [...(proforma.uses.additionalCosts || [])];
+                                          const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
+                                          const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                          const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
+                                          
+                                          if (closingCostIndex >= 0) {
+                                            newCosts[closingCostIndex].amount = closingCostAmount;
+                                          } else {
+                                            newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
+                                          }
+                                          setProforma(prev => {
+                                            if (!prev) return prev;
+                                            return {
+                                              ...prev,
+                                              uses: {
+                                                ...prev.uses,
+                                                additionalCosts: newCosts
+                                              }
+                                            };
+                                          });
+                                          setEditingField(null);
+                                        }
+                                      }}
+                                      className="h-8 w-24"
+                                    />
+                                    <span className="text-sm">%</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-4">
+                                  <div className="text-sm text-muted-foreground">
+                                    ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0).toLocaleString()}
+                                  </div>
+                                  <div 
+                                    className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    onClick={() => {
+                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                      const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
+                                      const percentage = landCost > 0 ? (closingCost / landCost * 100).toFixed(1) : '0';
+                                      setEditingField({ 
+                                        section: 'land', 
+                                        field: 'closingCost', 
+                                        value: percentage
+                                      });
                                     }}
-                                    className="h-8 w-24"
-                                  />
-                                  <span className="text-sm">%</span>
+                                  >
+                                    {(() => {
+                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                                      const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
+                                      return landCost > 0 ? `${(closingCost / landCost * 100).toFixed(1)}%` : '0%';
+                                    })()}
+                                  </div>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-4">
-                                <div className="text-sm text-muted-foreground">
-                                  ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0).toLocaleString()}
-                                </div>
-                                <div 
-                                  className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
-                                  onClick={() => {
-                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                    const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
-                                    const percentage = landCost > 0 ? (closingCost / landCost * 100).toFixed(1) : '0';
-                                    setEditingField({ 
-                                      section: 'land', 
-                                      field: 'closingCost', 
-                                      value: percentage
-                                    });
-                                  }}
-                                >
-                                  {(() => {
-                                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                    const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
-                                    return landCost > 0 ? `${(closingCost / landCost * 100).toFixed(1)}%` : '0%';
-                                  })()}
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
+
+                          {/* Additional Land Costs */}
+                          {proforma.uses.additionalCosts
+                            ?.filter(cost => 
+                              !cost.name.toLowerCase().includes('land') && 
+                              !cost.name.toLowerCase().includes('closing')
+                            )
+                            .map((cost) => (
+                              <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                                <div className="flex-1">
+                                  <label className="text-sm font-medium">{cost.name}</label>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-right">
+                                    <div className="font-semibold">${cost.amount.toLocaleString()}</div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteAdditionalCost(cost.name)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Delete cost</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
                         </div>
 
-                        {/* Additional Land Costs */}
-                        {proforma.uses.additionalCosts
-                          ?.filter(cost => 
-                            !cost.name.toLowerCase().includes('land') && 
-                            !cost.name.toLowerCase().includes('closing')
-                          )
-                          .map((cost) => (
+                        {/* Total Land Costs */}
+                        <div className="mt-6 pt-4 border-t border-border/50">
+                          {/* Per Unit and Per SF Calculations */}
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per Unit</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                                  const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                  return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per SF</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                                  const gba = proforma.gba || 0;
+                                  return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <div className="text-lg font-semibold">Total Land Costs</div>
+                            <div className="text-lg font-bold">
+                              ${(
+                                (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
+                              ).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Hard Costs Section */}
+                      <div className="bg-muted/30 p-6 rounded-lg space-y-6">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-semibold">Hard Costs</h3>
+                            <p className="text-sm text-muted-foreground">Costs associated with construction and related expenses</p>
+                          </div>
+                          <Dialog open={isHardCostDialogOpen} onOpenChange={setIsHardCostDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setIsHardCostDialogOpen(true)}>Add Hard Cost</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Add Hard Cost</DialogTitle>
+                                <DialogDescription>
+                                  Add a new hard cost item with its details
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <label htmlFor="hard-cost-name">Cost Name</label>
+                                  <Input
+                                    id="hard-cost-name"
+                                    value={newHardCost.name}
+                                    onChange={(e) => setNewHardCost(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Site Work"
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <label htmlFor="hard-cost-amount">Amount ($)</label>
+                                  <Input
+                                    id="hard-cost-amount"
+                                    type="number"
+                                    value={newHardCost.amount}
+                                    onChange={(e) => setNewHardCost(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Enter amount"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={() => {
+                                  if (!newHardCost.name || !newHardCost.amount) return;
+                                  setHardCosts(prev => [...prev, { name: newHardCost.name, amount: parseInt(newHardCost.amount) || 0 }]);
+                                  setNewHardCost({ name: '', amount: '' });
+                                  setIsHardCostDialogOpen(false);
+                                }}>Add Cost</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        <div className="space-y-4">
+                          <CostRow
+                            label="Construction Costs"
+                            description="Base construction cost"
+                            value={constructionCost}
+                            onChange={setConstructionCost}
+                          />
+                          <CostRow
+                            label="Hard Cost Contingency"
+                            description="Based on construction cost percentage"
+                            value={Math.round(constructionCost * (hardCostContingencyPct || 0) / 100)}
+                            onChange={val => {
+                              // When editing, update the percentage based on the new value
+                              const pct = constructionCost > 0 ? (val / constructionCost) * 100 : 0;
+                              setHardCostContingencyPct(Number(pct.toFixed(2)));
+                            }}
+                          />
+                          {/* Additional Hard Costs */}
+                          {hardCosts.map((cost) => (
+                            <CostRow
+                              key={cost.name}
+                              label={cost.name}
+                              value={cost.amount}
+                              onChange={val => {
+                                setHardCosts(prev => prev.map(c => c.name === cost.name ? { ...c, amount: val } : c));
+                              }}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Totals for Hard Costs */}
+                        <div className="mt-6 pt-4 border-t border-border/50">
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per Unit</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                  const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                  return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per SF</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                  const gba = proforma.gba || 0;
+                                  return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-lg font-semibold">Total Hard Costs</div>
+                            <div className="text-lg font-bold">
+                              ${(() => {
+                                const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                return totalCost.toLocaleString();
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Soft Costs Section */}
+                      <div className="bg-muted/30 p-6 rounded-lg space-y-6">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-semibold">Soft Costs</h3>
+                            <p className="text-sm text-muted-foreground">Costs associated with development, consultants, admin, and marketing</p>
+                          </div>
+                          <Dialog open={isSoftCostDialogOpen} onOpenChange={setIsSoftCostDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setIsSoftCostDialogOpen(true)}>Add Soft Cost</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Add Soft Cost</DialogTitle>
+                                <DialogDescription>
+                                  Add a new soft cost item with its details
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <label htmlFor="soft-cost-name">Cost Name</label>
+                                  <Input
+                                    id="soft-cost-name"
+                                    value={newSoftCost.name}
+                                    onChange={(e) => setNewSoftCost(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Legal Fees"
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <label htmlFor="soft-cost-amount">Amount ($)</label>
+                                  <Input
+                                    id="soft-cost-amount"
+                                    type="number"
+                                    value={newSoftCost.amount}
+                                    onChange={(e) => setNewSoftCost(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Enter amount"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={() => {
+                                  if (!newSoftCost.name || !newSoftCost.amount) return;
+                                  setSoftCosts(prev => [...prev, { name: newSoftCost.name, amount: parseInt(newSoftCost.amount) || 0 }]);
+                                  setNewSoftCost({ name: '', amount: '' });
+                                  setIsSoftCostDialogOpen(false);
+                                }}>Add Cost</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* SOFT COSTS - DEVELOPMENT */}
+                          <CostRow
+                            label="SOFT COSTS - DEVELOPMENT"
+                            value={softDev}
+                            onChange={setSoftDev}
+                          />
+                          {/* SOFT COSTS - CONSULTANTS */}
+                          <CostRow
+                            label="SOFT COSTS - CONSULTANTS"
+                            value={softConsultants}
+                            onChange={setSoftConsultants}
+                          />
+                          {/* ADMIN & MARKETING */}
+                          <CostRow
+                            label="ADMIN & MARKETING"
+                            value={adminMarketing}
+                            onChange={setAdminMarketing}
+                          />
+                          <PercentageRow
+                            label="Soft cost contingency"
+                            description="Based on total of above categories"
+                            baseAmount={softDev + softConsultants + adminMarketing}
+                            percentage={softCostContingencyPct}
+                            onChange={setSoftCostContingencyPct}
+                          />
+                          {/* Additional Soft Costs */}
+                          {softCosts.map((cost) => (
                             <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
                               <div className="flex-1">
                                 <label className="text-sm font-medium">{cost.name}</label>
@@ -1047,7 +1281,7 @@ export default function ProformaEditorPage({
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => handleDeleteAdditionalCost(cost.name)}
+                                  onClick={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
                                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -1056,333 +1290,73 @@ export default function ProformaEditorPage({
                               </div>
                             </div>
                           ))}
-                      </div>
+                        </div>
 
-                      {/* Total Land Costs */}
-                      <div className="mt-6 pt-4 border-t">
-                        {/* Per Unit and Per SF Calculations */}
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per Unit</div>
-                            <div className="text-sm font-semibold">
-                              ${(() => {
-                                const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-                              })()}
+                        {/* Totals for Soft Costs */}
+                        <div className="mt-6 pt-4 border-t border-border/50">
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per Unit</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                  const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                  return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total Cost per SF</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                  const gba = proforma.gba || 0;
+                                  return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
                             </div>
                           </div>
                           <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per SF</div>
-                            <div className="text-sm font-semibold">
+                            <div className="text-lg font-semibold">Total Soft Costs</div>
+                            <div className="text-lg font-bold">
                               ${(() => {
-                                const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-                                const gba = proforma.gba || 0;
-                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                                return totalCost.toLocaleString();
                               })()}
                             </div>
                           </div>
                         </div>
+                      </div>
 
+                      {/* Total Project Cost */}
+                      <div className="bg-primary/5 p-6 rounded-lg border border-primary/20">
                         <div className="flex justify-between items-center">
-                          <div className="text-lg font-semibold">Total Land Costs</div>
-                          <div className="text-lg font-bold">
-                            ${(
-                              (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
-                            ).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Hard Costs Section */}
-                    <div className="mt-10">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Hard Costs</h3>
-                          <p className="text-sm text-muted-foreground">Costs associated with construction and related expenses</p>
-                        </div>
-                        <Dialog open={isHardCostDialogOpen} onOpenChange={setIsHardCostDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setIsHardCostDialogOpen(true)}>Add Hard Cost</Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add Hard Cost</DialogTitle>
-                              <DialogDescription>
-                                Add a new hard cost item with its details
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <label htmlFor="hard-cost-name">Cost Name</label>
-                                <Input
-                                  id="hard-cost-name"
-                                  value={newHardCost.name}
-                                  onChange={(e) => setNewHardCost(prev => ({ ...prev, name: e.target.value }))}
-                                  placeholder="e.g., Site Work"
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <label htmlFor="hard-cost-amount">Amount ($)</label>
-                                <Input
-                                  id="hard-cost-amount"
-                                  type="number"
-                                  value={newHardCost.amount}
-                                  onChange={(e) => setNewHardCost(prev => ({ ...prev, amount: e.target.value }))}
-                                  placeholder="Enter amount"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button onClick={() => {
-                                if (!newHardCost.name || !newHardCost.amount) return;
-                                setHardCosts(prev => [...prev, { name: newHardCost.name, amount: parseInt(newHardCost.amount) || 0 }]);
-                                setNewHardCost({ name: '', amount: '' });
-                                setIsHardCostDialogOpen(false);
-                              }}>Add Cost</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <div className="space-y-4">
-                        {/* Construction Costs */}
-                        <CostRow
-                          label="Construction Costs"
-                          description="Base construction cost"
-                          value={constructionCost}
-                          onChange={setConstructionCost}
-                        />
-                        <PercentageRow
-                          label="Hard Cost Contingency"
-                          description="Based on construction cost percentage"
-                          baseAmount={constructionCost}
-                          percentage={hardCostContingencyPct}
-                          onChange={setHardCostContingencyPct}
-                        />
-                        {/* Additional Hard Costs */}
-                        {hardCosts.map((cost) => (
-                          <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                            <div className="flex-1">
-                              <label className="text-sm font-medium">{cost.name}</label>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <div className="font-semibold">${cost.amount.toLocaleString()}</div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setHardCosts(prev => prev.filter(c => c.name !== cost.name))}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete cost</span>
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {/* Totals for Hard Costs */}
-                      <div className="mt-6 pt-4 border-t">
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per Unit</div>
-                            <div className="text-sm font-semibold">
-                              ${(() => {
-                                const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-                              })()}
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per SF</div>
-                            <div className="text-sm font-semibold">
-                              ${(() => {
-                                const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                                const gba = proforma.gba || 0;
-                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-lg font-semibold">Total Hard Costs</div>
-                          <div className="text-lg font-bold">
+                          <div className="text-xl font-bold">Total Project Cost</div>
+                          <div className="text-xl font-bold">
                             ${(() => {
-                              const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                              return totalCost.toLocaleString();
+                              // Land Costs
+                              const landCosts = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                              // Hard Costs
+                              const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                              // Soft Costs
+                              const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
+                              return (landCosts + hardCostsTotal + softCostsTotal).toLocaleString();
                             })()}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Soft Costs Section */}
-                    <div className="mt-10">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Soft Costs</h3>
-                          <p className="text-sm text-muted-foreground">Costs associated with development, consultants, admin, and marketing</p>
-                        </div>
-                        <Dialog open={isSoftCostDialogOpen} onOpenChange={setIsSoftCostDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setIsSoftCostDialogOpen(true)}>Add Soft Cost</Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add Soft Cost</DialogTitle>
-                              <DialogDescription>
-                                Add a new soft cost item with its details
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <label htmlFor="soft-cost-name">Cost Name</label>
-                                <Input
-                                  id="soft-cost-name"
-                                  value={newSoftCost.name}
-                                  onChange={(e) => setNewSoftCost(prev => ({ ...prev, name: e.target.value }))}
-                                  placeholder="e.g., Legal Fees"
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <label htmlFor="soft-cost-amount">Amount ($)</label>
-                                <Input
-                                  id="soft-cost-amount"
-                                  type="number"
-                                  value={newSoftCost.amount}
-                                  onChange={(e) => setNewSoftCost(prev => ({ ...prev, amount: e.target.value }))}
-                                  placeholder="Enter amount"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button onClick={() => {
-                                if (!newSoftCost.name || !newSoftCost.amount) return;
-                                setSoftCosts(prev => [...prev, { name: newSoftCost.name, amount: parseInt(newSoftCost.amount) || 0 }]);
-                                setNewSoftCost({ name: '', amount: '' });
-                                setIsSoftCostDialogOpen(false);
-                              }}>Add Cost</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                    {/* SOURCES SECTION */}
+                    <div className="space-y-8">
+                      <div className="border-b pb-4">
+                        <h2 className="text-2xl font-bold text-primary mb-2">Sources</h2>
+                        <p className="text-muted-foreground">How the project is financed</p>
                       </div>
-                      <div className="space-y-4">
-                        {/* SOFT COSTS - DEVELOPMENT */}
-                        <CostRow
-                          label="SOFT COSTS - DEVELOPMENT"
-                          value={softDev}
-                          onChange={setSoftDev}
-                        />
-                        {/* SOFT COSTS - CONSULTANTS */}
-                        <CostRow
-                          label="SOFT COSTS - CONSULTANTS"
-                          value={softConsultants}
-                          onChange={setSoftConsultants}
-                        />
-                        {/* ADMIN & MARKETING */}
-                        <CostRow
-                          label="ADMIN & MARKETING"
-                          value={adminMarketing}
-                          onChange={setAdminMarketing}
-                        />
-                        <PercentageRow
-                          label="Soft cost contingency"
-                          description="Based on total of above categories"
-                          baseAmount={softDev + softConsultants + adminMarketing}
-                          percentage={softCostContingencyPct}
-                          onChange={setSoftCostContingencyPct}
-                        />
-                        {/* Additional Soft Costs */}
-                        {softCosts.map((cost) => (
-                          <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                            <div className="flex-1">
-                              <label className="text-sm font-medium">{cost.name}</label>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <div className="font-semibold">${cost.amount.toLocaleString()}</div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete cost</span>
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {/* Totals for Soft Costs */}
-                      <div className="mt-6 pt-4 border-t">
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per Unit</div>
-                            <div className="text-sm font-semibold">
-                              ${(() => {
-                                const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                                return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-                              })()}
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm font-medium">Total Cost per SF</div>
-                            <div className="text-sm font-semibold">
-                              ${(() => {
-                                const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                                const gba = proforma.gba || 0;
-                                return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-lg font-semibold">Total Soft Costs</div>
-                          <div className="text-lg font-bold">
-                            ${(() => {
-                              const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                              return totalCost.toLocaleString();
-                            })()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Total Project Cost Row */}
-                    <div className="mt-10">
-                      <div className="flex justify-between items-center border-t pt-6">
-                        <div className="text-xl font-bold">Total Project Cost</div>
-                        <div className="text-xl font-bold">
-                          ${(() => {
-                            // Land Costs
-                            const landCosts = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-                            // Hard Costs
-                            const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                            // Soft Costs
-                            const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                            return (landCosts + hardCostsTotal + softCostsTotal).toLocaleString();
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* After the Total Project Cost Row */}
-                    <div className="mt-10">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Sources</h3>
-                          <p className="text-sm text-muted-foreground">How the project is financed</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
+                      <div className="bg-muted/30 p-6 rounded-lg space-y-4">
                         {/* Equity */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
                           <div className="flex-1">
                             <label className="text-sm font-medium">Equity</label>
                             <div className="text-sm text-muted-foreground">Owner/Investor capital</div>
@@ -1408,7 +1382,7 @@ export default function ProformaEditorPage({
                           </div>
                         </div>
                         {/* Construction Debt */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
                           <div className="flex-1">
                             <label className="text-sm font-medium">Construction Debt</label>
                             <div className="text-sm text-muted-foreground">Loan or construction financing</div>
@@ -1436,17 +1410,16 @@ export default function ProformaEditorPage({
                       </div>
                     </div>
 
-                    {/* Financing Costs Section (place after Sources section) */}
-                    <div className="mt-10">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Financing Costs</h3>
-                          <p className="text-sm text-muted-foreground">Costs associated with financing the project</p>
-                        </div>
+                    {/* FINANCING COSTS SECTION */}
+                    <div className="space-y-8">
+                      <div className="border-b pb-4">
+                        <h2 className="text-2xl font-bold text-primary mb-2">Financing Costs</h2>
+                        <p className="text-muted-foreground">Costs associated with financing the project</p>
                       </div>
-                      <div className="space-y-4">
+
+                      <div className="bg-muted/30 p-6 rounded-lg space-y-4">
                         {/* Interest Cost */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
                           <div className="flex-1">
                             <label className="text-sm font-medium">Interest cost</label>
                             <div className="text-sm text-muted-foreground">Annual interest rate applied to construction debt</div>
@@ -1468,7 +1441,7 @@ export default function ProformaEditorPage({
                           </div>
                         </div>
                         {/* Broker Fee */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
                           <div className="flex-1">
                             <label className="text-sm font-medium">Broker fee</label>
                             <div className="text-sm text-muted-foreground">Fee as a percentage of construction debt</div>

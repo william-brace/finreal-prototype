@@ -1,5 +1,8 @@
 import { Project } from "./mock-data"
 
+// Re-export Project type
+export type { Project }
+
 // Types
 export interface Proforma {
     id: string
