@@ -1,5 +1,5 @@
-import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import { EditableAmountInput } from "@/components/ui/EditableAmountInput";
+import React from "react";
 
 interface CostRowProps {
   /**
@@ -44,18 +44,8 @@ export function CostRow({
   onChange,
   currency = true,
   editable = true,
-  inputClassName = "h-8 w-48",
+  inputClassName = "",
 }: CostRowProps) {
-  // Local string state is needed so we can keep user input as-is until they
-  // blur / commit.
-  const [draft, setDraft] = useState(String(value));
-
-  const commit = () => {
-    if (!onChange) return;
-    const num = Number(draft);
-    onChange(Number.isFinite(num) ? num : 0);
-  };
-
   const formatted = currency ? `$${value.toLocaleString()}` : value.toLocaleString();
 
   return (
@@ -66,12 +56,10 @@ export function CostRow({
       </div>
       <div className="text-right">
         {editable && onChange ? (
-          <Input
-            type="number"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => e.key === "Enter" && commit()}
+          <EditableAmountInput
+            value={value}
+            onChange={onChange}
+            currency={currency}
             className={inputClassName}
           />
         ) : (
