@@ -903,111 +903,39 @@ export default function ProformaEditorPage({
                               });
                             }}
                           />
-                          {/* Pre-populated Closing Costs (keep as is for now) */}
-                          <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                            <div className="flex-1">
-                              <label className="text-sm font-medium">Closing Costs</label>
-                              <div className="text-sm text-muted-foreground">Based on land cost percentage</div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              {editingField?.section === 'land' && editingField.field === 'closingCost' ? (
-                                <div className="flex items-center gap-4">
-                                  <div className="text-sm text-muted-foreground">
-                                    ${(() => {
-                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                      const percentage = parseFloat(editingField.value) || 0;
-                                      return Math.round(landCost * percentage / 100).toLocaleString();
-                                    })()}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      autoFocus
-                                      type="number"
-                                      step="0.1"
-                                      value={editingField.value}
-                                      onChange={(e) => setEditingField(prev => ({ ...prev!, value: e.target.value }))}
-                                      onBlur={() => {
-                                        const newCosts = [...(proforma.uses.additionalCosts || [])];
-                                        const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
-                                        const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                        const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
-                                        
-                                        if (closingCostIndex >= 0) {
-                                          newCosts[closingCostIndex].amount = closingCostAmount;
-                                        } else {
-                                          newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
-                                        }
-                                        setProforma(prev => {
-                                          if (!prev) return prev;
-                                          return {
-                                            ...prev,
-                                            uses: {
-                                              ...prev.uses,
-                                              additionalCosts: newCosts
-                                            }
-                                          };
-                                        });
-                                        setEditingField(null);
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          const newCosts = [...(proforma.uses.additionalCosts || [])];
-                                          const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
-                                          const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                          const closingCostAmount = Math.round(landCost * (parseFloat(editingField.value) || 0) / 100);
-                                          
-                                          if (closingCostIndex >= 0) {
-                                            newCosts[closingCostIndex].amount = closingCostAmount;
-                                          } else {
-                                            newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
-                                          }
-                                          setProforma(prev => {
-                                            if (!prev) return prev;
-                                            return {
-                                              ...prev,
-                                              uses: {
-                                                ...prev.uses,
-                                                additionalCosts: newCosts
-                                              }
-                                            };
-                                          });
-                                          setEditingField(null);
-                                        }
-                                      }}
-                                      className="h-8 w-24"
-                                    />
-                                    <span className="text-sm">%</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-4">
-                                  <div className="text-sm text-muted-foreground">
-                                    ${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0).toLocaleString()}
-                                  </div>
-                                  <div 
-                                    className="cursor-pointer p-2 rounded bg-background border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    onClick={() => {
-                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                      const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
-                                      const percentage = landCost > 0 ? (closingCost / landCost * 100).toFixed(1) : '0';
-                                      setEditingField({ 
-                                        section: 'land', 
-                                        field: 'closingCost', 
-                                        value: percentage
-                                      });
-                                    }}
-                                  >
-                                    {(() => {
-                                      const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                                      const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
-                                      return landCost > 0 ? `${(closingCost / landCost * 100).toFixed(1)}%` : '0%';
-                                    })()}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
+                          {/* Pre-populated Closing Costs */}
+                          <PercentageRow
+                            label="Closing Costs"
+                            description="Based on land cost percentage"
+                            baseAmount={proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0}
+                            percentage={(() => {
+                              const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                              const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
+                              return landCost > 0 ? (closingCost / landCost * 100) : 0;
+                            })()}
+                            onChange={(pct) => {
+                              const newCosts = [...(proforma.uses.additionalCosts || [])];
+                              const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
+                              const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
+                              const closingCostAmount = Math.round(landCost * pct / 100);
+                              
+                              if (closingCostIndex >= 0) {
+                                newCosts[closingCostIndex].amount = closingCostAmount;
+                              } else {
+                                newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
+                              }
+                              setProforma(prev => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  uses: {
+                                    ...prev.uses,
+                                    additionalCosts: newCosts
+                                  }
+                                };
+                              });
+                            }}
+                          />
                           {/* Additional Land Costs */}
                           {proforma.uses.additionalCosts
                             ?.filter(cost => 
@@ -1132,15 +1060,12 @@ export default function ProformaEditorPage({
                             value={constructionCost}
                             onChange={setConstructionCost}
                           />
-                          <CostRow
+                          <PercentageRow
                             label="Hard Cost Contingency"
                             description="Based on construction cost percentage"
-                            value={Math.round(constructionCost * (hardCostContingencyPct || 0) / 100)}
-                            onChange={val => {
-                              // When editing, update the percentage based on the new value
-                              const pct = constructionCost > 0 ? (val / constructionCost) * 100 : 0;
-                              setHardCostContingencyPct(Number(pct.toFixed(2)));
-                            }}
+                            baseAmount={constructionCost}
+                            percentage={hardCostContingencyPct}
+                            onChange={setHardCostContingencyPct}
                           />
                           {/* Additional Hard Costs */}
                           {hardCosts.map((cost) => (

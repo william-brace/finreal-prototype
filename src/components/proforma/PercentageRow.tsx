@@ -32,16 +32,18 @@ export function PercentageRow({ label, description, baseAmount, percentage, onCh
       <div className="flex items-center gap-4">
         <div className="text-sm text-muted-foreground">${amount.toLocaleString()}</div>
         <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            step="0.1"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => e.key === "Enter" && commit()}
-            className="h-8 w-24"
-          />
-          <span className="text-sm">%</span>
+          <div className="relative">
+            <Input
+              type="number"
+              step="0.1"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => e.key === "Enter" && commit()}
+              className="h-8 w-16 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+          </div>
         </div>
       </div>
     </div>
