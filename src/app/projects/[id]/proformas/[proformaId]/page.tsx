@@ -22,6 +22,7 @@ import { CostRow } from "@/components/proforma/CostRow"
 import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
 import { ResultsTab } from "@/components/proforma/tabs/ResultsTab"
 import { PercentageRow } from "@/components/proforma/PercentageRow"
+import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow"
 
 // New types for unit mix
 interface Unit {
@@ -109,6 +110,9 @@ export default function ProformaEditorPage({
   // Add state for Financing Costs section
   const [interestPct, setInterestPct] = useState(0);
   const [brokerFeePct, setBrokerFeePct] = useState(0);
+  const [isAdditionalCostDialogOpen, setIsAdditionalCostDialogOpen] = useState(false)
+  const [editingCostName, setEditingCostName] = useState<string | null>(null);
+  const [editingCostType, setEditingCostType] = useState<CostType | null>(null);
 
   const unitTypeDisplayNames: Record<string, string> = {
     parking: 'Parking Space',
@@ -293,31 +297,76 @@ export default function ProformaEditorPage({
     setEditingField(null)
   }
 
-  const handleAddAdditionalCost = () => {
-    if (!proforma) return
-    if (!newAdditionalCost.name || !newAdditionalCost.amount) return
+  type CostType = 'land' | 'hard' | 'soft';
 
-    const updatedProforma: Proforma = {
-      ...proforma,
-      uses: {
-        ...proforma.uses,
-        additionalCosts: [
-          ...proforma.uses.additionalCosts,
-          {
-            name: newAdditionalCost.name,
-            amount: parseInt(newAdditionalCost.amount) || 0
+  const handleAddCost = (type: CostType) => {
+    if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
+
+    switch (type) {
+      case 'land':
+        if (!proforma) return;
+        const updatedProforma: Proforma = {
+          ...proforma,
+          uses: {
+            ...proforma.uses,
+            additionalCosts: editingCostName
+              ? proforma.uses.additionalCosts.map(cost => 
+                  cost.name === editingCostName
+                    ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
+                    : cost
+                )
+              : [
+                  ...proforma.uses.additionalCosts,
+                  {
+                    name: newAdditionalCost.name,
+                    amount: parseInt(newAdditionalCost.amount) || 0
+                  }
+                ]
           }
-        ]
-      }
-    };
-    setProforma(prev => {
-      if (!prev) return prev;
-      return updatedProforma;
-    })
-    saveProforma(id, updatedProforma)
-    setNewAdditionalCost({ name: '', amount: '' })
-    setIsLandCostDialogOpen(false)
-  }
+        };
+        setProforma(prev => {
+          if (!prev) return prev;
+          return updatedProforma;
+        });
+        saveProforma(id, updatedProforma);
+        break;
+
+      case 'hard':
+        setHardCosts(prev => {
+          if (editingCostName) {
+            return prev.map(cost => 
+              cost.name === editingCostName
+                ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
+                : cost
+            );
+          }
+          return [...prev, { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }];
+        });
+        break;
+
+      case 'soft':
+        setSoftCosts(prev => {
+          if (editingCostName) {
+            return prev.map(cost => 
+              cost.name === editingCostName
+                ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
+                : cost
+            );
+          }
+          return [...prev, { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }];
+        });
+        break;
+    }
+
+    // Reset state
+    setNewAdditionalCost({ name: '', amount: '' });
+    setEditingCostName(null);
+    setEditingCostType(null);
+    setIsAdditionalCostDialogOpen(false);
+    setIsLandCostDialogOpen(false);
+    setIsHardCostDialogOpen(false);
+    setIsSoftCostDialogOpen(false);
+  };
 
   const handleDeleteAdditionalCost = (name: string) => {
     if (!proforma) return;
@@ -871,7 +920,7 @@ export default function ProformaEditorPage({
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button onClick={handleAddAdditionalCost}>Add Cost</Button>
+                                <Button onClick={() => handleAddCost('land')}>Add Cost</Button>
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
@@ -943,26 +992,70 @@ export default function ProformaEditorPage({
                               !cost.name.toLowerCase().includes('closing')
                             )
                             .map((cost) => (
-                              <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                                <div className="flex-1">
-                                  <label className="text-sm font-medium">{cost.name}</label>
+                              <AdditionalCostRow
+                                key={cost.name}
+                                name={cost.name}
+                                amount={cost.amount}
+                                onDelete={() => handleDeleteAdditionalCost(cost.name)}
+                                onEdit={() => {
+                                  setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                                  setEditingCostName(cost.name);
+                                  setIsAdditionalCostDialogOpen(true);
+                                }}
+                              />
+                            ))}
+
+                          <Dialog open={isAdditionalCostDialogOpen} onOpenChange={(open) => {
+                            setIsAdditionalCostDialogOpen(open);
+                            if (!open) {
+                              setEditingCostName(null);
+                              setEditingCostType(null);
+                              setNewAdditionalCost({ name: '', amount: '' });
+                            }
+                          }}>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit Additional Cost</DialogTitle>
+                                <DialogDescription>
+                                  Edit the additional cost details
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <label htmlFor="additional-cost-name">Cost Name</label>
+                                  <Input
+                                    id="additional-cost-name"
+                                    value={newAdditionalCost.name}
+                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Survey Costs"
+                                  />
                                 </div>
-                                <div className="flex items-center gap-4">
-                                  <div className="text-right">
-                                    <div className="font-semibold">${cost.amount.toLocaleString()}</div>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteAdditionalCost(cost.name)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Delete cost</span>
-                                  </Button>
+                                <div className="grid gap-2">
+                                  <label htmlFor="additional-cost-amount">Amount ($)</label>
+                                  <Input
+                                    id="additional-cost-amount"
+                                    type="number"
+                                    value={newAdditionalCost.amount}
+                                    onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Enter amount"
+                                  />
                                 </div>
                               </div>
-                            ))}
+                              <DialogFooter>
+                                <Button onClick={() => {
+                                  if (editingCostType) {
+                                    handleAddCost(editingCostType);
+                                  } else if (isHardCostDialogOpen) {
+                                    handleAddCost('hard');
+                                  } else if (isSoftCostDialogOpen) {
+                                    handleAddCost('soft');
+                                  } else {
+                                    handleAddCost('land');
+                                  }
+                                }}>Save Changes</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
 
                         {/* Total Land Costs */}
@@ -1069,12 +1162,16 @@ export default function ProformaEditorPage({
                           />
                           {/* Additional Hard Costs */}
                           {hardCosts.map((cost) => (
-                            <CostRow
+                            <AdditionalCostRow
                               key={cost.name}
-                              label={cost.name}
-                              value={cost.amount}
-                              onChange={val => {
-                                setHardCosts(prev => prev.map(c => c.name === cost.name ? { ...c, amount: val } : c));
+                              name={cost.name}
+                              amount={cost.amount}
+                              onDelete={() => setHardCosts(prev => prev.filter(c => c.name !== cost.name))}
+                              onEdit={() => {
+                                setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                                setEditingCostName(cost.name);
+                                setEditingCostType('hard');
+                                setIsAdditionalCostDialogOpen(true);
                               }}
                             />
                           ))}
@@ -1195,25 +1292,18 @@ export default function ProformaEditorPage({
                           />
                           {/* Additional Soft Costs */}
                           {softCosts.map((cost) => (
-                            <div key={cost.name} className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                              <div className="flex-1">
-                                <label className="text-sm font-medium">{cost.name}</label>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                  <div className="font-semibold">${cost.amount.toLocaleString()}</div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
-                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Delete cost</span>
-                                </Button>
-                              </div>
-                            </div>
+                            <AdditionalCostRow
+                              key={cost.name}
+                              name={cost.name}
+                              amount={cost.amount}
+                              onDelete={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
+                              onEdit={() => {
+                                setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                                setEditingCostName(cost.name);
+                                setEditingCostType('soft');
+                                setIsAdditionalCostDialogOpen(true);
+                              }}
+                            />
                           ))}
                         </div>
 
