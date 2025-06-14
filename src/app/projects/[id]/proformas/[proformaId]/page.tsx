@@ -1371,54 +1371,54 @@ export default function ProformaEditorPage({
 
                       <div className="bg-muted/30 p-6 rounded-lg space-y-4">
                         {/* Equity */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Equity</label>
-                            <div className="text-sm text-muted-foreground">Owner/Investor capital</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${equityAmount}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={equityPct}
-                                onChange={e => {
-                                  const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
-                                  setEquityPct(val);
-                                  setDebtPct(100 - val);
-                                }}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <PercentageRow
+                          label="Equity"
+                          description="Owner/Investor capital"
+                          baseAmount={totalProjectCost}
+                          percentage={equityPct}
+                          onChange={(pct) => {
+                            setEquityPct(pct);
+                            setDebtPct(100 - pct);
+                          }}
+                        />
                         {/* Construction Debt */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Construction Debt</label>
-                            <div className="text-sm text-muted-foreground">Loan or construction financing</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${debtAmount}
+                        <PercentageRow
+                          label="Construction Debt"
+                          description="Loan or construction financing"
+                          baseAmount={totalProjectCost}
+                          percentage={debtPct}
+                          onChange={(pct) => {
+                            setDebtPct(pct);
+                            setEquityPct(100 - pct);
+                          }}
+                        />
+
+                        {/* Total Sources */}
+                        <div className="mt-6 pt-4 border-t border-border/50">
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total per Unit</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                                  return totalUnits > 0 ? Number(totalProjectCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={debtPct}
-                                onChange={e => {
-                                  const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
-                                  setDebtPct(val);
-                                  setEquityPct(100 - val);
-                                }}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-medium">Total per SF</div>
+                              <div className="text-sm font-semibold">
+                                ${(() => {
+                                  const gba = proforma.gba || 0;
+                                  return gba > 0 ? Number(totalProjectCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-lg font-semibold">Total Sources</div>
+                            <div className="text-lg font-bold">
+                              ${totalProjectCost.toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -1434,49 +1434,59 @@ export default function ProformaEditorPage({
 
                       <div className="bg-muted/30 p-6 rounded-lg space-y-4">
                         {/* Interest Cost */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Interest cost</label>
-                            <div className="text-sm text-muted-foreground">Annual interest rate applied to construction debt</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${interestCostAmount}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={interestPct}
-                                onChange={e => setInterestPct(Number(e.target.value) || 0)}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <PercentageRow
+                          label="Interest cost"
+                          description="Annual interest rate applied to construction debt"
+                          baseAmount={constructionDebtAmount}
+                          percentage={interestPct}
+                          onChange={setInterestPct}
+                          amount={Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount)}
+                        />
                         {/* Broker Fee */}
-                        <div className="flex items-center justify-between gap-4 p-4 bg-background rounded-lg">
-                          <div className="flex-1">
-                            <label className="text-sm font-medium">Broker fee</label>
-                            <div className="text-sm text-muted-foreground">Fee as a percentage of construction debt</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                              ${brokerFeeAmount}
+                        <PercentageRow
+                          label="Broker fee"
+                          description="Fee as a percentage of construction debt"
+                          baseAmount={constructionDebtAmount}
+                          percentage={brokerFeePct}
+                          onChange={setBrokerFeePct}
+                          amount={Math.round((brokerFeePct / 100) * constructionDebtAmount)}
+                        />
+
+                        {/* Total Financing Costs */}
+                        {(() => {
+                          // Calculate interest cost as (interestPct / 100 / 12) * projectLength * constructionDebtAmount
+                          const interestCost = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount);
+                          // Calculate broker fee as (brokerFeePct / 100) * constructionDebtAmount
+                          const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
+                          // Total is the sum
+                          const totalFinancingCosts = interestCost + brokerFee;
+                          const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                          const gba = proforma.gba || 0;
+                          return (
+                            <div className="mt-6 pt-4 border-t border-border/50">
+                              <div className="space-y-2 mb-4">
+                                <div className="flex justify-between items-center">
+                                  <div className="text-sm font-medium">Total per Unit</div>
+                                  <div className="text-sm font-semibold">
+                                    ${totalUnits > 0 ? Number(totalFinancingCosts / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <div className="text-sm font-medium">Total per SF</div>
+                                  <div className="text-sm font-semibold">
+                                    ${gba > 0 ? Number(totalFinancingCosts / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <div className="text-lg font-semibold">Total Financing Costs</div>
+                                <div className="text-lg font-bold">
+                                  ${totalFinancingCosts.toLocaleString()}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.1"
-                                value={brokerFeePct}
-                                onChange={e => setBrokerFeePct(Number(e.target.value) || 0)}
-                                className="h-8 w-24"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
