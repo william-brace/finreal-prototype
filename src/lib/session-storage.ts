@@ -26,6 +26,7 @@ export interface Proforma {
         debtPct: number
         interestPct: number
         brokerFeePct: number
+        totalProjectCost: number
     }
     uses: {
         legalCosts: number

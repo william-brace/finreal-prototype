@@ -48,6 +48,29 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     !cost.name.toLowerCase().includes('closing')
   ) || [];
 
+  // Calculate totals with safe array checks
+  const landCosts = Array.isArray(proforma?.uses?.additionalCosts) 
+    ? proforma.uses.additionalCosts.reduce((sum, c) => sum + (c.amount || 0), 0) 
+    : 0;
+  
+  const hardCostsTotal = constructionCost + 
+    Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + 
+    (Array.isArray(hardCosts) ? hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
+  
+  const softCostsTotal = softDev + 
+    softConsultants + 
+    adminMarketing + 
+    Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + 
+    (Array.isArray(softCosts) ? softCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
+  
+  const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
+  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
+  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
+  const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
+  const projectLength = proforma?.projectLength || 0;
+  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
+  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
+
   // Update proforma and save to session storage when state changes
   useEffect(() => {
     const newCosts = [...(proforma.uses.additionalCosts || [])];
@@ -77,6 +100,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
         debtPct,
         interestPct,
         brokerFeePct,
+        totalProjectCost,
       },
       uses: {
         ...proforma.uses,
@@ -108,6 +132,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     brokerFeePct,
     landCost,
     closingCostPercentage,
+    totalProjectCost,
   ]);
 
   const handleAddCost = (type: 'land' | 'hard' | 'soft') => {
@@ -190,29 +215,6 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     onProformaChange(updatedProforma);
     saveProforma(proforma.projectId, updatedProforma);
   };
-
-  // Calculate totals with safe array checks
-  const landCosts = Array.isArray(proforma?.uses?.additionalCosts) 
-    ? proforma.uses.additionalCosts.reduce((sum, c) => sum + (c.amount || 0), 0) 
-    : 0;
-  
-  const hardCostsTotal = constructionCost + 
-    Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + 
-    (Array.isArray(hardCosts) ? hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
-  
-  const softCostsTotal = softDev + 
-    softConsultants + 
-    adminMarketing + 
-    Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + 
-    (Array.isArray(softCosts) ? softCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
-  
-  const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
-  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
-  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
-  const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
-  const projectLength = proforma?.projectLength || 0;
-  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
-  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
 
   return {
     // State
