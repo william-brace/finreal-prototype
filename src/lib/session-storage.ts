@@ -22,6 +22,10 @@ export interface Proforma {
         constructionDebt: number
         equity: number
         interestRate: number
+        equityPct: number
+        debtPct: number
+        interestPct: number
+        brokerFeePct: number
     }
     uses: {
         legalCosts: number
@@ -30,6 +34,14 @@ export interface Proforma {
         hardCostContingency: number
         softCostContingency: number
         additionalCosts: Array<{ name: string; amount: number }>
+        constructionCost: number
+        hardCostContingencyPct: number
+        softDev: number
+        softConsultants: number
+        adminMarketing: number
+        softCostContingencyPct: number
+        hardCosts: Array<{ name: string; amount: number }>
+        softCosts: Array<{ name: string; amount: number }>
     }
     results: {
         totalProjectCost: number
@@ -75,6 +87,7 @@ export interface OtherIncome {
 // Session Storage Keys
 const PROJECTS_KEY = 'finreal_projects'
 const PROFORMAS_KEY = 'finreal_proformas'
+const ACTIVE_TAB_KEY = 'finreal_active_tab'
 
 // Project Operations
 export function getProjects(): Project[] {
@@ -136,4 +149,16 @@ export function deleteProforma(projectId: string, proformaId: string): void {
     const proformas = getProformas(projectId)
     const filteredProformas = proformas.filter(p => p.id !== proformaId)
     sessionStorage.setItem(`${PROFORMAS_KEY}_${projectId}`, JSON.stringify(filteredProformas))
+}
+
+// Tab Operations
+export function getActiveTab(projectId: string, proformaId: string): string {
+    if (typeof window === 'undefined') return 'general'
+    const key = `${ACTIVE_TAB_KEY}_${projectId}_${proformaId}`
+    return sessionStorage.getItem(key) || 'general'
+}
+
+export function setActiveTab(projectId: string, proformaId: string, tab: string): void {
+    const key = `${ACTIVE_TAB_KEY}_${projectId}_${proformaId}`
+    sessionStorage.setItem(key, tab)
 } 
