@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
-import { Proforma, Unit, UnitType } from "@/lib/session-storage"
+import { Proforma } from "@/lib/session-storage"
+import { useUnitMix } from "@/hooks/useUnitMix"
 
 interface UnitMixTabProps {
   proforma: Proforma;
@@ -22,117 +22,28 @@ interface UnitMixTabProps {
 }
 
 export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
-  const [newUnitType, setNewUnitType] = useState({ name: '', description: '' })
-  const [newUnit, setNewUnit] = useState({ 
-    name: '', 
-    area: '', 
-    value: '', 
-    quantity: '1' 
-  })
-  const [selectedUnitTypeId, setSelectedUnitTypeId] = useState<string | null>(null)
-  const [isUnitTypeDialogOpen, setIsUnitTypeDialogOpen] = useState(false)
-  const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false)
-  const [expandedUnitTypes, setExpandedUnitTypes] = useState<Record<string, boolean>>({})
-  const [editingUnitGroup, setEditingUnitGroup] = useState<{ unitTypeId: string, groupKey: string } | null>(null)
-  const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
-
-  const handleAddUnitType = () => {
-    const newUnitTypeObj: UnitType = {
-      id: Date.now().toString(),
-      name: newUnitType.name,
-      description: newUnitType.description,
-      units: []
-    }
-    const updatedProforma: Proforma = {
-      ...proforma,
-      unitMix: [...proforma.unitMix, newUnitTypeObj]
-    }
-    onProformaChange(updatedProforma)
-    setNewUnitType({ name: '', description: '' })
-    setIsUnitTypeDialogOpen(false)
-  }
-
-  const handleAddUnits = (unitTypeId: string) => {
-    if (editingUnitGroup && editingUnitGroup.unitTypeId === unitTypeId) {
-      // Edit mode: update all units in the group
-      const updatedProforma: Proforma = {
-        ...proforma,
-        unitMix: proforma.unitMix.map(ut => {
-          if (ut.id !== unitTypeId) return ut;
-          const groupKey = editingUnitGroup.groupKey;
-          const filteredUnits = ut.units.filter(u => `${u.name}|${u.area}|${u.value}` !== groupKey);
-          const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
-            id: `${unitTypeId}-${Date.now()}-${i}`,
-            name: newUnit.name,
-            area: parseInt(newUnit.area) || 0,
-            value: parseInt(newUnit.value) || 0
-          }));
-          return { ...ut, units: [...filteredUnits, ...newUnits] };
-        })
-      };
-      onProformaChange(updatedProforma)
-      setEditingUnitGroup(null);
-    } else {
-      // Add mode: add new units as before
-      const unitType = proforma.unitMix.find(ut => ut.id === unitTypeId);
-      if (!unitType) return;
-      const newUnits = Array.from({ length: parseInt(newUnit.quantity) || 1 }, (_, i) => ({
-        id: `${unitTypeId}-${Date.now()}-${i}`,
-        name: newUnit.name,
-        area: parseInt(newUnit.area) || 0,
-        value: parseInt(newUnit.value) || 0
-      }));
-      const updatedProforma: Proforma = {
-        ...proforma,
-        unitMix: proforma.unitMix.map(ut => 
-          ut.id === unitTypeId 
-            ? { ...ut, units: [...ut.units, ...newUnits] }
-            : ut
-        )
-      };
-      onProformaChange(updatedProforma)
-    }
-    setExpandedUnitTypes(prev => ({ ...prev, [unitTypeId]: true }));
-    setNewUnit({ name: '', area: '', value: '', quantity: '1' });
-    setIsUnitDialogOpen(false);
-  }
-
-  const toggleUnitType = (unitTypeId: string) => {
-    setExpandedUnitTypes(prev => ({
-      ...prev,
-      [unitTypeId]: !prev[unitTypeId]
-    }))
-  }
-
-  const handleDeleteUnit = (unitTypeId: string, unitId: string) => {
-    const updatedProforma: Proforma = {
-      ...proforma,
-      unitMix: proforma.unitMix.map(ut => 
-        ut.id === unitTypeId 
-          ? {
-              ...ut,
-              units: ut.units.filter(u => u.id !== unitId)
-            }
-          : ut
-      )
-    };
-    onProformaChange(updatedProforma)
-  }
-
-  // Helper to collate units by name, area, value
-  function collateUnits(units: Unit[]): Array<Unit & { quantity: number; ids: string[], groupKey: string }> {
-    const map = new Map<string, Unit & { quantity: number; ids: string[], groupKey: string }>();
-    units.forEach((unit: Unit) => {
-      const key = `${unit.name}|${unit.area}|${unit.value}`;
-      if (map.has(key)) {
-        map.get(key)!.quantity += 1;
-        map.get(key)!.ids.push(unit.id);
-      } else {
-        map.set(key, { ...unit, quantity: 1, ids: [unit.id], groupKey: key });
-      }
-    });
-    return Array.from(map.values());
-  }
+  const {
+    newUnitType,
+    setNewUnitType,
+    newUnit,
+    setNewUnit,
+    selectedUnitTypeId,
+    setSelectedUnitTypeId,
+    isUnitTypeDialogOpen,
+    setIsUnitTypeDialogOpen,
+    isUnitDialogOpen,
+    setIsUnitDialogOpen,
+    expandedUnitTypes,
+    editingUnitGroup,
+    setEditingUnitGroup,
+    unitDialogMode,
+    setUnitDialogMode,
+    handleAddUnitType,
+    handleAddUnits,
+    toggleUnitType,
+    handleDeleteUnit,
+    collateUnits
+  } = useUnitMix({ proforma, onProformaChange })
 
   return (
     <Card>
