@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Proforma, OtherIncome, saveProforma } from "@/lib/session-storage"
+import { Proforma, OtherIncome, saveProforma, calculateTotalRevenue } from "@/lib/session-storage"
 
 interface UseOtherIncomeProps {
   proforma: Proforma;
@@ -35,10 +35,14 @@ export function useOtherIncome({ proforma, onProformaChange }: UseOtherIncomePro
     retail: 'Retail Space',
   };
 
-  // Add useEffect to save changes to session storage
+  // Update useEffect to ensure total revenue is calculated
   useEffect(() => {
-    onProformaChange(proforma);
-    saveProforma(proforma.projectId, proforma);
+    const updatedProforma = {
+      ...proforma,
+      totalRevenue: calculateTotalRevenue(proforma)
+    };
+    onProformaChange(updatedProforma);
+    saveProforma(proforma.projectId, updatedProforma);
   }, [proforma.otherIncome]);
 
   const handleAddOrEditOtherIncome = () => {

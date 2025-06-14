@@ -18,6 +18,7 @@ export interface Proforma {
     absorptionPeriod: number
     unitMix: UnitType[]
     otherIncome: OtherIncome[]
+    totalRevenue: number
     sources: {
         constructionDebt: number
         equity: number
@@ -133,14 +134,33 @@ export function getProforma(projectId: string, proformaId: string): Proforma | n
     return proformas.find(p => p.id === proformaId) || null
 }
 
+export function calculateTotalRevenue(proforma: Proforma): number {
+    const unitMixRevenue = proforma.unitMix.reduce((total, unitType) => {
+        return total + unitType.units.reduce((unitTypeTotal, unit) => {
+            return unitTypeTotal + (unit.area * unit.value);
+        }, 0);
+    }, 0);
+
+    const otherIncomeRevenue = proforma.otherIncome.reduce((total, income) => {
+        return total + (income.numberOfUnits * income.valuePerUnit);
+    }, 0);
+
+    return unitMixRevenue + otherIncomeRevenue;
+}
+
 export function saveProforma(projectId: string, proforma: Proforma): void {
     const proformas = getProformas(projectId)
     const index = proformas.findIndex(p => p.id === proforma.id)
 
+    const updatedProforma = {
+        ...proforma,
+        totalRevenue: calculateTotalRevenue(proforma)
+    };
+
     if (index >= 0) {
-        proformas[index] = proforma
+        proformas[index] = updatedProforma
     } else {
-        proformas.push(proforma)
+        proformas.push(updatedProforma)
     }
 
     sessionStorage.setItem(`${PROFORMAS_KEY}_${projectId}`, JSON.stringify(proformas))
