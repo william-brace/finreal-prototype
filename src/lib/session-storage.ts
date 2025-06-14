@@ -19,6 +19,7 @@ export interface Proforma {
     unitMix: UnitType[]
     otherIncome: OtherIncome[]
     totalRevenue: number
+    totalExpenses: number
     sources: {
         constructionDebt: number
         equity: number
@@ -52,8 +53,6 @@ export interface Proforma {
         costPerUnit: number
     }
     metrics: {
-        grossRevenue: number
-        totalExpenses: number
         grossProfit: number
         roi: number
         annualizedRoi: number
@@ -148,14 +147,37 @@ export function calculateTotalRevenue(proforma: Proforma): number {
     return unitMixRevenue + otherIncomeRevenue;
 }
 
+export function calculateProformaMetrics(proforma: Proforma): Proforma {
+    const totalProfit = proforma.totalRevenue - proforma.sources.totalProjectCost;
+    const leveredEmx = proforma.totalRevenue / proforma.sources.totalProjectCost;
+    const grossProfit = totalProfit;
+    const roiFormula = (proforma.sources.equityPct && proforma.sources.totalProjectCost)
+        ? grossProfit / ((proforma.sources.equityPct / 100) * proforma.sources.totalProjectCost)
+        : 0;
+    const annualizedRoi = (roiFormula && proforma.projectLength)
+        ? roiFormula / (proforma.projectLength / 12)
+        : 0;
+
+    return {
+        ...proforma,
+        metrics: {
+            grossProfit,
+            leveredEmx,
+            roi: roiFormula * 100,
+            annualizedRoi: annualizedRoi * 100,
+        },
+    };
+}
+
 export function saveProforma(projectId: string, proforma: Proforma): void {
     const proformas = getProformas(projectId)
     const index = proformas.findIndex(p => p.id === proforma.id)
 
-    const updatedProforma = {
+    // Always recalculate metrics and totalExpenses before saving
+    const updatedProforma = calculateProformaMetrics({
         ...proforma,
         totalRevenue: calculateTotalRevenue(proforma)
-    };
+    });
 
     if (index >= 0) {
         proformas[index] = updatedProforma
