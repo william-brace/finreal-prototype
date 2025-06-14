@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Proforma, Unit, UnitType, saveProforma } from "@/lib/session-storage"
+import { Proforma, Unit, UnitType, saveProforma, calculateTotalRevenue } from "@/lib/session-storage"
 
 interface UseUnitMixProps {
   proforma: Proforma;
@@ -44,10 +44,14 @@ export function useUnitMix({ proforma, onProformaChange }: UseUnitMixProps) {
   const [editingUnitGroup, setEditingUnitGroup] = useState<EditingUnitGroup | null>(null)
   const [unitDialogMode, setUnitDialogMode] = useState<'add' | 'edit'>('add')
 
-  // Add useEffect to save changes to session storage
+  // Update useEffect to ensure total revenue is calculated
   useEffect(() => {
-    onProformaChange(proforma);
-    saveProforma(proforma.projectId, proforma);
+    const updatedProforma = {
+      ...proforma,
+      totalRevenue: calculateTotalRevenue(proforma)
+    };
+    onProformaChange(updatedProforma);
+    saveProforma(proforma.projectId, updatedProforma);
   }, [proforma.unitMix]);
 
   const handleAddUnitType = () => {
