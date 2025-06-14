@@ -281,7 +281,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 <div className="flex justify-between items-center">
                   <div className="text-lg font-semibold">Total Land Costs</div>
                   <div className="text-lg font-bold">
-                    ${landCost.toLocaleString()}
+                    ${landCosts.toLocaleString()}
                   </div>
                 </div>
               </div>
