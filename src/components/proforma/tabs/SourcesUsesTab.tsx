@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +16,7 @@ import { Proforma } from "@/lib/session-storage"
 import { CostRow } from "@/components/proforma/CostRow"
 import { PercentageRow } from "@/components/proforma/PercentageRow"
 import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow"
+import { useSourcesUses } from "@/hooks/useSourcesUses"
 
 interface SourcesUsesTabProps {
   proforma: Proforma;
@@ -24,116 +24,72 @@ interface SourcesUsesTabProps {
 }
 
 export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabProps) {
-  const [newAdditionalCost, setNewAdditionalCost] = useState({ name: '', amount: '' })
-  const [newHardCost, setNewHardCost] = useState({ name: '', amount: '' })
-  const [newSoftCost, setNewSoftCost] = useState({ name: '', amount: '' })
-  const [isLandCostDialogOpen, setIsLandCostDialogOpen] = useState(false)
-  const [isHardCostDialogOpen, setIsHardCostDialogOpen] = useState(false)
-  const [isSoftCostDialogOpen, setIsSoftCostDialogOpen] = useState(false)
-  const [isAdditionalCostDialogOpen, setIsAdditionalCostDialogOpen] = useState(false)
-  const [editingCostName, setEditingCostName] = useState<string | null>(null)
-  const [editingCostType, setEditingCostType] = useState<'land' | 'hard' | 'soft' | null>(null)
-  const [hardCosts, setHardCosts] = useState<{ name: string; amount: number }[]>([])
-  const [softCosts, setSoftCosts] = useState<{ name: string; amount: number }[]>([])
-  const [constructionCost, setConstructionCost] = useState<number>(0)
-  const [hardCostContingencyPct, setHardCostContingencyPct] = useState<number>(0)
-  const [softDev, setSoftDev] = useState<number>(0)
-  const [softConsultants, setSoftConsultants] = useState<number>(0)
-  const [adminMarketing, setAdminMarketing] = useState<number>(0)
-  const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(0)
-  const [equityPct, setEquityPct] = useState(30)
-  const [debtPct, setDebtPct] = useState(70)
-  const [interestPct, setInterestPct] = useState(0)
-  const [brokerFeePct, setBrokerFeePct] = useState(0)
+  const {
+    // State
+    newAdditionalCost,
+    setNewAdditionalCost,
+    newHardCost,
+    setNewHardCost,
+    newSoftCost,
+    setNewSoftCost,
+    isLandCostDialogOpen,
+    setIsLandCostDialogOpen,
+    isHardCostDialogOpen,
+    setIsHardCostDialogOpen,
+    isSoftCostDialogOpen,
+    setIsSoftCostDialogOpen,
+    isAdditionalCostDialogOpen,
+    setIsAdditionalCostDialogOpen,
+    editingCostName,
+    setEditingCostName,
+    editingCostType,
+    setEditingCostType,
+    hardCosts,
+    setHardCosts,
+    softCosts,
+    setSoftCosts,
+    constructionCost,
+    setConstructionCost,
+    hardCostContingencyPct,
+    setHardCostContingencyPct,
+    softDev,
+    setSoftDev,
+    softConsultants,
+    setSoftConsultants,
+    adminMarketing,
+    setAdminMarketing,
+    softCostContingencyPct,
+    setSoftCostContingencyPct,
+    equityPct,
+    setEquityPct,
+    debtPct,
+    setDebtPct,
+    interestPct,
+    setInterestPct,
+    brokerFeePct,
+    setBrokerFeePct,
 
-  const handleAddCost = (type: 'land' | 'hard' | 'soft') => {
-    if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
+    // Handlers
+    handleAddCost,
+    handleDeleteAdditionalCost,
 
-    switch (type) {
-      case 'land':
-        const updatedProforma: Proforma = {
-          ...proforma,
-          uses: {
-            ...proforma.uses,
-            additionalCosts: editingCostName
-              ? proforma.uses.additionalCosts.map(cost => 
-                  cost.name === editingCostName
-                    ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
-                    : cost
-                )
-              : [
-                  ...proforma.uses.additionalCosts,
-                  {
-                    name: newAdditionalCost.name,
-                    amount: parseInt(newAdditionalCost.amount) || 0
-                  }
-                ]
-          }
-        };
-        onProformaChange(updatedProforma);
-        break;
-
-      case 'hard':
-        setHardCosts(prev => {
-          if (editingCostName) {
-            return prev.map(cost => 
-              cost.name === editingCostName
-                ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
-                : cost
-            );
-          }
-          return [...prev, { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }];
-        });
-        break;
-
-      case 'soft':
-        setSoftCosts(prev => {
-          if (editingCostName) {
-            return prev.map(cost => 
-              cost.name === editingCostName
-                ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
-                : cost
-            );
-          }
-          return [...prev, { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }];
-        });
-        break;
-    }
-
-    // Reset state
-    setNewAdditionalCost({ name: '', amount: '' });
-    setEditingCostName(null);
-    setEditingCostType(null);
-    setIsAdditionalCostDialogOpen(false);
-    setIsLandCostDialogOpen(false);
-    setIsHardCostDialogOpen(false);
-    setIsSoftCostDialogOpen(false);
-  };
-
-  const handleDeleteAdditionalCost = (name: string) => {
-    const updatedProforma: Proforma = {
-      ...proforma,
-      uses: {
-        ...proforma.uses,
-        additionalCosts: proforma.uses.additionalCosts.filter(
-          c => c.name !== name || ['land cost', 'closing costs'].includes(c.name.toLowerCase())
-        )
-      }
-    };
-    onProformaChange(updatedProforma);
-  };
-
-  // Calculate totals
-  const landCosts = proforma?.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-  const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-  const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-  const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
-  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
-  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
-  const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
-  const projectLength = proforma?.projectLength || 0;
-  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
-  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
+    // Calculated values
+    landCosts,
+    hardCostsTotal,
+    softCostsTotal,
+    totalProjectCost,
+    equityAmount,
+    debtAmount,
+    constructionDebtAmount,
+    projectLength,
+    interestCostAmount,
+    brokerFeeAmount,
+    landCost,
+    setLandCost,
+    closingCostPercentage,
+    setClosingCostPercentage,
+    additionalLandCosts,
+  } = useSourcesUses({ proforma, onProformaChange });
 
   return (
     <Card>
@@ -217,73 +173,31 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 <CostRow
                   label="Land Cost"
                   description="Base land acquisition cost"
-                  value={proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0}
-                  onChange={val => {
-                    const newCosts = [...(proforma.uses.additionalCosts || [])];
-                    const landCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('land'));
-                    if (landCostIndex >= 0) {
-                      newCosts[landCostIndex].amount = val;
-                    } else {
-                      newCosts.push({ name: 'Land Cost', amount: val });
-                    }
-                    onProformaChange({
-                      ...proforma,
-                      uses: {
-                        ...proforma.uses,
-                        additionalCosts: newCosts
-                      }
-                    });
-                  }}
+                  value={landCost}
+                  onChange={setLandCost}
                 />
                 {/* Pre-populated Closing Costs */}
                 <PercentageRow
                   label="Closing Costs"
                   description="Based on land cost percentage"
-                  baseAmount={proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0}
-                  percentage={(() => {
-                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                    const closingCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('closing'))?.amount || 0;
-                    return landCost > 0 ? (closingCost / landCost * 100) : 0;
-                  })()}
-                  onChange={(pct) => {
-                    const newCosts = [...(proforma.uses.additionalCosts || [])];
-                    const closingCostIndex = newCosts.findIndex(c => c.name.toLowerCase().includes('closing'));
-                    const landCost = proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0;
-                    const closingCostAmount = Math.round(landCost * pct / 100);
-                    
-                    if (closingCostIndex >= 0) {
-                      newCosts[closingCostIndex].amount = closingCostAmount;
-                    } else {
-                      newCosts.push({ name: 'Closing Costs', amount: closingCostAmount });
-                    }
-                    onProformaChange({
-                      ...proforma,
-                      uses: {
-                        ...proforma.uses,
-                        additionalCosts: newCosts
-                      }
-                    });
-                  }}
+                  baseAmount={landCost}
+                  percentage={closingCostPercentage}
+                  onChange={setClosingCostPercentage}
                 />
                 {/* Additional Land Costs */}
-                {proforma.uses.additionalCosts
-                  ?.filter(cost => 
-                    !cost.name.toLowerCase().includes('land') && 
-                    !cost.name.toLowerCase().includes('closing')
-                  )
-                  .map((cost) => (
-                    <AdditionalCostRow
-                      key={cost.name}
-                      name={cost.name}
-                      amount={cost.amount}
-                      onDelete={() => handleDeleteAdditionalCost(cost.name)}
-                      onEdit={() => {
-                        setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
-                        setEditingCostName(cost.name);
-                        setIsAdditionalCostDialogOpen(true);
-                      }}
-                    />
-                  ))}
+                {additionalLandCosts.map((cost) => (
+                  <AdditionalCostRow
+                    key={cost.name}
+                    name={cost.name}
+                    amount={cost.amount}
+                    onDelete={() => handleDeleteAdditionalCost(cost.name)}
+                    onEdit={() => {
+                      setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                      setEditingCostName(cost.name);
+                      setIsAdditionalCostDialogOpen(true);
+                    }}
+                  />
+                ))}
 
                 <Dialog open={isAdditionalCostDialogOpen} onOpenChange={(open) => {
                   setIsAdditionalCostDialogOpen(open);
@@ -367,9 +281,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 <div className="flex justify-between items-center">
                   <div className="text-lg font-semibold">Total Land Costs</div>
                   <div className="text-lg font-bold">
-                    ${(
-                      (proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0)
-                    ).toLocaleString()}
+                    ${landCost.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -464,9 +376,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per Unit</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
                         const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                        return totalUnits > 0 ? Number(hardCostsTotal / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
                     </div>
                   </div>
@@ -474,9 +385,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per SF</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                        return gba > 0 ? Number(hardCostsTotal / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
                     </div>
                   </div>
@@ -484,10 +394,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 <div className="flex justify-between items-center">
                   <div className="text-lg font-semibold">Total Hard Costs</div>
                   <div className="text-lg font-bold">
-                    ${(() => {
-                      const totalCost = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                      return totalCost.toLocaleString();
-                    })()}
+                    ${hardCostsTotal.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -594,9 +501,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per Unit</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
                         const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                        return totalUnits > 0 ? Number(softCostsTotal / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
                     </div>
                   </div>
@@ -604,9 +510,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per SF</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                        return gba > 0 ? Number(softCostsTotal / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
                     </div>
                   </div>
@@ -614,10 +519,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 <div className="flex justify-between items-center">
                   <div className="text-lg font-semibold">Total Soft Costs</div>
                   <div className="text-lg font-bold">
-                    ${(() => {
-                      const totalCost = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                      return totalCost.toLocaleString();
-                    })()}
+                    ${softCostsTotal.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -628,15 +530,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="flex justify-between items-center">
                 <div className="text-xl font-bold">Total Project Cost</div>
                 <div className="text-xl font-bold">
-                  ${(() => {
-                    // Land Costs
-                    const landCosts = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
-                    // Hard Costs
-                    const hardCostsTotal = constructionCost + Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + hardCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                    // Soft Costs
-                    const softCostsTotal = softDev + softConsultants + adminMarketing + Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + softCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-                    return (landCosts + hardCostsTotal + softCostsTotal).toLocaleString();
-                  })()}
+                  ${totalProjectCost.toLocaleString()}
                 </div>
               </div>
             </div>

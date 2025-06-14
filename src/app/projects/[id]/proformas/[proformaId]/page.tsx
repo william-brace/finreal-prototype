@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useEffect, useState, use } from "react"
-import { getProforma, saveProforma, Proforma, getProject, Project } from "@/lib/session-storage"
+import { getProforma, saveProforma, Proforma, getProject, Project, getActiveTab, setActiveTab } from "@/lib/session-storage"
 import { jsPDF } from 'jspdf'
 import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
 import { ResultsTab } from "@/components/proforma/tabs/ResultsTab"
@@ -13,6 +13,7 @@ import { UnitMixTab } from "@/components/proforma/tabs/UnitMixTab"
 import { OtherIncomeTab } from "@/components/proforma/tabs/OtherIncomeTab"
 import { SourcesUsesTab } from "@/components/proforma/tabs/SourcesUsesTab"
 import { SummaryCard } from "@/components/proforma/tabs/SummaryCard"
+import { useRouter } from "next/navigation"
 
 
 export default function ProformaEditorPage({
@@ -21,10 +22,12 @@ export default function ProformaEditorPage({
   params: Promise<{ id: string; proformaId: string }>
 }) {
   const { id, proformaId } = use(params)
+  const router = useRouter()
   const [proforma, setProforma] = useState<Proforma | null>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [proformaName, setProformaName] = useState('')
+  const [activeTab, setActiveTabState] = useState('general')
 
   useEffect(() => {
     const fetchData = () => {
@@ -34,6 +37,7 @@ export default function ProformaEditorPage({
         if (proformaData) {
           setProforma(proformaData)
           setProformaName(proformaData.name)
+          setActiveTabState(getActiveTab(id, proformaId))
         }
         if (projectData) {
           setProject(projectData)
@@ -112,7 +116,14 @@ export default function ProformaEditorPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Tabs defaultValue="general" className="w-full">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(value) => {
+              setActiveTabState(value)
+              setActiveTab(id, proformaId, value)
+            }} 
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
