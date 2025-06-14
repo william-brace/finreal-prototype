@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Trash2 } from "lucide-react"
-import { Proforma, OtherIncome } from "@/lib/session-storage"
+import { Proforma } from "@/lib/session-storage"
+import { useOtherIncome } from "@/hooks/useOtherIncome"
 
 interface OtherIncomeTabProps {
   proforma: Proforma;
@@ -22,78 +22,18 @@ interface OtherIncomeTabProps {
 }
 
 export function OtherIncomeTab({ proforma, onProformaChange }: OtherIncomeTabProps) {
-  const [newOtherIncome, setNewOtherIncome] = useState({ 
-    name: '', 
-    description: '', 
-    value: '',
-    unitType: '',
-    numberOfUnits: '1',
-    valuePerUnit: '',
-    customUnitType: ''
-  })
-  const [isOtherIncomeDialogOpen, setIsOtherIncomeDialogOpen] = useState(false)
-  const [editingOtherIncomeDialog, setEditingOtherIncomeDialog] = useState<OtherIncome | null>(null)
-
-  const unitTypeDisplayNames: Record<string, string> = {
-    parking: 'Parking Space',
-    storage: 'Storage Unit',
-    retail: 'Retail Space',
-  };
-
-  const handleAddOrEditOtherIncome = () => {
-    const unitType = newOtherIncome.unitType === 'other' ? newOtherIncome.customUnitType : newOtherIncome.unitType;
-    const totalValue = parseInt(newOtherIncome.numberOfUnits) * parseInt(newOtherIncome.valuePerUnit);
-
-    const newOtherIncomeObj: OtherIncome = {
-      id: editingOtherIncomeDialog ? editingOtherIncomeDialog.id : Date.now().toString(),
-      name: newOtherIncome.name,
-      description: newOtherIncome.description,
-      value: totalValue,
-      unitType: unitType || '',
-      numberOfUnits: parseInt(newOtherIncome.numberOfUnits),
-      valuePerUnit: parseInt(newOtherIncome.valuePerUnit)
-    }
-    const updatedProforma: Proforma = {
-      ...proforma,
-      otherIncome: editingOtherIncomeDialog
-        ? proforma.otherIncome.map(item => item.id === editingOtherIncomeDialog.id ? newOtherIncomeObj : item)
-        : [...proforma.otherIncome, newOtherIncomeObj]
-    };
-    onProformaChange(updatedProforma)
-    setNewOtherIncome({ 
-      name: '', 
-      description: '', 
-      value: '',
-      unitType: '',
-      numberOfUnits: '1',
-      valuePerUnit: '',
-      customUnitType: ''
-    })
-    setIsOtherIncomeDialogOpen(false)
-    setEditingOtherIncomeDialog(null)
-  }
-
-  const openEditOtherIncomeDialog = (item: OtherIncome) => {
-    setNewOtherIncome({
-      name: item.name,
-      description: item.description,
-      value: item.value.toString(),
-      unitType: ['parking','storage','retail'].includes(item.unitType) ? item.unitType : 'other',
-      numberOfUnits: item.numberOfUnits.toString(),
-      valuePerUnit: item.valuePerUnit.toString(),
-      customUnitType: ['parking','storage','retail'].includes(item.unitType) ? '' : item.unitType
-    })
-    setEditingOtherIncomeDialog(item)
-    setIsOtherIncomeDialogOpen(true)
-  }
-
-  const handleDeleteOtherIncome = (id: string) => {
-    const updatedProforma: Proforma = {
-      ...proforma,
-      otherIncome: proforma.otherIncome.filter(item => item.id !== id)
-    };
-    onProformaChange(updatedProforma)
-  }
+  const {
+    newOtherIncome,
+    setNewOtherIncome,
+    isOtherIncomeDialogOpen,
+    setIsOtherIncomeDialogOpen,
+    editingOtherIncomeDialog,
+    setEditingOtherIncomeDialog,
+    unitTypeDisplayNames,
+    handleAddOrEditOtherIncome,
+    openEditOtherIncomeDialog,
+    handleDeleteOtherIncome
+  } = useOtherIncome({ proforma, onProformaChange })
 
   return (
     <Card>
