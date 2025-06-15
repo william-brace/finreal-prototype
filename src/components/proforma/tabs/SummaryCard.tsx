@@ -6,6 +6,38 @@ interface SummaryCardProps {
   proforma: Proforma
 }
 
+interface UnitSummary {
+  totalUnits: number
+  averagePricePerSqFt: number
+  totalValue: number
+}
+
+function calculateUnitSummary(proforma: Proforma): UnitSummary {
+  // Calculate total units
+  const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0)
+  console.log('Total Units:', totalUnits)
+
+  // Calculate total area
+  const totalArea = proforma.unitMix.reduce((sum, unitType) => 
+    sum + unitType.units.reduce((sum, unit) => sum + unit.area, 0), 0)
+  console.log('Total Area:', totalArea)
+
+  // Calculate total value
+  const totalValue = proforma.unitMix.reduce((sum, unitType) => 
+    sum + unitType.units.reduce((unitSum, unit) => unitSum + (unit.area * unit.value), 0), 0)
+  console.log('Total Value:', totalValue)
+
+  // Calculate average price per sq ft
+  const averagePricePerSqFt = totalValue / Math.max(1, totalArea)
+  console.log('Average Price per Sq Ft:', averagePricePerSqFt)
+
+  return {
+    totalUnits,
+    averagePricePerSqFt,
+    totalValue
+  }
+}
+
 export function SummaryCard({ proforma }: SummaryCardProps) {
   const [metrics, setMetrics] = useState(proforma.metrics)
 
@@ -13,6 +45,8 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
     // Recalculate metrics whenever proforma changes
     setMetrics(proforma.metrics)
   }, [proforma])
+
+  const unitSummary = calculateUnitSummary(proforma)
 
   return (
     <Card className="sticky top-4">
@@ -27,7 +61,7 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
             <div className="flex justify-between"><span>ROI</span><span className="font-semibold">{metrics.roi.toFixed(1)}%</span></div>
             <div className="flex justify-between"><span>Annualized ROI</span><span className="font-semibold">{metrics.annualizedRoi.toFixed(1)}%</span></div>
             <div className="flex justify-between"><span>Levered IRR</span><span className="font-semibold">20%</span></div>
-            <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">{metrics.leveredEmx.toFixed(1)}x</span></div>
+            <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">{metrics.leveredEmx?.toFixed(1) ? metrics.leveredEmx.toFixed(1) : 0}x</span></div>
           </div>
         </div>
 
@@ -38,17 +72,17 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
             <span>Gross Sales Revenue</span>
             <span className="font-semibold">${proforma.totalRevenue?.toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-sm mb-1">
+          {/* <div className="flex justify-between text-sm mb-1">
             <span>Other Income</span>
             <span className="font-semibold">${proforma.otherIncome.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</span>
-          </div>
+          </div> */}
           <div className="flex justify-between text-sm mb-1">
             <span>Total Expenses</span>
-            <span className="font-semibold border-b-2 border-black">${proforma.totalExpenses?.toLocaleString()}</span>
+            <span className="font-semibold border-b-2 border-black">${proforma.sources.totalProjectCost?.toLocaleString() ? proforma.sources.totalProjectCost.toLocaleString() : 0}</span>
           </div>
           <div className="flex justify-between text-base font-bold mt-2">
             <span>Gross Profit</span>
-            <span className="font-bold">${metrics.grossProfit.toLocaleString()}</span>
+            <span className="font-bold">${metrics.grossProfit?.toLocaleString() ? metrics.grossProfit.toLocaleString() : 0}</span>
           </div>
         </div>
 
@@ -61,12 +95,9 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
             <span className="underline">Total Value</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>{proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0)}</span>
-            <span>${(
-              proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.value, 0), 0) /
-              Math.max(1, proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((sum, unit) => sum + unit.area, 0), 0))
-            ).toFixed(0)}</span>
-            <span>${proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.reduce((unitSum, unit) => unitSum + (unit.area * unit.value), 0), 0).toLocaleString()}</span>
+            <span>{unitSummary.totalUnits}</span>
+            <span>${unitSummary.averagePricePerSqFt.toFixed(0)}</span>
+            <span>${unitSummary.totalValue.toLocaleString()}</span>
           </div>
         </div>
 
@@ -77,7 +108,7 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           <div className="flex justify-between text-sm mb-1"><span>Hard Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('hard'))?.amount || 0).toLocaleString()}</span></div>
           <div className="flex justify-between text-sm mb-1"><span>Soft Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('soft'))?.amount || 0).toLocaleString()}</span></div>
           <div className="flex justify-between text-sm mb-1"><span>Contingency</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('contingency'))?.amount || 0).toLocaleString()}</span></div>
-          <div className="flex justify-between text-sm font-semibold mt-2"><span>Total Expenses</span><span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString()}</span></div>
+          <div className="flex justify-between text-sm font-semibold mt-2"><span>Total Expenses</span><span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() ? proforma.totalExpenses.toLocaleString() : 0}</span></div>
         </div>
       </CardContent>
     </Card>
