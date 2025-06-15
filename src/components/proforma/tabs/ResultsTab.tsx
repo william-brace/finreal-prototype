@@ -18,7 +18,6 @@ export function ResultsTab({ proforma }: Props) {
   }, [proforma.projectId, proforma.id]);
 
   const { grossProfit, leveredEmx, roi, annualizedRoi } = latestProforma.metrics;
-  console.log(latestProforma.metrics);
   const { totalExpenses } = latestProforma;
 
   return (
