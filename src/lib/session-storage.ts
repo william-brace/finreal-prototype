@@ -21,30 +21,31 @@ export interface Proforma {
     totalRevenue: number
     totalExpenses: number
     sources: {
-        constructionDebt: number
-        equity: number
-        interestRate: number
         equityPct: number
         debtPct: number
-        interestPct: number
-        brokerFeePct: number
-        totalProjectCost: number
+        financingCosts: {
+            interestPct: number
+            brokerFeePct: number
+        }
     }
     uses: {
-        legalCosts: number
-        quantitySurveyorCosts: number
-        realtorFee: number
-        hardCostContingency: number
-        softCostContingency: number
-        additionalCosts: Array<{ name: string; amount: number }>
-        constructionCost: number
-        hardCostContingencyPct: number
-        softDev: number
-        softConsultants: number
-        adminMarketing: number
-        softCostContingencyPct: number
-        hardCosts: Array<{ name: string; amount: number }>
-        softCosts: Array<{ name: string; amount: number }>
+        landCosts: {
+            baseCost: number
+            closingCost: number
+            additionalCosts: Array<{ name: string; amount: number }>
+        }
+        hardCosts: {
+            baseCost: number
+            contingencyPct: number
+            additionalCosts: Array<{ name: string; amount: number }>
+        }
+        softCosts: {
+            development: number
+            consultants: number
+            adminMarketing: number
+            contingencyPct: number
+            additionalCosts: Array<{ name: string; amount: number }>
+        }
     }
     results: {
         totalProjectCost: number
@@ -148,11 +149,13 @@ export function calculateTotalRevenue(proforma: Proforma): number {
 }
 
 export function calculateProformaMetrics(proforma: Proforma): Proforma {
-    const totalProfit = proforma.totalRevenue - proforma.sources.totalProjectCost;
-    const leveredEmx = proforma.totalRevenue / proforma.sources.totalProjectCost;
+    const totalProfit = proforma.totalRevenue - proforma.totalExpenses;
+    const leveredEmx = proforma.totalExpenses > 0 
+        ? proforma.totalRevenue / proforma.totalExpenses 
+        : 0;
     const grossProfit = totalProfit;
-    const roiFormula = (proforma.sources.equityPct && proforma.sources.totalProjectCost)
-        ? grossProfit / ((proforma.sources.equityPct / 100) * proforma.sources.totalProjectCost)
+    const roiFormula = (proforma.sources.equityPct && proforma.totalExpenses)
+        ? grossProfit / ((proforma.sources.equityPct / 100) * proforma.totalExpenses)
         : 0;
     const annualizedRoi = (roiFormula && proforma.projectLength)
         ? roiFormula / (proforma.projectLength / 12)
@@ -204,4 +207,63 @@ export function getActiveTab(projectId: string, proformaId: string): string {
 export function setActiveTab(projectId: string, proformaId: string, tab: string): void {
     const key = `${ACTIVE_TAB_KEY}_${projectId}_${proformaId}`
     sessionStorage.setItem(key, tab)
+}
+
+export function createNewProforma(projectId: string, projectLandCost: number): Proforma {
+  return {
+    id: Date.now().toString(),
+    name: "New Proforma",
+    projectId,
+    lastUpdated: new Date().toISOString().split('T')[0],
+    totalCost: 0,
+    netProfit: 0,
+    roi: 0,
+    gba: 0,
+    stories: 0,
+    projectLength: 0,
+    absorptionPeriod: 0,
+    unitMix: [],
+    otherIncome: [],
+    totalRevenue: 0,
+    totalExpenses: 0,
+    sources: {
+      equityPct: 30,
+      debtPct: 70,
+      financingCosts: {
+        interestPct: 5.5,
+        brokerFeePct: 0
+      }
+    },
+    uses: {
+      landCosts: {
+        baseCost: projectLandCost,
+        closingCost: 0,
+        additionalCosts: []
+      },
+      hardCosts: {
+        baseCost: 0,
+        contingencyPct: 10,
+        additionalCosts: []
+      },
+      softCosts: {
+        development: 0,
+        consultants: 0,
+        adminMarketing: 0,
+        contingencyPct: 5,
+        additionalCosts: []
+      }
+    },
+    results: {
+      totalProjectCost: 0,
+      netProfit: 0,
+      roi: 0,
+      costPerUnit: 0
+    },
+    metrics: {
+      grossProfit: 0,
+      roi: 0,
+      annualizedRoi: 0,
+      leveredEmx: 0
+    }
+  }
 } 

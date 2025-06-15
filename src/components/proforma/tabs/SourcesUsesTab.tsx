@@ -28,10 +28,6 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     // State
     newAdditionalCost,
     setNewAdditionalCost,
-    newHardCost,
-    setNewHardCost,
-    newSoftCost,
-    setNewSoftCost,
     isLandCostDialogOpen,
     setIsLandCostDialogOpen,
     isHardCostDialogOpen,
@@ -44,10 +40,6 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     setEditingCostName,
     editingCostType,
     setEditingCostType,
-    hardCosts,
-    setHardCosts,
-    softCosts,
-    setSoftCosts,
     constructionCost,
     setConstructionCost,
     hardCostContingencyPct,
@@ -84,11 +76,15 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     projectLength,
     interestCostAmount,
     brokerFeeAmount,
+
+    // Land Costs specific values
     landCost,
     setLandCost,
     closingCostPercentage,
     setClosingCostPercentage,
     additionalLandCosts,
+    additionalHardCosts,
+    additionalSoftCosts,
   } = useSourcesUses({ proforma, onProformaChange });
 
   return (
@@ -190,10 +186,11 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => handleDeleteAdditionalCost(cost.name)}
+                    onDelete={() => handleDeleteAdditionalCost('land', cost.name)}
                     onEdit={() => {
                       setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
                       setEditingCostName(cost.name);
+                      setEditingCostType('land');
                       setIsAdditionalCostDialogOpen(true);
                     }}
                   />
@@ -260,7 +257,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per Unit</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                        const totalCost = landCosts + hardCostsTotal + softCostsTotal;
                         const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
                         return totalUnits > 0 ? Number(totalCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
@@ -270,7 +267,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per SF</div>
                     <div className="text-sm font-semibold">
                       ${(() => {
-                        const totalCost = proforma.uses.additionalCosts?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+                        const totalCost = landCosts + hardCostsTotal + softCostsTotal;
                         const gba = proforma.gba || 0;
                         return gba > 0 ? Number(totalCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                       })()}
@@ -310,8 +307,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <label htmlFor="hard-cost-name">Cost Name</label>
                         <Input
                           id="hard-cost-name"
-                          value={newHardCost.name}
-                          onChange={(e) => setNewHardCost(prev => ({ ...prev, name: e.target.value }))}
+                          value={newAdditionalCost.name}
+                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="e.g., Site Work"
                         />
                       </div>
@@ -320,18 +317,16 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="hard-cost-amount"
                           type="number"
-                          value={newHardCost.amount}
-                          onChange={(e) => setNewHardCost(prev => ({ ...prev, amount: e.target.value }))}
+                          value={newAdditionalCost.amount}
+                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
                           placeholder="Enter amount"
                         />
                       </div>
                     </div>
                     <DialogFooter>
                       <Button onClick={() => {
-                        if (!newHardCost.name || !newHardCost.amount) return;
-                        setHardCosts(prev => [...prev, { name: newHardCost.name, amount: parseInt(newHardCost.amount) || 0 }]);
-                        setNewHardCost({ name: '', amount: '' });
-                        setIsHardCostDialogOpen(false);
+                        if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
+                        handleAddCost('hard');
                       }}>Add Cost</Button>
                     </DialogFooter>
                   </DialogContent>
@@ -353,12 +348,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                   onChange={setHardCostContingencyPct}
                 />
                 {/* Additional Hard Costs */}
-                {hardCosts.map((cost) => (
+                {additionalHardCosts.map((cost) => (
                   <AdditionalCostRow
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => setHardCosts(prev => prev.filter(c => c.name !== cost.name))}
+                    onDelete={() => handleDeleteAdditionalCost('hard', cost.name)}
                     onEdit={() => {
                       setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
                       setEditingCostName(cost.name);
@@ -423,8 +418,8 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <label htmlFor="soft-cost-name">Cost Name</label>
                         <Input
                           id="soft-cost-name"
-                          value={newSoftCost.name}
-                          onChange={(e) => setNewSoftCost(prev => ({ ...prev, name: e.target.value }))}
+                          value={newAdditionalCost.name}
+                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="e.g., Legal Fees"
                         />
                       </div>
@@ -433,18 +428,16 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="soft-cost-amount"
                           type="number"
-                          value={newSoftCost.amount}
-                          onChange={(e) => setNewSoftCost(prev => ({ ...prev, amount: e.target.value }))}
+                          value={newAdditionalCost.amount}
+                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, amount: e.target.value }))}
                           placeholder="Enter amount"
                         />
                       </div>
                     </div>
                     <DialogFooter>
                       <Button onClick={() => {
-                        if (!newSoftCost.name || !newSoftCost.amount) return;
-                        setSoftCosts(prev => [...prev, { name: newSoftCost.name, amount: parseInt(newSoftCost.amount) || 0 }]);
-                        setNewSoftCost({ name: '', amount: '' });
-                        setIsSoftCostDialogOpen(false);
+                        if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
+                        handleAddCost('soft');
                       }}>Add Cost</Button>
                     </DialogFooter>
                   </DialogContent>
@@ -478,12 +471,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                   onChange={setSoftCostContingencyPct}
                 />
                 {/* Additional Soft Costs */}
-                {softCosts.map((cost) => (
+                {additionalSoftCosts.map((cost) => (
                   <AdditionalCostRow
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => setSoftCosts(prev => prev.filter(c => c.name !== cost.name))}
+                    onDelete={() => handleDeleteAdditionalCost('soft', cost.name)}
                     onEdit={() => {
                       setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
                       setEditingCostName(cost.name);

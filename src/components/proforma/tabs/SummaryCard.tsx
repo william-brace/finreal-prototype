@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Proforma } from "@/lib/session-storage"
+import { Proforma, calculateProformaMetrics } from "@/lib/session-storage"
 import { useEffect, useState } from "react"
 
 interface SummaryCardProps {
@@ -43,8 +43,9 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
 
   useEffect(() => {
     // Recalculate metrics whenever proforma changes
-    setMetrics(proforma.metrics)
-  }, [proforma])
+    const updatedMetrics = calculateProformaMetrics(proforma).metrics;
+    setMetrics(updatedMetrics);
+  }, [proforma]);
 
   const unitSummary = calculateUnitSummary(proforma)
 
@@ -58,10 +59,22 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
         {/* Key Metrics */}
         <div className="space-y-4 border-b pb-4 mb-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <div className="flex justify-between"><span>ROI</span><span className="font-semibold">{metrics.roi.toFixed(1)}%</span></div>
-            <div className="flex justify-between"><span>Annualized ROI</span><span className="font-semibold">{metrics.annualizedRoi.toFixed(1)}%</span></div>
-            <div className="flex justify-between"><span>Levered IRR</span><span className="font-semibold">20%</span></div>
-            <div className="flex justify-between"><span>Levered EMx</span><span className="font-semibold">{metrics.leveredEmx?.toFixed(1) ? metrics.leveredEmx.toFixed(1) : 0}x</span></div>
+            <div className="flex justify-between">
+              <span>Total Profit</span>
+              <span className="font-semibold">${metrics.grossProfit?.toLocaleString() || "0"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>ROI</span>
+              <span className="font-semibold">{metrics.roi?.toFixed(1) || "0.0"}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Annualized ROI</span>
+              <span className="font-semibold">{metrics.annualizedRoi?.toFixed(1) || "0.0"}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Levered EMx</span>
+              <span className="font-semibold">{metrics.leveredEmx?.toFixed(1) || "0.0"}x</span>
+            </div>
           </div>
         </div>
 
@@ -70,7 +83,7 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           <div className="font-bold mb-2">Revenue</div>
           <div className="flex justify-between text-sm mb-1">
             <span>Gross Sales Revenue</span>
-            <span className="font-semibold">${proforma.totalRevenue?.toLocaleString()}</span>
+            <span className="font-semibold">${proforma.totalRevenue?.toLocaleString() || "0"}</span>
           </div>
           {/* <div className="flex justify-between text-sm mb-1">
             <span>Other Income</span>
@@ -78,11 +91,11 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           </div> */}
           <div className="flex justify-between text-sm mb-1">
             <span>Total Expenses</span>
-            <span className="font-semibold border-b-2 border-black">${proforma.sources.totalProjectCost?.toLocaleString() ? proforma.sources.totalProjectCost.toLocaleString() : 0}</span>
+            <span className="font-semibold border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() || "0"}</span>
           </div>
           <div className="flex justify-between text-base font-bold mt-2">
             <span>Gross Profit</span>
-            <span className="font-bold">${metrics.grossProfit?.toLocaleString() ? metrics.grossProfit.toLocaleString() : 0}</span>
+            <span className="font-bold">${metrics.grossProfit?.toLocaleString() || "0"}</span>
           </div>
         </div>
 
@@ -104,11 +117,30 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
         {/* Expenses Breakdown */}
         <div>
           <div className="font-bold mb-2">Expenses Breakdown</div>
-          <div className="flex justify-between text-sm mb-1"><span>Land Cost</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('land'))?.amount || 0).toLocaleString()}</span></div>
-          <div className="flex justify-between text-sm mb-1"><span>Hard Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('hard'))?.amount || 0).toLocaleString()}</span></div>
-          <div className="flex justify-between text-sm mb-1"><span>Soft Costs</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('soft'))?.amount || 0).toLocaleString()}</span></div>
-          <div className="flex justify-between text-sm mb-1"><span>Contingency</span><span>${(proforma.uses.additionalCosts?.find(c => c.name.toLowerCase().includes('contingency'))?.amount || 0).toLocaleString()}</span></div>
-          <div className="flex justify-between text-sm font-semibold mt-2"><span>Total Expenses</span><span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() ? proforma.totalExpenses.toLocaleString() : 0}</span></div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Land Cost</span>
+            <span>${(proforma.uses.landCosts.baseCost + proforma.uses.landCosts.closingCost + 
+              proforma.uses.landCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Hard Costs</span>
+            <span>${(proforma.uses.hardCosts.baseCost + 
+              (proforma.uses.hardCosts.baseCost * proforma.uses.hardCosts.contingencyPct / 100) +
+              proforma.uses.hardCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Soft Costs</span>
+            <span>${(proforma.uses.softCosts.development + 
+              proforma.uses.softCosts.consultants + 
+              proforma.uses.softCosts.adminMarketing +
+              ((proforma.uses.softCosts.development + proforma.uses.softCosts.consultants + proforma.uses.softCosts.adminMarketing) * 
+                proforma.uses.softCosts.contingencyPct / 100) +
+              proforma.uses.softCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm font-semibold mt-2">
+            <span>Total Expenses</span>
+            <span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() ? proforma.totalExpenses.toLocaleString() : 0}</span>
+          </div>
         </div>
       </CardContent>
     </Card>
