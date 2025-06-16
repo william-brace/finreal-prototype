@@ -34,7 +34,6 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
     isUnitDialogOpen,
     setIsUnitDialogOpen,
     expandedUnitTypes,
-    editingUnitGroup,
     setEditingUnitGroup,
     unitDialogMode,
     setUnitDialogMode,

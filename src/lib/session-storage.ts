@@ -26,6 +26,9 @@ export interface Proforma {
         financingCosts: {
             interestPct: number
             brokerFeePct: number
+            interestCost: number
+            brokerFee: number
+            totalFinancingCost: number
         }
     }
     uses: {
@@ -231,7 +234,10 @@ export function createNewProforma(projectId: string, projectLandCost: number): P
       debtPct: 70,
       financingCosts: {
         interestPct: 5.5,
-        brokerFeePct: 0
+        brokerFeePct: 0,
+        interestCost: 0,
+        brokerFee: 0,
+        totalFinancingCost: 0
       }
     },
     uses: {

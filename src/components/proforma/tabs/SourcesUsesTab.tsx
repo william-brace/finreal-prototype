@@ -1,7 +1,9 @@
 'use client'
 
+import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow"
+import { CostRow } from "@/components/proforma/CostRow"
+import { PercentageRow } from "@/components/proforma/PercentageRow"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -12,11 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Proforma } from "@/lib/session-storage"
-import { CostRow } from "@/components/proforma/CostRow"
-import { PercentageRow } from "@/components/proforma/PercentageRow"
-import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow"
+import { Input } from "@/components/ui/input"
 import { useSourcesUses } from "@/hooks/useSourcesUses"
+import { Proforma } from "@/lib/session-storage"
 
 interface SourcesUsesTabProps {
   proforma: Proforma;
@@ -36,7 +36,6 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     setIsSoftCostDialogOpen,
     isAdditionalCostDialogOpen,
     setIsAdditionalCostDialogOpen,
-    editingCostName,
     setEditingCostName,
     editingCostType,
     setEditingCostType,
@@ -70,12 +69,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     hardCostsTotal,
     softCostsTotal,
     totalProjectCost,
-    equityAmount,
-    debtAmount,
     constructionDebtAmount,
-    projectLength,
-    interestCostAmount,
-    brokerFeeAmount,
 
     // Land Costs specific values
     landCost,
@@ -607,7 +601,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 baseAmount={constructionDebtAmount}
                 percentage={interestPct}
                 onChange={setInterestPct}
-                amount={Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount)}
+                amount={proforma.sources.financingCosts.interestCost}
               />
               {/* Broker Fee */}
               <PercentageRow
@@ -616,44 +610,38 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 baseAmount={constructionDebtAmount}
                 percentage={brokerFeePct}
                 onChange={setBrokerFeePct}
-                amount={Math.round((brokerFeePct / 100) * constructionDebtAmount)}
+                amount={proforma.sources.financingCosts.brokerFee}
               />
 
               {/* Total Financing Costs */}
-              {(() => {
-                // Calculate interest cost as (interestPct / 100 / 12) * projectLength * constructionDebtAmount
-                const interestCost = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount);
-                // Calculate broker fee as (brokerFeePct / 100) * constructionDebtAmount
-                const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
-                // Total is the sum
-                const totalFinancingCosts = interestCost + brokerFee;
-                const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                const gba = proforma.gba || 0;
-                return (
-                  <div className="mt-6 pt-4 border-t border-border/50">
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm font-medium">Total per Unit</div>
-                        <div className="text-sm font-semibold">
-                          ${totalUnits > 0 ? Number(totalFinancingCosts / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm font-medium">Total per SF</div>
-                        <div className="text-sm font-semibold">
-                          ${gba > 0 ? Number(totalFinancingCosts / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-lg font-semibold">Total Financing Costs</div>
-                      <div className="text-lg font-bold">
-                        ${totalFinancingCosts.toLocaleString()}
-                      </div>
+              <div className="mt-6 pt-4 border-t border-border/50">
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm font-medium">Total per Unit</div>
+                    <div className="text-sm font-semibold">
+                      ${(() => {
+                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                        return totalUnits > 0 ? Number(proforma.sources.financingCosts.totalFinancingCost / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                      })()}
                     </div>
                   </div>
-                );
-              })()}
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm font-medium">Total per SF</div>
+                    <div className="text-sm font-semibold">
+                      ${(() => {
+                        const gba = proforma.gba || 0;
+                        return gba > 0 ? Number(proforma.sources.financingCosts.totalFinancingCost / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-lg font-semibold">Total Financing Costs</div>
+                  <div className="text-lg font-bold">
+                    ${proforma.sources?.financingCosts?.totalFinancingCost?.toLocaleString() ? proforma.sources.financingCosts.totalFinancingCost.toLocaleString() : '0'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
