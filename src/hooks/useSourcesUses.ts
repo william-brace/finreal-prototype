@@ -64,6 +64,11 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
 
   // Update proforma and save to session storage when state changes
   useEffect(() => {
+    // Calculate financing costs
+    const interestCost = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount);
+    const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
+    const totalFinancingCost = interestCost + brokerFee;
+
     const updatedProforma: Proforma = {
       ...proforma,
       sources: {
@@ -72,7 +77,10 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
         debtPct,
         financingCosts: {
           interestPct,
-          brokerFeePct
+          brokerFeePct,
+          interestCost,
+          brokerFee,
+          totalFinancingCost
         }
       },
       uses: {

@@ -17,8 +17,7 @@ export function ResultsTab({ proforma }: Props) {
     }
   }, [proforma.projectId, proforma.id]);
 
-  const { grossProfit, leveredEmx, roi, annualizedRoi } = latestProforma.metrics;
-  const { totalExpenses } = latestProforma;
+  const { grossProfit, roi, annualizedRoi } = latestProforma.metrics;
 
   return (
     <Card>
