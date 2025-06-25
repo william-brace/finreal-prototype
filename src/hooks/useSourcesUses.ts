@@ -69,8 +69,12 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
     const totalFinancingCost = interestCost + brokerFee;
 
+    // Calculate total project cost including financing
+    const totalProjectCostInclFinancing = totalProjectCost + totalFinancingCost;
+
     const updatedProforma: Proforma = {
       ...proforma,
+      totalProjectCostInclFinancing,
       sources: {
         ...proforma.sources,
         equityPct,
@@ -228,6 +232,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     hardCostsTotal,
     softCostsTotal,
     totalProjectCost,
+    totalProjectCostInclFinancing: totalProjectCost + (proforma.sources?.financingCosts?.totalFinancingCost || 0),
     equityAmount,
     debtAmount,
     constructionDebtAmount,

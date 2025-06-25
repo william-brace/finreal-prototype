@@ -20,6 +20,7 @@ export interface Proforma {
     otherIncome: OtherIncome[]
     totalRevenue: number
     totalExpenses: number
+    totalProjectCostInclFinancing: number
     sources: {
         equityPct: number
         debtPct: number
@@ -182,7 +183,8 @@ export function saveProforma(projectId: string, proforma: Proforma): void {
     // Always recalculate metrics and totalExpenses before saving
     const updatedProforma = calculateProformaMetrics({
         ...proforma,
-        totalRevenue: calculateTotalRevenue(proforma)
+        totalRevenue: calculateTotalRevenue(proforma),
+        totalProjectCostInclFinancing: proforma.totalProjectCostInclFinancing || (proforma.totalExpenses + (proforma.sources?.financingCosts?.totalFinancingCost || 0))
     });
 
     if (index >= 0) {
@@ -229,6 +231,7 @@ export function createNewProforma(projectId: string, projectLandCost: number): P
     otherIncome: [],
     totalRevenue: 0,
     totalExpenses: 0,
+    totalProjectCostInclFinancing: 0,
     sources: {
       equityPct: 30,
       debtPct: 70,

@@ -69,6 +69,7 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     hardCostsTotal,
     softCostsTotal,
     totalProjectCost,
+    totalProjectCostInclFinancing,
     constructionDebtAmount,
 
     // Land Costs specific values
@@ -639,6 +640,52 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                   <div className="text-lg font-semibold">Total Financing Costs</div>
                   <div className="text-lg font-bold">
                     ${proforma.sources?.financingCosts?.totalFinancingCost?.toLocaleString() ? proforma.sources.financingCosts.totalFinancingCost.toLocaleString() : '0'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Project Cost Incl. Financing */}
+          <div className="bg-primary/5 p-6 rounded-lg border border-primary/20">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="text-xl font-bold">Total Project Cost Incl. Financing</div>
+                <div className="text-xl font-bold">
+                  ${totalProjectCostInclFinancing.toLocaleString()}
+                </div>
+              </div>
+              
+              {/* Breakdown */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <div className="text-muted-foreground">Base Project Cost</div>
+                  <div>${totalProjectCost.toLocaleString()}</div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-muted-foreground">Financing Costs</div>
+                  <div>${proforma.sources?.financingCosts?.totalFinancingCost?.toLocaleString() || '0'}</div>
+                </div>
+              </div>
+              
+              {/* Per Unit and Per SF Calculations */}
+              <div className="space-y-2 pt-2 border-t border-primary/20">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm font-medium">Total Cost per Unit</div>
+                  <div className="text-sm font-semibold">
+                    ${(() => {
+                      const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
+                      return totalUnits > 0 ? Number(totalProjectCostInclFinancing / totalUnits).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                    })()}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm font-medium">Total Cost per SF</div>
+                  <div className="text-sm font-semibold">
+                    ${(() => {
+                      const gba = proforma.gba || 0;
+                      return gba > 0 ? Number(totalProjectCostInclFinancing / gba).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                    })()}
                   </div>
                 </div>
               </div>
