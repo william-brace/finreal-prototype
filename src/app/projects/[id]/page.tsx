@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
-import { getProject, getProformas, saveProforma, Proforma, createNewProforma } from "@/lib/session-storage"
+import { getProject, getProformas, saveProforma, Proforma, createNewProforma, deleteProforma } from "@/lib/session-storage"
 import { useRouter } from "next/navigation"
+import { Trash2 } from "lucide-react"
 
 const formatLocation = (location: string) => {
   const parts = location.split(',')
@@ -58,6 +59,16 @@ export default function ProjectDetailsPage({
     proformas.push(newProforma);
     saveProforma(id, newProforma);
     router.push(`/projects/${id}/proformas/${newProforma.id}`);
+  };
+
+  const handleDeleteProforma = (e: React.MouseEvent, proformaId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this proforma? This action cannot be undone.')) {
+      deleteProforma(id, proformaId);
+      const updatedProformas = getProformas(id);
+      setProformas(updatedProformas);
+    }
   };
 
   if (loading) {
@@ -128,8 +139,18 @@ export default function ProjectDetailsPage({
                     href={`/projects/${id}/proformas/${proforma.id}`}
                     className="block"
                   >
-                    <Card className="hover:bg-accent transition-colors">
+                    <Card className="hover:bg-accent transition-colors relative group">
                       <CardContent className="pt-6">
+                        {/* Trash Icon Button - Top Right, only on hover */}
+                        <button
+                          type="button"
+                          aria-label="Delete proforma"
+                          onClick={(e) => handleDeleteProforma(e, proforma.id)}
+                          className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow rounded-md p-2.5 flex items-center justify-center hover:bg-destructive/90 hover:text-white text-destructive"
+                          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                        >
+                          <Trash2 className="h-6 w-6" />
+                        </button>
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-start">
                             <div>
