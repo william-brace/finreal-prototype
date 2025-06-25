@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { exportProformaPDF } from '@/lib/pdf/exportProformaPDF'
 import { Proforma, Project, getActiveTab, getProforma, getProject, saveProforma, setActiveTab } from "@/lib/session-storage"
 import Link from "next/link"
-import { use, useEffect, useState } from "react"
+import { use, useEffect, useState, useRef } from "react"
 
 
 export default function ProformaEditorPage({
@@ -26,6 +26,9 @@ export default function ProformaEditorPage({
   const [loading, setLoading] = useState(true)
   const [proformaName, setProformaName] = useState('')
   const [activeTab, setActiveTabState] = useState('general')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editingName, setEditingName] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchData = () => {
@@ -78,6 +81,47 @@ export default function ProformaEditorPage({
     saveProforma(id, updatedProforma)
   }
 
+  const handleNameEdit = () => {
+    setIsEditingName(true)
+    setEditingName(proformaName)
+  }
+
+  const handleNameSave = () => {
+    if (!proforma) return
+    
+    const trimmedName = editingName.trim()
+    const finalName = trimmedName || "Untitled Proforma"
+    
+    setProformaName(finalName)
+    setIsEditingName(false)
+    
+    const updatedProforma: Proforma = {
+      ...proforma,
+      name: finalName
+    }
+    setProforma(updatedProforma)
+    saveProforma(id, updatedProforma)
+  }
+
+  const handleNameCancel = () => {
+    setIsEditingName(false)
+    setEditingName(proformaName)
+  }
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNameSave()
+    } else if (e.key === 'Escape') {
+      handleNameCancel()
+    }
+  }
+
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus()
+      nameInputRef.current.select()
+    }
+  }, [isEditingName])
 
   const handleExportPDF = () => {
     if (!proforma) return;
@@ -96,11 +140,24 @@ export default function ProformaEditorPage({
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <div className="flex-1 max-w-2xl">
-          <h1 
-            className="text-3xl font-bold cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
-          >
-            {proformaName || "Untitled Proforma"}
-          </h1>
+          {isEditingName ? (
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={handleNameKeyDown}
+              className="text-3xl font-bold bg-transparent border-b-2 border-primary focus:outline-none focus:border-primary px-2 py-1 rounded"
+            />
+          ) : (
+            <h1 
+              className="text-3xl font-bold cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
+              onClick={handleNameEdit}
+            >
+              {proformaName || "Untitled Proforma"}
+            </h1>
+          )}
         </div>
         <div className="flex gap-4">
           <Button variant="outline" onClick={handleExportPDF}>Export to PDF</Button>
