@@ -139,22 +139,26 @@ export default function ProjectDetailsPage({
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium text-xl">${proforma.results?.totalProjectCost?.toLocaleString() ?? proforma.totalCost?.toLocaleString() ?? '—'}</p>
+                              <p className="font-medium text-xl">${proforma.totalProjectCostInclFinancing?.toLocaleString() ?? proforma.totalCost?.toLocaleString() ?? '—'}</p>
                               <p className="text-xs text-muted-foreground">Total Cost</p>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 mt-2">
                             <div>
                               <span className="block text-xs text-muted-foreground">Net Profit</span>
-                              <span className="font-semibold">${proforma.results?.netProfit?.toLocaleString() ?? proforma.netProfit?.toLocaleString() ?? '—'}</span>
+                              <span className="font-semibold">${proforma.metrics?.grossProfit?.toLocaleString() ?? '—'}</span>
                             </div>
                             <div>
                               <span className="block text-xs text-muted-foreground">ROI</span>
-                              <span className="font-semibold">{proforma.results?.roi?.toFixed(1) ?? proforma.roi?.toFixed(1) ?? '—'}%</span>
+                              <span className="font-semibold">{proforma.metrics?.roi?.toFixed(1) ?? '—'}%</span>
                             </div>
                             <div>
-                              <span className="block text-xs text-muted-foreground">Cost per Unit</span>
-                              <span className="font-semibold">${proforma.results?.costPerUnit?.toLocaleString() ?? '—'}</span>
+                              <span className="block text-xs text-muted-foreground">Annualized ROI</span>
+                              <span className="font-semibold">{proforma.metrics?.annualizedRoi?.toFixed(1) ?? '—'}%</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-muted-foreground">Total Revenue</span>
+                              <span className="font-semibold">${proforma.totalRevenue?.toLocaleString() ?? '—'}</span>
                             </div>
                           </div>
                         </div>

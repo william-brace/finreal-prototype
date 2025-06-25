@@ -51,17 +51,11 @@ export interface Proforma {
             additionalCosts: Array<{ name: string; amount: number }>
         }
     }
-    results: {
-        totalProjectCost: number
-        netProfit: number
-        roi: number
-        costPerUnit: number
-    }
     metrics: {
         grossProfit: number
         roi: number
         annualizedRoi: number
-        leveredEmx: number
+        unleveredEmx: number
     }
 }
 
@@ -155,7 +149,7 @@ export function calculateTotalRevenue(proforma: Proforma): number {
 export function calculateProformaMetrics(proforma: Proforma): Proforma {
     const totalProjectCostInclFinancing = proforma.totalProjectCostInclFinancing || (proforma.totalExpenses + (proforma.sources?.financingCosts?.totalFinancingCost || 0));
     const totalProfit = proforma.totalRevenue - totalProjectCostInclFinancing;
-    const leveredEmx = totalProjectCostInclFinancing > 0 
+    const unleveredEmx = totalProjectCostInclFinancing > 0 
         ? proforma.totalRevenue / totalProjectCostInclFinancing 
         : 0;
     const grossProfit = totalProfit;
@@ -170,7 +164,7 @@ export function calculateProformaMetrics(proforma: Proforma): Proforma {
         ...proforma,
         metrics: {
             grossProfit,
-            leveredEmx,
+            unleveredEmx,
             roi: roiFormula * 100,
             annualizedRoi: annualizedRoi * 100,
         },
@@ -181,7 +175,7 @@ export function saveProforma(projectId: string, proforma: Proforma): void {
     const proformas = getProformas(projectId)
     const index = proformas.findIndex(p => p.id === proforma.id)
 
-    // Always recalculate metrics and totalExpenses before saving
+    // Always recalculate metrics before saving
     const updatedProforma = calculateProformaMetrics({
         ...proforma,
         totalRevenue: calculateTotalRevenue(proforma),
@@ -263,17 +257,11 @@ export function createNewProforma(projectId: string, projectLandCost: number): P
         additionalCosts: []
       }
     },
-    results: {
-      totalProjectCost: 0,
-      netProfit: 0,
-      roi: 0,
-      costPerUnit: 0
-    },
     metrics: {
       grossProfit: 0,
       roi: 0,
       annualizedRoi: 0,
-      leveredEmx: 0
+      unleveredEmx: 0
     }
   }
 } 

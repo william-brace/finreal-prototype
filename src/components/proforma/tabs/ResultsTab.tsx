@@ -42,7 +42,7 @@ export function ResultsTab({ proforma }: Props) {
           </div>
           <div>
             <label className="text-sm font-medium">Unlevered EMx</label>
-            <Input value={proforma.metrics.leveredEmx?.toFixed(2) || "0.00"} readOnly />
+            <Input value={proforma.metrics.unleveredEmx?.toFixed(2) || "0.00"} readOnly />
           </div>
         </div>
       </CardContent>
