@@ -25,7 +25,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
   const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(proforma.uses.softCosts.contingencyPct || 0)
   const [equityPct, setEquityPct] = useState(proforma.sources.equityPct || 30)
   const [debtPct, setDebtPct] = useState(proforma.sources.debtPct || 70)
-  const [interestPct, setInterestPct] = useState(proforma.sources.financingCosts.interestPct || 0)
+  const [interestPct, setInterestPct] = useState(proforma.sources.financingCosts.interestPct || 4.95)
   const [brokerFeePct, setBrokerFeePct] = useState(proforma.sources.financingCosts.brokerFeePct || 0)
 
   // Land Costs specific state

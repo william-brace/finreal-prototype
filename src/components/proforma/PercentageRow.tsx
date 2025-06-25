@@ -52,7 +52,7 @@ export function PercentageRow({ label, description, baseAmount, percentage, onCh
               showCommas={false}
               min={0}
               max={100}
-              className="h-8 w-16 pr-6"
+              className="h-8 w-24 pr-6"
             />
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
           </div>

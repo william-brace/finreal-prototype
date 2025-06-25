@@ -233,7 +233,7 @@ export function createNewProforma(projectId: string, projectLandCost: number, pr
       equityPct: 30,
       debtPct: 70,
       financingCosts: {
-        interestPct: 5.5,
+        interestPct: 4.95,
         brokerFeePct: 0,
         interestCost: 0,
         brokerFee: 0,

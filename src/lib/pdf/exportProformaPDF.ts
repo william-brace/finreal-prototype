@@ -18,7 +18,9 @@ export function exportProformaPDF(proforma: Proforma, project: Project | null) {
      proforma.proformaType === 'land-development' ? 'Land Development Proforma' :
      `${proforma.proformaType} Proforma`) 
     : '[Proforma Type]', 40, y);
-  doc.text(`Date (${new Date().toLocaleDateString()})`, 40, y + 15);
+  const today = new Date();
+  const formattedDate = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+  doc.text(`Date (${formattedDate})`, 40, y + 15);
   // Logo placeholder
   doc.setFillColor(235, 235, 235);
   doc.rect(420, 20, 120, 50, 'F');

@@ -614,6 +614,10 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 onChange={setInterestPct}
                 amount={proforma.sources.financingCosts.interestCost}
               />
+              {/* Canadian Prime Rate Note */}
+              <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded border-l-2 border-blue-200">
+                💡 Default rate reflects current Canadian Prime Rate (4.95%)
+              </div>
               {/* Broker Fee */}
               <PercentageRow
                 label="Broker fee"
