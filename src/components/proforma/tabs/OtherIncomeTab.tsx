@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 import { Trash2 } from "lucide-react"
 import { Proforma } from "@/lib/session-storage"
 import { useOtherIncome } from "@/hooks/useOtherIncome"
+import { formatCurrencyWithSymbol } from "@/lib/utils"
 
 interface OtherIncomeTabProps {
   proforma: Proforma;
@@ -142,11 +144,10 @@ export function OtherIncomeTab({ proforma, onProformaChange }: OtherIncomeTabPro
                       ? newOtherIncome.customUnitType || 'unit'
                       : unitTypeDisplayNames[newOtherIncome.unitType] || 'unit'} ($)
                   </label>
-                  <Input
+                  <CurrencyInput
                     id="income-value-per-unit"
-                    type="number"
-                    value={newOtherIncome.valuePerUnit}
-                    onChange={(e) => setNewOtherIncome(prev => ({ ...prev, valuePerUnit: e.target.value }))}
+                    value={parseFloat(newOtherIncome.valuePerUnit) || 0}
+                    onChange={(value) => setNewOtherIncome(prev => ({ ...prev, valuePerUnit: value.toString() }))}
                     placeholder="Enter value per unit"
                   />
                 </div>
@@ -196,10 +197,10 @@ export function OtherIncomeTab({ proforma, onProformaChange }: OtherIncomeTabPro
                         </td>
                         <td className="p-3 min-w-[150px] cursor-pointer" onClick={() => openEditOtherIncomeDialog(item)}>
                           <div className="font-semibold">
-                            ${ (item.numberOfUnits * item.valuePerUnit).toLocaleString() }
+                            {formatCurrencyWithSymbol(item.numberOfUnits * item.valuePerUnit)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {item.numberOfUnits} {plural} @ ${item.valuePerUnit.toLocaleString()} each
+                            {item.numberOfUnits} {plural} @ {formatCurrencyWithSymbol(item.valuePerUnit)} each
                           </div>
                         </td>
                         <td className="p-3">

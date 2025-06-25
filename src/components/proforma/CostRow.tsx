@@ -1,4 +1,5 @@
 import { EditableAmountInput } from "@/components/ui/EditableAmountInput";
+import { formatCurrencyWithSymbol, formatCurrency } from "@/lib/utils";
 import React from "react";
 
 interface CostRowProps {
@@ -46,7 +47,7 @@ export function CostRow({
   editable = true,
   inputClassName = "",
 }: CostRowProps) {
-  const formatted = currency ? `$${value.toLocaleString()}` : value.toLocaleString();
+  const formatted = currency ? formatCurrencyWithSymbol(value) : formatCurrency(value);
 
   return (
     <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">

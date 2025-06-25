@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Proforma, saveProforma } from "@/lib/session-storage"
+import { formatCurrency } from '@/lib/utils'
 
 interface UseSourcesUsesProps {
   proforma: Proforma;
@@ -55,12 +56,12 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     (Array.isArray(additionalSoftCosts) ? additionalSoftCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
   
   const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
-  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
-  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
+  const equityAmount = formatCurrency(Math.round((equityPct / 100) * totalProjectCost));
+  const debtAmount = formatCurrency(Math.round((debtPct / 100) * totalProjectCost));
   const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
   const projectLength = proforma?.projectLength || 0;
-  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
-  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
+  const interestCostAmount = formatCurrency(Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount));
+  const brokerFeeAmount = formatCurrency(Math.round((brokerFeePct / 100) * constructionDebtAmount));
 
   // Update proforma and save to session storage when state changes
   useEffect(() => {

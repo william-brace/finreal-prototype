@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { Proforma } from "@/lib/session-storage"
 import { useUnitMix } from "@/hooks/useUnitMix"
+import { formatCurrencyWithSymbol } from "@/lib/utils"
 
 interface UnitMixTabProps {
   proforma: Proforma;
@@ -167,16 +169,15 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                         </div>
                         <div className="grid gap-2">
                           <label htmlFor="value">Price per Square Foot ($)</label>
-                          <Input
+                          <CurrencyInput
                             id="value"
-                            type="number"
-                            value={newUnit.value}
-                            onChange={(e) => setNewUnit(prev => ({ ...prev, value: e.target.value }))}
+                            value={parseFloat(newUnit.value) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, value: value.toString() }))}
                             placeholder="Enter price per sqft"
                           />
                           {newUnit.area && newUnit.value && !isNaN(Number(newUnit.area)) && !isNaN(Number(newUnit.value)) && (
                             <div className="text-xs text-muted-foreground mt-1">
-                              Total Value: {(Number(newUnit.area) * Number(newUnit.value)).toLocaleString(undefined, { style: 'currency', currency: 'USD' })} ({newUnit.area} sqft × ${newUnit.value}/sqft)
+                              Total Value: {formatCurrencyWithSymbol(Number(newUnit.area) * Number(newUnit.value))} ({newUnit.area} sqft × {formatCurrencyWithSymbol(Number(newUnit.value))}/sqft)
                             </div>
                           )}
                         </div>
@@ -248,9 +249,9 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                             }}>
                               <td className="p-3 min-w-[200px]">{unit.name}</td>
                               <td className="p-3 min-w-[150px]">{unit.area.toLocaleString()}</td>
-                              <td className="p-3 min-w-[150px]">${unit.value.toLocaleString()}</td>
+                              <td className="p-3 min-w-[150px]">{formatCurrencyWithSymbol(unit.value)}</td>
                               <td className="p-3 min-w-[100px]">{unit.quantity}</td>
-                              <td className="p-3 min-w-[150px]">${(unit.area * unit.value * unit.quantity).toLocaleString()}</td>
+                              <td className="p-3 min-w-[150px]">{formatCurrencyWithSymbol(unit.area * unit.value * unit.quantity)}</td>
                               <td className="p-3 min-w-[100px]">
                                 <Button
                                   variant="ghost"

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -200,10 +201,16 @@ export default function EditProjectPage({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Land Cost ($)</label>
-                <Input 
-                  type="number" 
-                  min={0} 
-                  {...register("landCost", { valueAsNumber: true })}
+                <Controller
+                  name="landCost"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Enter land cost"
+                    />
+                  )}
                 />
                 {errors.landCost && (
                   <p className="text-sm text-destructive">{errors.landCost.message}</p>

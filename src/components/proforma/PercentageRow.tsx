@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { formatCurrencyWithSymbol } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
 
 interface Props {
@@ -37,7 +38,7 @@ export function PercentageRow({ label, description, baseAmount, percentage, onCh
         {description && <div className="text-sm text-muted-foreground">{description}</div>}
       </div>
       <div className="flex items-center gap-4">
-        <div className="text-sm text-muted-foreground">${displayAmount.toLocaleString()}</div>
+        <div className="text-sm text-muted-foreground">{formatCurrencyWithSymbol(displayAmount)}</div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Input

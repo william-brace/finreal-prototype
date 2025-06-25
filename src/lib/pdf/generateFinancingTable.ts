@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { CellHookData, UserOptions } from 'jspdf-autotable';
 import { Proforma, Project } from '@/lib/session-storage';
+import { formatCurrency } from '@/lib/utils';
 
 type TableCell = string | { content: string; colSpan?: number; styles?: { fontStyle?: 'bold' | 'normal'; halign?: 'left' | 'right' } };
 type TableRow = TableCell[];
@@ -45,7 +46,7 @@ export function generateFinancingTable(doc: jsPDF, proforma: Proforma, project: 
       constructionDebtGBA,
       constructionDebtUnit,
       constructionDebtPctRevenue,
-      (proforma.totalExpenses ? (proforma.totalExpenses - totalFinancing).toLocaleString() : '0')
+      (proforma.totalExpenses ? formatCurrency(proforma.totalExpenses - totalFinancing) : formatCurrency(0))
     ],
     [
       'Interest Cost',
@@ -55,7 +56,7 @@ export function generateFinancingTable(doc: jsPDF, proforma: Proforma, project: 
       interestCostGBA,
       interestCostUnit,
       interestCostPctRevenue,
-      interestCost.toLocaleString()
+      formatCurrency(interestCost)
     ],
     [
       'Broker Fee',
@@ -65,7 +66,7 @@ export function generateFinancingTable(doc: jsPDF, proforma: Proforma, project: 
       brokerFeeGBA,
       brokerFeeUnit,
       brokerFeePctRevenue,
-      brokerFee.toLocaleString()
+      formatCurrency(brokerFee)
     ],
     [
       { content: 'Total', styles: { fontStyle: 'bold', halign: 'left' } },
@@ -75,7 +76,7 @@ export function generateFinancingTable(doc: jsPDF, proforma: Proforma, project: 
       totalGBA,
       totalUnit,
       totalPctRevenue,
-      totalFinancing.toLocaleString()
+      formatCurrency(totalFinancing)
     ]
   ];
 
