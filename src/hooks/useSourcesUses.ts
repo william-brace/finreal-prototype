@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Proforma, saveProforma } from "@/lib/session-storage"
+import { formatCurrency } from '@/lib/utils'
 
 interface UseSourcesUsesProps {
   proforma: Proforma;
@@ -24,7 +25,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
   const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(proforma.uses.softCosts.contingencyPct || 0)
   const [equityPct, setEquityPct] = useState(proforma.sources.equityPct || 30)
   const [debtPct, setDebtPct] = useState(proforma.sources.debtPct || 70)
-  const [interestPct, setInterestPct] = useState(proforma.sources.financingCosts.interestPct || 0)
+  const [interestPct, setInterestPct] = useState(proforma.sources.financingCosts.interestPct || 4.95)
   const [brokerFeePct, setBrokerFeePct] = useState(proforma.sources.financingCosts.brokerFeePct || 0)
 
   // Land Costs specific state
@@ -55,12 +56,12 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     (Array.isArray(additionalSoftCosts) ? additionalSoftCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
   
   const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
-  const equityAmount = Math.round((equityPct / 100) * totalProjectCost).toLocaleString();
-  const debtAmount = Math.round((debtPct / 100) * totalProjectCost).toLocaleString();
+  const equityAmount = formatCurrency(Math.round((equityPct / 100) * totalProjectCost));
+  const debtAmount = formatCurrency(Math.round((debtPct / 100) * totalProjectCost));
   const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
   const projectLength = proforma?.projectLength || 0;
-  const interestCostAmount = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount).toLocaleString();
-  const brokerFeeAmount = Math.round((brokerFeePct / 100) * constructionDebtAmount).toLocaleString();
+  const interestCostAmount = formatCurrency(Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount));
+  const brokerFeeAmount = formatCurrency(Math.round((brokerFeePct / 100) * constructionDebtAmount));
 
   // Update proforma and save to session storage when state changes
   useEffect(() => {
@@ -69,8 +70,12 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
     const totalFinancingCost = interestCost + brokerFee;
 
+    // Calculate total project cost including financing
+    const totalProjectCostInclFinancing = totalProjectCost + totalFinancingCost;
+
     const updatedProforma: Proforma = {
       ...proforma,
+      totalProjectCostInclFinancing,
       sources: {
         ...proforma.sources,
         equityPct,
@@ -228,6 +233,7 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     hardCostsTotal,
     softCostsTotal,
     totalProjectCost,
+    totalProjectCostInclFinancing: totalProjectCost + (proforma.sources?.financingCosts?.totalFinancingCost || 0),
     equityAmount,
     debtAmount,
     constructionDebtAmount,

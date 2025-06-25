@@ -15,6 +15,8 @@ import {
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { Proforma } from "@/lib/session-storage"
 import { useUnitMix } from "@/hooks/useUnitMix"
+import { formatCurrencyWithSymbol } from "@/lib/utils"
+import { NumberInput } from "@/components/ui/NumberInput"
 
 interface UnitMixTabProps {
   proforma: Proforma;
@@ -41,6 +43,7 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
     handleAddUnits,
     toggleUnitType,
     handleDeleteUnit,
+    handleDeleteUnitType,
     collateUnits
   } = useUnitMix({ proforma, onProformaChange })
 
@@ -114,91 +117,108 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                     <p className="text-sm text-muted-foreground">{unitType.description}</p>
                   </div>
                 </div>
-                <Dialog open={isUnitDialogOpen && selectedUnitTypeId === unitType.id} onOpenChange={(open) => {
-                  if (!open) setIsUnitDialogOpen(false)
-                  else {
-                    setIsUnitDialogOpen(true)
-                    setSelectedUnitTypeId(unitType.id)
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" onClick={() => {
-                      setSelectedUnitTypeId(unitType.id);
-                      setUnitDialogMode('add');
-                      if (unitType.units.length > 0) {
-                        setEditingUnitGroup({ unitTypeId: unitType.id, groupKey: `${unitType.name}|${unitType.units[0].area}|${unitType.units[0].value}` });
-                      } else {
-                        setEditingUnitGroup(null);
-                      }
-                    }}>
-                      Add Units
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {unitDialogMode === 'edit' ? 'Edit Units' : 'Add Units'}
-                      </DialogTitle>
-                      <DialogDescription>
-                        Specify the details for the new units
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <label htmlFor="unit-name">Unit Name</label>
-                        <Input
-                          id="unit-name"
-                          value={newUnit.name}
-                          onChange={(e) => setNewUnit(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="e.g., Unit A"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <label htmlFor="area">Area (sqft)</label>
-                        <Input
-                          id="area"
-                          type="number"
-                          value={newUnit.area}
-                          onChange={(e) => setNewUnit(prev => ({ ...prev, area: e.target.value }))}
-                          placeholder="Enter area"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <label htmlFor="value">Price per Square Foot ($)</label>
-                        <Input
-                          id="value"
-                          type="number"
-                          value={newUnit.value}
-                          onChange={(e) => setNewUnit(prev => ({ ...prev, value: e.target.value }))}
-                          placeholder="Enter price per sqft"
-                        />
-                        {newUnit.area && newUnit.value && !isNaN(Number(newUnit.area)) && !isNaN(Number(newUnit.value)) && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Total Value: {(Number(newUnit.area) * Number(newUnit.value)).toLocaleString(undefined, { style: 'currency', currency: 'USD' })} ({newUnit.area} sqft × ${newUnit.value}/sqft)
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid gap-2">
-                        <label htmlFor="quantity">Number of Units</label>
-                        <Input
-                          id="quantity"
-                          type="number"
-                          value={newUnit.quantity}
-                          onChange={(e) => setNewUnit(prev => ({ ...prev, quantity: e.target.value }))}
-                          placeholder="Enter quantity"
-                          min="1"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
+                <div className="flex items-center gap-2">
+                  <Dialog open={isUnitDialogOpen && selectedUnitTypeId === unitType.id} onOpenChange={(open) => {
+                    if (!open) setIsUnitDialogOpen(false)
+                    else {
+                      setIsUnitDialogOpen(true)
+                      setSelectedUnitTypeId(unitType.id)
+                    }
+                  }}>
+                    <DialogTrigger asChild>
                       <Button variant="outline" onClick={() => {
-                        setIsUnitDialogOpen(false);
-                        setEditingUnitGroup(null);
-                      }}>Cancel</Button>
-                      <Button onClick={() => handleAddUnits(unitType.id)}>{unitDialogMode === 'edit' ? 'Save Changes' : 'Create Units'}</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                        setSelectedUnitTypeId(unitType.id);
+                        setUnitDialogMode('add');
+                        if (unitType.units.length > 0) {
+                          setEditingUnitGroup({ unitTypeId: unitType.id, groupKey: `${unitType.name}|${unitType.units[0].area}|${unitType.units[0].value}` });
+                        } else {
+                          setEditingUnitGroup(null);
+                        }
+                      }}>
+                        Add Units
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {unitDialogMode === 'edit' ? 'Edit Units' : 'Add Units'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Specify the details for the new units
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <label htmlFor="unit-name">Unit Name</label>
+                          <Input
+                            id="unit-name"
+                            value={newUnit.name}
+                            onChange={(e) => setNewUnit(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="e.g., Unit A"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <label htmlFor="area">Area (sqft)</label>
+                          <NumberInput
+                            id="area"
+                            value={parseFloat(newUnit.area) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, area: value.toString() }))}
+                            placeholder="Enter area"
+                            allowDecimals={true}
+                            showCommas={true}
+                            suffix=" sqft"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <label htmlFor="value">Price per Square Foot ($)</label>
+                          <NumberInput
+                            id="value"
+                            value={parseFloat(newUnit.value) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, value: value.toString() }))}
+                            placeholder="Enter price per sqft"
+                            allowDecimals={true}
+                            showCommas={true}
+                            prefix="$"
+                          />
+                          {newUnit.area && newUnit.value && !isNaN(Number(newUnit.area)) && !isNaN(Number(newUnit.value)) && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Total Value: {formatCurrencyWithSymbol(Number(newUnit.area) * Number(newUnit.value))} ({newUnit.area} sqft × {formatCurrencyWithSymbol(Number(newUnit.value))}/sqft)
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid gap-2">
+                          <label htmlFor="quantity">Number of Units</label>
+                          <NumberInput
+                            id="quantity"
+                            value={parseInt(newUnit.quantity) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, quantity: value.toString() }))}
+                            placeholder="Enter quantity"
+                            allowDecimals={false}
+                            showCommas={false}
+                            min={1}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          setIsUnitDialogOpen(false);
+                          setEditingUnitGroup(null);
+                        }}>Cancel</Button>
+                        <Button onClick={() => handleAddUnits(unitType.id)}>{unitDialogMode === 'edit' ? 'Save Changes' : 'Create Units'}</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteUnitType(unitType.id)}
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Delete unit type"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete unit type</span>
+                  </Button>
+                </div>
               </div>
               <div className={`overflow-hidden transition-all duration-300 ${
                 expandedUnitTypes[unitType.id] 
@@ -235,9 +255,9 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                             }}>
                               <td className="p-3 min-w-[200px]">{unit.name}</td>
                               <td className="p-3 min-w-[150px]">{unit.area.toLocaleString()}</td>
-                              <td className="p-3 min-w-[150px]">${unit.value.toLocaleString()}</td>
+                              <td className="p-3 min-w-[150px]">{formatCurrencyWithSymbol(unit.value)}</td>
                               <td className="p-3 min-w-[100px]">{unit.quantity}</td>
-                              <td className="p-3 min-w-[150px]">${(unit.area * unit.value * unit.quantity).toLocaleString()}</td>
+                              <td className="p-3 min-w-[150px]">{formatCurrencyWithSymbol(unit.area * unit.value * unit.quantity)}</td>
                               <td className="p-3 min-w-[100px]">
                                 <Button
                                   variant="ghost"

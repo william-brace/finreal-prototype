@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Proforma, calculateProformaMetrics } from "@/lib/session-storage"
 import { useEffect, useState } from "react"
+import { formatCurrencyWithSymbol } from "@/lib/utils"
 
 interface SummaryCardProps {
   proforma: Proforma
@@ -72,8 +73,8 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
               <span className="font-semibold">{metrics.annualizedRoi?.toFixed(1) || "0.0"}%</span>
             </div>
             <div className="flex justify-between">
-              <span>Levered EMx</span>
-              <span className="font-semibold">{metrics.leveredEmx?.toFixed(1) || "0.0"}x</span>
+              <span>Unlevered EMx</span>
+              <span className="font-semibold">{metrics.unleveredEmx?.toFixed(1) || "0.0"}x</span>
             </div>
           </div>
         </div>
@@ -83,19 +84,19 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           <div className="font-bold mb-2">Revenue</div>
           <div className="flex justify-between text-sm mb-1">
             <span>Gross Sales Revenue</span>
-            <span className="font-semibold">${proforma.totalRevenue?.toLocaleString() || "0"}</span>
+            <span className="font-semibold">{formatCurrencyWithSymbol(proforma.totalRevenue || 0)}</span>
           </div>
           {/* <div className="flex justify-between text-sm mb-1">
             <span>Other Income</span>
             <span className="font-semibold">${proforma.otherIncome.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</span>
           </div> */}
           <div className="flex justify-between text-sm mb-1">
-            <span>Total Expenses</span>
-            <span className="font-semibold border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() || "0"}</span>
+            <span>Total Expenses (Incl. Financing)</span>
+            <span className="font-semibold border-b-2 border-black">{formatCurrencyWithSymbol(proforma.totalProjectCostInclFinancing || 0)}</span>
           </div>
           <div className="flex justify-between text-base font-bold mt-2">
             <span>Gross Profit</span>
-            <span className="font-bold">${metrics.grossProfit?.toLocaleString() || "0"}</span>
+            <span className="font-bold">{formatCurrencyWithSymbol((proforma.totalRevenue - proforma.totalProjectCostInclFinancing) || 0)}</span>
           </div>
         </div>
 
@@ -110,7 +111,7 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           <div className="flex justify-between text-sm">
             <span>{unitSummary.totalUnits}</span>
             <span>${unitSummary.averagePricePerSqFt.toFixed(0)}</span>
-            <span>${unitSummary.totalValue.toLocaleString()}</span>
+            <span>{formatCurrencyWithSymbol(unitSummary.totalValue)}</span>
           </div>
         </div>
 
@@ -119,27 +120,31 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
           <div className="font-bold mb-2">Expenses Breakdown</div>
           <div className="flex justify-between text-sm mb-1">
             <span>Land Cost</span>
-            <span>${(proforma.uses.landCosts.baseCost + proforma.uses.landCosts.closingCost + 
-              proforma.uses.landCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+            <span>{formatCurrencyWithSymbol((proforma.uses.landCosts.baseCost + proforma.uses.landCosts.closingCost + 
+              proforma.uses.landCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)))}</span>
           </div>
           <div className="flex justify-between text-sm mb-1">
             <span>Hard Costs</span>
-            <span>${(proforma.uses.hardCosts.baseCost + 
+            <span>{formatCurrencyWithSymbol((proforma.uses.hardCosts.baseCost + 
               (proforma.uses.hardCosts.baseCost * proforma.uses.hardCosts.contingencyPct / 100) +
-              proforma.uses.hardCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+              proforma.uses.hardCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)))}</span>
           </div>
           <div className="flex justify-between text-sm mb-1">
             <span>Soft Costs</span>
-            <span>${(proforma.uses.softCosts.development + 
+            <span>{formatCurrencyWithSymbol((proforma.uses.softCosts.development + 
               proforma.uses.softCosts.consultants + 
               proforma.uses.softCosts.adminMarketing +
               ((proforma.uses.softCosts.development + proforma.uses.softCosts.consultants + proforma.uses.softCosts.adminMarketing) * 
                 proforma.uses.softCosts.contingencyPct / 100) +
-              proforma.uses.softCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
+              proforma.uses.softCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)))}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Financing Costs</span>
+            <span>{formatCurrencyWithSymbol(proforma.sources?.financingCosts?.totalFinancingCost || 0)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold mt-2">
-            <span>Total Expenses</span>
-            <span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() ? proforma.totalExpenses.toLocaleString() : 0}</span>
+            <span>Total Expenses (Incl. Financing)</span>
+            <span className="border-b-2 border-black">{formatCurrencyWithSymbol(proforma.totalProjectCostInclFinancing || 0)}</span>
           </div>
         </div>
       </CardContent>

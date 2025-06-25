@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { NumberInput } from "@/components/ui/NumberInput"
 import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { saveProject } from "@/lib/session-storage"
+import { formatProvinceCode } from "@/lib/utils"
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -18,7 +20,6 @@ const projectSchema = z.object({
   city: z.string().min(1, "City is required"),
   province: z.string().min(1, "Province is required"),
   address: z.string().min(1, "Address is required"),
-  proformaType: z.string().min(1, "Proforma type is required"),
   landCost: z.number().min(0, "Land cost must be greater than or equal to 0"),
 })
 
@@ -30,7 +31,6 @@ const testData: ProjectFormData = {
   city: "Toronto",
   province: "on",
   address: "123 Douglas Street",
-  proformaType: "condo",
   landCost: 15000000,
 }
 
@@ -47,7 +47,6 @@ export default function NewProjectPage() {
     defaultValues: {
       landCost: 0,
       province: "on", // Default to Ontario
-      proformaType: "residential", // Default to Residential
     },
   })
 
@@ -56,7 +55,7 @@ export default function NewProjectPage() {
       const project = {
         id: Date.now().toString(),
         ...data,
-        location: `${data.city}, ${data.province}`,
+        location: `${data.city}, ${formatProvinceCode(data.province)}`,
         proformas: [],
       }
       saveProject(project)
@@ -151,37 +150,20 @@ export default function NewProjectPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Proforma Type</label>
+                <label className="text-sm font-medium">Land Cost ($)</label>
                 <Controller
-                  name="proformaType"
+                  name="landCost"
                   control={control}
                   render={({ field }) => (
-                    <Select
+                    <NumberInput
                       value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pick a selection" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
-                        <SelectItem value="land-development">Land Development</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={field.onChange}
+                      placeholder="Enter land cost"
+                      allowDecimals={true}
+                      showCommas={true}
+                      prefix="$"
+                    />
                   )}
-                />
-                {errors.proformaType && (
-                  <p className="text-sm text-destructive">{errors.proformaType.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Land Cost ($)</label>
-                <Input 
-                  type="number" 
-                  min={0} 
-                  {...register("landCost", { valueAsNumber: true })}
                 />
                 {errors.landCost && (
                   <p className="text-sm text-destructive">{errors.landCost.message}</p>

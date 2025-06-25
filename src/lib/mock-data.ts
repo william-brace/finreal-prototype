@@ -11,7 +11,6 @@ class MockDataStore {
             name: "Downtown Condo Development",
             location: "Toronto, ON",
             address: "123 Main St",
-            proformaType: "Residential",
             landCost: 15000000,
             notes: "Prime downtown location with excellent transit access.",
             proformas: [
@@ -243,7 +242,6 @@ export type Project = {
     name: string
     location: string
     address: string
-    proformaType: string
     landCost: number
     notes?: string
     proformas: Proforma[]

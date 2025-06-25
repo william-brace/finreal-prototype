@@ -3,8 +3,9 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { getProjects } from "@/lib/session-storage"
+import { getProjects, deleteProject } from "@/lib/session-storage"
 import { Project } from "@/lib/mock-data"
+import { Trash2 } from "lucide-react"
 
 export default function HomePage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -24,6 +25,16 @@ export default function HomePage() {
 
     loadProjects()
   }, [])
+
+  const handleDeleteProject = (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this project? This action cannot be undone and will also delete all associated proformas.')) {
+      deleteProject(projectId);
+      const updatedProjects = getProjects();
+      setProjects(updatedProjects);
+    }
+  };
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -58,7 +69,17 @@ export default function HomePage() {
               href={`/projects/${project.id}`}
               className="block"
             >
-              <div className="bg-white rounded-lg border p-6 hover:bg-accent transition-colors">
+              <div className="bg-white rounded-lg border p-6 hover:bg-accent transition-colors relative group">
+                {/* Trash Icon Button - Top Right, only on hover */}
+                <button
+                  type="button"
+                  aria-label="Delete project"
+                  onClick={(e) => handleDeleteProject(e, project.id)}
+                  className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow rounded-md p-2.5 flex items-center justify-center hover:bg-destructive/90 hover:text-white text-destructive"
+                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{project.location}</p>
                 <div className="flex justify-between text-sm">

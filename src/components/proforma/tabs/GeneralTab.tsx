@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/NumberInput";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React from "react";
 
 interface Props {
@@ -11,7 +12,9 @@ interface Props {
   setProjectLengthValue: (v: string) => void;
   absorptionPeriodValue: string;
   setAbsorptionPeriodValue: (v: string) => void;
-  handleInputChange: (field: string, value: number) => void;
+  proformaTypeValue: string;
+  setProformaTypeValue: (v: string) => void;
+  handleInputChange: (field: string, value: number | string) => void;
 }
 
 //test comment
@@ -25,6 +28,8 @@ export function GeneralTab({
   setProjectLengthValue,
   absorptionPeriodValue,
   setAbsorptionPeriodValue,
+  proformaTypeValue,
+  setProformaTypeValue,
   handleInputChange,
 }: Props) {
   return (
@@ -40,40 +45,80 @@ export function GeneralTab({
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div>
+            <label className="text-sm font-medium">Proforma Type</label>
+            <Select 
+              value={proformaTypeValue} 
+              onValueChange={(value) => {
+                setProformaTypeValue(value);
+                handleInputChange("proformaType", value);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select proforma type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="condo">Condo</SelectItem>
+                <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
+                <SelectItem value="land-development">Land Development</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <label className="text-sm font-medium">GBA (sqft)</label>
-            <Input
-              type="number"
-              step="any"
-              value={gbaValue}
-              onChange={(e) => setGbaValue(e.target.value)}
-              onBlur={() => handleInputChange("gba", parseFloat(gbaValue) || 0)}
+            <NumberInput
+              value={parseFloat(gbaValue) || 0}
+              onChange={(value) => {
+                setGbaValue(value.toString());
+                handleInputChange("gba", value);
+              }}
+              placeholder="Enter GBA"
+              allowDecimals={true}
+              showCommas={true}
+              suffix=" sqft"
             />
           </div>
           <div>
             <label className="text-sm font-medium">Stories</label>
-            <Input
-              type="number"
-              value={storiesValue}
-              onChange={(e) => setStoriesValue(e.target.value)}
-              onBlur={() => handleInputChange("stories", parseInt(storiesValue) || 0)}
+            <NumberInput
+              value={parseInt(storiesValue) || 0}
+              onChange={(value) => {
+                setStoriesValue(value.toString());
+                handleInputChange("stories", value);
+              }}
+              placeholder="Enter stories"
+              allowDecimals={false}
+              showCommas={false}
+              min={1}
             />
           </div>
           <div>
             <label className="text-sm font-medium">Project Length (months)</label>
-            <Input
-              type="number"
-              value={projectLengthValue}
-              onChange={(e) => setProjectLengthValue(e.target.value)}
-              onBlur={() => handleInputChange("projectLength", parseInt(projectLengthValue) || 0)}
+            <NumberInput
+              value={parseInt(projectLengthValue) || 0}
+              onChange={(value) => {
+                setProjectLengthValue(value.toString());
+                handleInputChange("projectLength", value);
+              }}
+              placeholder="Enter months"
+              allowDecimals={false}
+              showCommas={false}
+              min={1}
+              suffix=" months"
             />
           </div>
           <div>
             <label className="text-sm font-medium">Absorption Period (months)</label>
-            <Input
-              type="number"
-              value={absorptionPeriodValue}
-              onChange={(e) => setAbsorptionPeriodValue(e.target.value)}
-              onBlur={() => handleInputChange("absorptionPeriod", parseInt(absorptionPeriodValue) || 0)}
+            <NumberInput
+              value={parseInt(absorptionPeriodValue) || 0}
+              onChange={(value) => {
+                setAbsorptionPeriodValue(value.toString());
+                handleInputChange("absorptionPeriod", value);
+              }}
+              placeholder="Enter months"
+              allowDecimals={false}
+              showCommas={false}
+              min={1}
+              suffix=" months"
             />
           </div>
         </div>

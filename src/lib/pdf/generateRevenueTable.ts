@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { CellHookData, UserOptions } from 'jspdf-autotable';
 import { Proforma, Project } from '@/lib/session-storage';
+import { formatCurrency } from '@/lib/utils';
 
 type TableCell = string | { content: string; colSpan?: number; styles?: { fontStyle?: 'bold' | 'normal'; halign?: 'left' | 'right' } };
 type TableRow = TableCell[];
@@ -25,8 +26,8 @@ export function generateRevenueTable(doc: jsPDF, proforma: Proforma, project: Pr
       String(unitType.units.length),
       unitType.units.length ? (unitType.units.reduce((sum, u) => sum + u.area, 0) / unitType.units.length).toFixed(2) : '0.00',
       unitType.units.length > 0 ? (unitType.units.reduce((sum, u) => sum + u.value, 0) / unitType.units.length).toFixed(2) : '0.00',
-      unitType.units.length > 0 ? (unitType.units.reduce((sum, u) => sum + u.value, 0) / unitType.units.length).toLocaleString() : '0',
-      typeof unitType.units.reduce((sum, u) => sum + u.value, 0) === 'number' ? unitType.units.reduce((sum, u) => sum + u.value, 0).toLocaleString() : '0'
+      unitType.units.length > 0 ? formatCurrency(unitType.units.reduce((sum, u) => sum + u.value, 0) / unitType.units.length) : formatCurrency(0),
+      formatCurrency(unitType.units.reduce((sum, u) => sum + u.value, 0))
     ]);
   });
   // Units total row
@@ -36,7 +37,7 @@ export function generateRevenueTable(doc: jsPDF, proforma: Proforma, project: Pr
     (proforma.unitMix.reduce((sum, ut) => sum + ut.units.reduce((s, u) => s + u.area, 0), 0) / (proforma.unitMix.reduce((sum, ut) => sum + ut.units.length, 0) || 1)).toFixed(2),
     (proforma.unitMix.reduce((sum, ut) => sum + ut.units.reduce((s, u) => s + u.value, 0), 0) / (proforma.unitMix.reduce((sum, ut) => sum + ut.units.length, 0) || 1)).toFixed(2),
     '',
-    typeof proforma.unitMix.reduce((sum, ut) => sum + ut.units.reduce((s, u) => s + u.value, 0), 0) === 'number' ? proforma.unitMix.reduce((sum, ut) => sum + ut.units.reduce((s, u) => s + u.value, 0), 0).toLocaleString() : '0'
+    formatCurrency(proforma.unitMix.reduce((sum, ut) => sum + ut.units.reduce((s, u) => s + u.value, 0), 0))
   ]);
   // Other Income subheader
   revenueTableBody.push([
@@ -49,8 +50,8 @@ export function generateRevenueTable(doc: jsPDF, proforma: Proforma, project: Pr
       String(item.numberOfUnits),
       '',
       '',
-      typeof item.valuePerUnit === 'number' ? item.valuePerUnit.toLocaleString() : '0',
-      typeof item.numberOfUnits === 'number' && typeof item.valuePerUnit === 'number' ? (item.numberOfUnits * item.valuePerUnit).toLocaleString() : '0'
+      formatCurrency(item.valuePerUnit),
+      formatCurrency(item.numberOfUnits * item.valuePerUnit)
     ]);
   });
   // Other income total row
@@ -60,13 +61,13 @@ export function generateRevenueTable(doc: jsPDF, proforma: Proforma, project: Pr
     '',
     '',
     '',
-    typeof proforma.otherIncome.reduce((sum, i) => sum + (i.numberOfUnits * i.valuePerUnit), 0) === 'number' ? proforma.otherIncome.reduce((sum, i) => sum + (i.numberOfUnits * i.valuePerUnit), 0).toLocaleString() : '0'
+    formatCurrency(proforma.otherIncome.reduce((sum, i) => sum + (i.numberOfUnits * i.valuePerUnit), 0))
   ]);
   // Total Revenue row (bold, left label, right value)
   revenueTableBody.push([
     { content: 'Total Revenue', styles: { fontStyle: 'bold' as const, halign: 'left' as const } },
     '', '', '', '',
-    { content: typeof proforma.totalRevenue === 'number' ? proforma.totalRevenue.toLocaleString() : '0', styles: { fontStyle: 'bold' as const, halign: 'right' as const } }
+    { content: formatCurrency(proforma.totalRevenue || 0), styles: { fontStyle: 'bold' as const, halign: 'right' as const } }
   ]);
   autoTable(doc, {
     startY: y,

@@ -8,6 +8,7 @@ export interface Proforma {
     id: string
     name: string
     projectId: string
+    proformaType: string
     lastUpdated: string
     totalCost: number
     netProfit: number
@@ -20,6 +21,7 @@ export interface Proforma {
     otherIncome: OtherIncome[]
     totalRevenue: number
     totalExpenses: number
+    totalProjectCostInclFinancing: number
     sources: {
         equityPct: number
         debtPct: number
@@ -50,17 +52,11 @@ export interface Proforma {
             additionalCosts: Array<{ name: string; amount: number }>
         }
     }
-    results: {
-        totalProjectCost: number
-        netProfit: number
-        roi: number
-        costPerUnit: number
-    }
     metrics: {
         grossProfit: number
         roi: number
         annualizedRoi: number
-        leveredEmx: number
+        unleveredEmx: number
     }
 }
 
@@ -152,13 +148,14 @@ export function calculateTotalRevenue(proforma: Proforma): number {
 }
 
 export function calculateProformaMetrics(proforma: Proforma): Proforma {
-    const totalProfit = proforma.totalRevenue - proforma.totalExpenses;
-    const leveredEmx = proforma.totalExpenses > 0 
-        ? proforma.totalRevenue / proforma.totalExpenses 
+    const totalProjectCostInclFinancing = proforma.totalProjectCostInclFinancing || (proforma.totalExpenses + (proforma.sources?.financingCosts?.totalFinancingCost || 0));
+    const totalProfit = proforma.totalRevenue - totalProjectCostInclFinancing;
+    const unleveredEmx = totalProjectCostInclFinancing > 0 
+        ? proforma.totalRevenue / totalProjectCostInclFinancing 
         : 0;
     const grossProfit = totalProfit;
-    const roiFormula = (proforma.sources.equityPct && proforma.totalExpenses)
-        ? grossProfit / ((proforma.sources.equityPct / 100) * proforma.totalExpenses)
+    const roiFormula = (proforma.sources.equityPct && totalProjectCostInclFinancing)
+        ? grossProfit / ((proforma.sources.equityPct / 100) * totalProjectCostInclFinancing)
         : 0;
     const annualizedRoi = (roiFormula && proforma.projectLength)
         ? roiFormula / (proforma.projectLength / 12)
@@ -168,7 +165,7 @@ export function calculateProformaMetrics(proforma: Proforma): Proforma {
         ...proforma,
         metrics: {
             grossProfit,
-            leveredEmx,
+            unleveredEmx,
             roi: roiFormula * 100,
             annualizedRoi: annualizedRoi * 100,
         },
@@ -179,10 +176,11 @@ export function saveProforma(projectId: string, proforma: Proforma): void {
     const proformas = getProformas(projectId)
     const index = proformas.findIndex(p => p.id === proforma.id)
 
-    // Always recalculate metrics and totalExpenses before saving
+    // Always recalculate metrics before saving
     const updatedProforma = calculateProformaMetrics({
         ...proforma,
-        totalRevenue: calculateTotalRevenue(proforma)
+        totalRevenue: calculateTotalRevenue(proforma),
+        totalProjectCostInclFinancing: proforma.totalProjectCostInclFinancing || (proforma.totalExpenses + (proforma.sources?.financingCosts?.totalFinancingCost || 0))
     });
 
     if (index >= 0) {
@@ -212,11 +210,12 @@ export function setActiveTab(projectId: string, proformaId: string, tab: string)
     sessionStorage.setItem(key, tab)
 }
 
-export function createNewProforma(projectId: string, projectLandCost: number): Proforma {
+export function createNewProforma(projectId: string, projectLandCost: number, proformaType: string): Proforma {
   return {
     id: Date.now().toString(),
     name: "New Proforma",
     projectId,
+    proformaType,
     lastUpdated: new Date().toISOString().split('T')[0],
     totalCost: 0,
     netProfit: 0,
@@ -229,11 +228,12 @@ export function createNewProforma(projectId: string, projectLandCost: number): P
     otherIncome: [],
     totalRevenue: 0,
     totalExpenses: 0,
+    totalProjectCostInclFinancing: 0,
     sources: {
       equityPct: 30,
       debtPct: 70,
       financingCosts: {
-        interestPct: 5.5,
+        interestPct: 4.95,
         brokerFeePct: 0,
         interestCost: 0,
         brokerFee: 0,
@@ -259,17 +259,11 @@ export function createNewProforma(projectId: string, projectLandCost: number): P
         additionalCosts: []
       }
     },
-    results: {
-      totalProjectCost: 0,
-      netProfit: 0,
-      roi: 0,
-      costPerUnit: 0
-    },
     metrics: {
       grossProfit: 0,
       roi: 0,
       annualizedRoi: 0,
-      leveredEmx: 0
+      unleveredEmx: 0
     }
   }
 } 

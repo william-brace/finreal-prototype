@@ -148,6 +148,21 @@ export function useUnitMix({ proforma, onProformaChange }: UseUnitMixProps) {
     onProformaChange(updatedProforma)
   }
 
+  const handleDeleteUnitType = (unitTypeId: string) => {
+    const updatedProforma: Proforma = {
+      ...proforma,
+      unitMix: proforma.unitMix.filter(ut => ut.id !== unitTypeId)
+    };
+    onProformaChange(updatedProforma);
+    
+    // Remove from expanded state
+    setExpandedUnitTypes(prev => {
+      const newState = { ...prev };
+      delete newState[unitTypeId];
+      return newState;
+    });
+  }
+
   // Helper to collate units by name, area, value
   const collateUnits = (units: Unit[]): Array<Unit & { quantity: number; ids: string[], groupKey: string }> => {
     const map = new Map<string, Unit & { quantity: number; ids: string[], groupKey: string }>();
@@ -183,6 +198,7 @@ export function useUnitMix({ proforma, onProformaChange }: UseUnitMixProps) {
     handleAddUnits,
     toggleUnitType,
     handleDeleteUnit,
+    handleDeleteUnitType,
     collateUnits
   }
 } 
