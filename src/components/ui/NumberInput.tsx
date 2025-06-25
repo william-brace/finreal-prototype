@@ -26,7 +26,6 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   disabled = false,
   min,
   max,
-  step = 1,
   id,
   allowDecimals = true,
   showCommas = true,

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { formatCurrency, formatCurrencyWithSymbol } from '@/lib/utils';
+import React, { useState } from 'react';
 import { NumberInput } from './NumberInput';
-import { formatCurrencyWithSymbol, formatCurrency } from '@/lib/utils';
 
 interface EditableAmountInputProps {
   value: number;

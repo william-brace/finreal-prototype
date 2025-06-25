@@ -23,10 +23,6 @@ export function PercentageRow({ label, description, baseAmount, percentage, onCh
     setDraft(String(percentage));
   }, [percentage]);
 
-  const commit = () => {
-    const pct = parseFloat(draft);
-    onChange(Number.isFinite(pct) ? pct : 0);
-  };
 
   // Use the override amount if provided, otherwise use the default calculation
   const displayAmount = typeof amount === 'number' ? amount : Math.round(baseAmount * (percentage || 0) / 100);
