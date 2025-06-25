@@ -41,7 +41,7 @@ export function ResultsTab({ proforma }: Props) {
             <Input value={annualizedRoi !== undefined ? `${annualizedRoi.toFixed(2)}%` : "-"} readOnly />
           </div>
           <div>
-            <label className="text-sm font-medium">Levered Emx</label>
+            <label className="text-sm font-medium">Unlevered EMx</label>
             <Input value={proforma.metrics.leveredEmx?.toFixed(2) || "0.00"} readOnly />
           </div>
         </div>

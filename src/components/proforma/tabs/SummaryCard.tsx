@@ -72,7 +72,7 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
               <span className="font-semibold">{metrics.annualizedRoi?.toFixed(1) || "0.0"}%</span>
             </div>
             <div className="flex justify-between">
-              <span>Levered EMx</span>
+              <span>Unlevered EMx</span>
               <span className="font-semibold">{metrics.leveredEmx?.toFixed(1) || "0.0"}x</span>
             </div>
           </div>
