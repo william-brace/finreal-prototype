@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { useEffect, useState, use } from "react"
 import { Project } from "@/lib/mock-data"
@@ -34,6 +36,8 @@ export default function ProjectDetailsPage({
   const [project, setProject] = useState<Project | null>(null)
   const [proformas, setProformas] = useState<Proforma[]>([])
   const [loading, setLoading] = useState(true)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [selectedProformaType, setSelectedProformaType] = useState<string>('')
 
   useEffect(() => {
     const fetchData = () => {
@@ -53,11 +57,13 @@ export default function ProjectDetailsPage({
   }, [id])
 
   const handleCreateProforma = () => {
-    if (!project) return;
-    const newProforma = createNewProforma(id, project.landCost);
+    if (!project || !selectedProformaType) return;
+    const newProforma = createNewProforma(id, project.landCost, selectedProformaType);
     const proformas = getProformas(id);
     proformas.push(newProforma);
     saveProforma(id, newProforma);
+    setShowCreateDialog(false);
+    setSelectedProformaType('');
     router.push(`/projects/${id}/proformas/${newProforma.id}`);
   };
 
@@ -87,7 +93,39 @@ export default function ProjectDetailsPage({
           <Link href={`/projects/${id}/edit`}>
             <Button variant="outline">Edit Project</Button>
           </Link>
-          <Button onClick={handleCreateProforma}>New Proforma</Button>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button>New Proforma</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Proforma</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Proforma Type</label>
+                  <Select value={selectedProformaType} onValueChange={setSelectedProformaType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select proforma type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="condo">Condo</SelectItem>
+                      <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
+                      <SelectItem value="land-development">Land Development</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateProforma} disabled={!selectedProformaType}>
+                    Create Proforma
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -106,10 +144,6 @@ export default function ProjectDetailsPage({
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
                   <p className="font-medium">{project.address}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Proforma Type</p>
-                  <p className="font-medium">{formatProformaType(project.proformaType)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Land Cost</p>
@@ -155,6 +189,9 @@ export default function ProjectDetailsPage({
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="font-medium text-lg">{proforma.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatProformaType(proforma.proformaType)}
+                              </p>
                               <p className="text-sm text-muted-foreground">
                                 Last updated: {proforma.lastUpdated}
                               </p>

@@ -19,7 +19,6 @@ const projectSchema = z.object({
   city: z.string().min(1, "City is required"),
   province: z.string().min(1, "Province is required"),
   address: z.string().min(1, "Address is required"),
-  proformaType: z.string().min(1, "Proforma type is required"),
   landCost: z.number().min(0, "Land cost must be greater than or equal to 0"),
 })
 
@@ -31,7 +30,6 @@ const testData: ProjectFormData = {
   city: "Toronto",
   province: "on",
   address: "123 Douglas Street",
-  proformaType: "condo",
   landCost: 15000000,
 }
 
@@ -48,7 +46,6 @@ export default function NewProjectPage() {
     defaultValues: {
       landCost: 0,
       province: "on", // Default to Ontario
-      proformaType: "residential", // Default to Residential
     },
   })
 
@@ -148,32 +145,6 @@ export default function NewProjectPage() {
                 />
                 {errors.address && (
                   <p className="text-sm text-destructive">{errors.address.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Proforma Type</label>
-                <Controller
-                  name="proformaType"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pick a selection" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
-                        <SelectItem value="land-development">Land Development</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.proformaType && (
-                  <p className="text-sm text-destructive">{errors.proformaType.message}</p>
                 )}
               </div>
 

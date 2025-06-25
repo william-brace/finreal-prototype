@@ -8,6 +8,7 @@ export interface Proforma {
     id: string
     name: string
     projectId: string
+    proformaType: string
     lastUpdated: string
     totalCost: number
     netProfit: number
@@ -209,11 +210,12 @@ export function setActiveTab(projectId: string, proformaId: string, tab: string)
     sessionStorage.setItem(key, tab)
 }
 
-export function createNewProforma(projectId: string, projectLandCost: number): Proforma {
+export function createNewProforma(projectId: string, projectLandCost: number, proformaType: string): Proforma {
   return {
     id: Date.now().toString(),
     name: "New Proforma",
     projectId,
+    proformaType,
     lastUpdated: new Date().toISOString().split('T')[0],
     totalCost: 0,
     netProfit: 0,

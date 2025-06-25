@@ -22,7 +22,6 @@ const projectSchema = z.object({
   city: z.string().min(1, "City is required"),
   province: z.string().min(1, "Province is required"),
   address: z.string().min(1, "Address is required"),
-  proformaType: z.string().min(1, "Proforma type is required"),
   landCost: z.number().min(0, "Land cost must be greater than or equal to 0"),
 })
 
@@ -62,7 +61,6 @@ export default function EditProjectPage({
             city,
             province: province.toLowerCase(),
             address: projectData.address,
-            proformaType: projectData.proformaType,
             landCost: projectData.landCost,
           })
         }
@@ -197,32 +195,6 @@ export default function EditProjectPage({
                 />
                 {errors.address && (
                   <p className="text-sm text-destructive">{errors.address.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Proforma Type</label>
-                <Controller
-                  name="proformaType"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pick a selection" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
-                        <SelectItem value="land-development">Land Development</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.proformaType && (
-                  <p className="text-sm text-destructive">{errors.proformaType.message}</p>
                 )}
               </div>
 

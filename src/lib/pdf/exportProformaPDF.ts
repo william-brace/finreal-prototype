@@ -12,11 +12,11 @@ export function exportProformaPDF(proforma: Proforma, project: Project | null) {
   doc.text(proforma.name || '[Property Name]', 40, y);
   doc.setFontSize(10);
   y += 20;
-  doc.text(project?.proformaType ? 
-    (project.proformaType === 'condo' ? 'Condominium Development Proforma' : 
-     project.proformaType === 'purpose-built-rental' ? 'Purpose Built Rental Proforma' :
-     project.proformaType === 'land-development' ? 'Land Development Proforma' :
-     `${project.proformaType} Proforma`) 
+  doc.text(proforma.proformaType ? 
+    (proforma.proformaType === 'condo' ? 'Condominium Development Proforma' : 
+     proforma.proformaType === 'purpose-built-rental' ? 'Purpose Built Rental Proforma' :
+     proforma.proformaType === 'land-development' ? 'Land Development Proforma' :
+     `${proforma.proformaType} Proforma`) 
     : '[Proforma Type]', 40, y);
   doc.text(`Date (${new Date().toLocaleDateString()})`, 40, y + 15);
   // Logo placeholder

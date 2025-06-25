@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React from "react";
 
 interface Props {
@@ -11,7 +12,9 @@ interface Props {
   setProjectLengthValue: (v: string) => void;
   absorptionPeriodValue: string;
   setAbsorptionPeriodValue: (v: string) => void;
-  handleInputChange: (field: string, value: number) => void;
+  proformaTypeValue: string;
+  setProformaTypeValue: (v: string) => void;
+  handleInputChange: (field: string, value: number | string) => void;
 }
 
 //test comment
@@ -25,6 +28,8 @@ export function GeneralTab({
   setProjectLengthValue,
   absorptionPeriodValue,
   setAbsorptionPeriodValue,
+  proformaTypeValue,
+  setProformaTypeValue,
   handleInputChange,
 }: Props) {
   return (
@@ -39,6 +44,25 @@ export function GeneralTab({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Proforma Type</label>
+            <Select 
+              value={proformaTypeValue} 
+              onValueChange={(value) => {
+                setProformaTypeValue(value);
+                handleInputChange("proformaType", value);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select proforma type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="condo">Condo</SelectItem>
+                <SelectItem value="purpose-built-rental">Purpose Built Rental</SelectItem>
+                <SelectItem value="land-development">Land Development</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <label className="text-sm font-medium">GBA (sqft)</label>
             <Input

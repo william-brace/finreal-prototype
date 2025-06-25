@@ -28,6 +28,7 @@ export default function ProformaEditorPage({
   const [activeTab, setActiveTabState] = useState('general')
   const [isEditingName, setIsEditingName] = useState(false)
   const [editingName, setEditingName] = useState('')
+  const [proformaTypeValue, setProformaTypeValue] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function ProformaEditorPage({
         if (proformaData) {
           setProforma(proformaData)
           setProformaName(proformaData.name)
+          setProformaTypeValue(proformaData.proformaType || '')
           setActiveTabState(getActiveTab(id, proformaId))
         }
         if (projectData) {
@@ -196,6 +198,11 @@ export default function ProformaEditorPage({
                 setProjectLengthValue={(value) => handleInputChange('projectLength', value)}
                 absorptionPeriodValue={proforma.absorptionPeriod?.toString() ?? ''}
                 setAbsorptionPeriodValue={(value) => handleInputChange('absorptionPeriod', value)}
+                proformaTypeValue={proformaTypeValue}
+                setProformaTypeValue={(value) => {
+                  setProformaTypeValue(value);
+                  handleInputChange('proformaType', value);
+                }}
                 handleInputChange={handleInputChange}
               />
             </TabsContent>
