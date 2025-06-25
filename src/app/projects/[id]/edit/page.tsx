@@ -14,6 +14,7 @@ import { use } from "react"
 import { getProject, saveProject } from "@/lib/session-storage"
 import { useEffect, useState } from "react"
 import { Project } from "@/lib/mock-data"
+import { formatProvinceCode } from "@/lib/utils"
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -80,7 +81,7 @@ export default function EditProjectPage({
       const updatedProject: Project = {
         ...project!,
         ...data,
-        location: `${data.city}, ${data.province}`,
+        location: `${data.city}, ${formatProvinceCode(data.province)}`,
         id: project!.id,
       }
       saveProject(updatedProject)
