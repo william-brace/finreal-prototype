@@ -12,16 +12,21 @@ export function exportProformaPDF(proforma: Proforma, project: Project | null) {
   doc.text(proforma.name || '[Property Name]', 40, y);
   doc.setFontSize(10);
   y += 20;
-  doc.text(project?.proformaType ? `${project.proformaType} Proforma` : '[Proforma Type]', 40, y);
+  doc.text(project?.proformaType ? 
+    (project.proformaType === 'condo' ? 'Condominium Development Proforma' : 
+     project.proformaType === 'purpose-built-rental' ? 'Purpose Built Rental Proforma' :
+     project.proformaType === 'land-development' ? 'Land Development Proforma' :
+     `${project.proformaType} Proforma`) 
+    : '[Proforma Type]', 40, y);
   doc.text(`Date (${new Date().toLocaleDateString()})`, 40, y + 15);
   // Logo placeholder
-  doc.setFillColor('230');
+  doc.setFillColor(235, 235, 235);
   doc.rect(420, 20, 120, 50, 'F');
   doc.setTextColor(100);
   doc.text('[USER LOGO]', 480, 50, { align: 'center' });
   y += 40;
   // Property image placeholder
-  doc.setFillColor('240');
+  doc.setFillColor(235, 235, 235);
   doc.rect(40, y, 500, 100, 'F');
   doc.setTextColor(120);
   doc.setFontSize(12);
