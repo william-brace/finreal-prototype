@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,7 @@ import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { Proforma } from "@/lib/session-storage"
 import { useUnitMix } from "@/hooks/useUnitMix"
 import { formatCurrencyWithSymbol } from "@/lib/utils"
+import { NumberInput } from "@/components/ui/NumberInput"
 
 interface UnitMixTabProps {
   proforma: Proforma;
@@ -159,21 +159,26 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                         </div>
                         <div className="grid gap-2">
                           <label htmlFor="area">Area (sqft)</label>
-                          <Input
+                          <NumberInput
                             id="area"
-                            type="number"
-                            value={newUnit.area}
-                            onChange={(e) => setNewUnit(prev => ({ ...prev, area: e.target.value }))}
+                            value={parseFloat(newUnit.area) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, area: value.toString() }))}
                             placeholder="Enter area"
+                            allowDecimals={true}
+                            showCommas={true}
+                            suffix=" sqft"
                           />
                         </div>
                         <div className="grid gap-2">
                           <label htmlFor="value">Price per Square Foot ($)</label>
-                          <CurrencyInput
+                          <NumberInput
                             id="value"
                             value={parseFloat(newUnit.value) || 0}
                             onChange={(value) => setNewUnit(prev => ({ ...prev, value: value.toString() }))}
                             placeholder="Enter price per sqft"
+                            allowDecimals={true}
+                            showCommas={true}
+                            prefix="$"
                           />
                           {newUnit.area && newUnit.value && !isNaN(Number(newUnit.area)) && !isNaN(Number(newUnit.value)) && (
                             <div className="text-xs text-muted-foreground mt-1">
@@ -183,13 +188,14 @@ export function UnitMixTab({ proforma, onProformaChange }: UnitMixTabProps) {
                         </div>
                         <div className="grid gap-2">
                           <label htmlFor="quantity">Number of Units</label>
-                          <Input
+                          <NumberInput
                             id="quantity"
-                            type="number"
-                            value={newUnit.quantity}
-                            onChange={(e) => setNewUnit(prev => ({ ...prev, quantity: e.target.value }))}
+                            value={parseInt(newUnit.quantity) || 0}
+                            onChange={(value) => setNewUnit(prev => ({ ...prev, quantity: value.toString() }))}
                             placeholder="Enter quantity"
-                            min="1"
+                            allowDecimals={false}
+                            showCommas={false}
+                            min={1}
                           />
                         </div>
                       </div>

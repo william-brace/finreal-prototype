@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,7 @@ import { Trash2 } from "lucide-react"
 import { Proforma } from "@/lib/session-storage"
 import { useOtherIncome } from "@/hooks/useOtherIncome"
 import { formatCurrencyWithSymbol } from "@/lib/utils"
+import { NumberInput } from "@/components/ui/NumberInput"
 
 interface OtherIncomeTabProps {
   proforma: Proforma;
@@ -129,13 +129,14 @@ export function OtherIncomeTab({ proforma, onProformaChange }: OtherIncomeTabPro
                 )}
                 <div className="grid gap-2">
                   <label htmlFor="income-number-of-units">Number of Units</label>
-                  <Input
+                  <NumberInput
                     id="income-number-of-units"
-                    type="number"
-                    min="1"
-                    value={newOtherIncome.numberOfUnits}
-                    onChange={(e) => setNewOtherIncome(prev => ({ ...prev, numberOfUnits: e.target.value }))}
+                    value={parseInt(newOtherIncome.numberOfUnits) || 0}
+                    onChange={(value) => setNewOtherIncome(prev => ({ ...prev, numberOfUnits: value.toString() }))}
                     placeholder="Enter number of units"
+                    allowDecimals={false}
+                    showCommas={false}
+                    min={1}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -144,11 +145,14 @@ export function OtherIncomeTab({ proforma, onProformaChange }: OtherIncomeTabPro
                       ? newOtherIncome.customUnitType || 'unit'
                       : unitTypeDisplayNames[newOtherIncome.unitType] || 'unit'} ($)
                   </label>
-                  <CurrencyInput
+                  <NumberInput
                     id="income-value-per-unit"
                     value={parseFloat(newOtherIncome.valuePerUnit) || 0}
                     onChange={(value) => setNewOtherIncome(prev => ({ ...prev, valuePerUnit: value.toString() }))}
                     placeholder="Enter value per unit"
+                    allowDecimals={true}
+                    showCommas={true}
+                    prefix="$"
                   />
                 </div>
               </div>

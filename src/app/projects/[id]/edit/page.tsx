@@ -2,19 +2,18 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { NumberInput } from "@/components/ui/NumberInput"
 import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { use } from "react"
-import { getProject, saveProject } from "@/lib/session-storage"
-import { useEffect, useState } from "react"
-import { Project } from "@/lib/mock-data"
+import { useState, useEffect } from "react"
+import { getProject, saveProject, Project } from "@/lib/session-storage"
 import { formatProvinceCode } from "@/lib/utils"
 
 const projectSchema = z.object({
@@ -205,10 +204,13 @@ export default function EditProjectPage({
                   name="landCost"
                   control={control}
                   render={({ field }) => (
-                    <CurrencyInput
+                    <NumberInput
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Enter land cost"
+                      allowDecimals={true}
+                      showCommas={true}
+                      prefix="$"
                     />
                   )}
                 />

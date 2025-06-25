@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { formatCurrencyWithSymbol, formatCurrency, parseCurrency, roundToTwoDecimals } from '@/lib/utils';
+import { NumberInput } from './NumberInput';
+import { formatCurrencyWithSymbol, formatCurrency } from '@/lib/utils';
 
 interface EditableAmountInputProps {
   value: number;
@@ -19,62 +20,21 @@ export const EditableAmountInput: React.FC<EditableAmountInputProps> = ({
   min,
 }) => {
   const [editing, setEditing] = useState(false);
-  const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!editing) {
-      setInputValue(value.toString());
-    }
-  }, [value, editing]);
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  const handleSave = () => {
-    if (currency) {
-      const parsedValue = parseCurrency(inputValue);
-      const roundedValue = roundToTwoDecimals(parsedValue);
-      onChange(roundedValue);
-    } else {
-      const num = parseFloat(inputValue);
-      if (!isNaN(num)) {
-        onChange(num);
-      }
-    }
-    setEditing(false);
-  };
 
   if (editing) {
     return (
-      <input
-        ref={inputRef}
-        type="text"
-        min={min}
-        value={inputValue}
-        onChange={e => {
-          const val = e.target.value;
-          if (currency) {
-            // Allow only valid currency input
-            if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
-              setInputValue(val);
-            }
-          } else {
-            setInputValue(val);
-          }
+      <NumberInput
+        value={value}
+        onChange={(newValue) => {
+          onChange(newValue);
+          setEditing(false);
         }}
-        onBlur={handleSave}
-        onKeyDown={e => {
-          if (e.key === 'Enter') handleSave();
-          if (e.key === 'Escape') setEditing(false);
-        }}
-        className={`h-8 w-24 px-2 border rounded ${className}`}
         placeholder={placeholder}
-        inputMode="decimal"
+        className={`h-8 w-24 ${className}`}
+        allowDecimals={currency}
+        showCommas={currency}
+        prefix={currency ? "$" : ""}
+        min={min}
       />
     );
   }

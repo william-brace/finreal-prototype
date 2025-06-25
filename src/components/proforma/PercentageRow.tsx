@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/NumberInput";
 import { formatCurrencyWithSymbol } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
 
@@ -41,14 +41,18 @@ export function PercentageRow({ label, description, baseAmount, percentage, onCh
         <div className="text-sm text-muted-foreground">{formatCurrencyWithSymbol(displayAmount)}</div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Input
-              type="number"
-              step="0.1"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commit}
-              onKeyDown={(e) => e.key === "Enter" && commit()}
-              className="h-8 w-16 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            <NumberInput
+              value={parseFloat(draft) || 0}
+              onChange={(value) => {
+                setDraft(value.toString());
+                onChange(value);
+              }}
+              placeholder="0.0"
+              allowDecimals={true}
+              showCommas={false}
+              min={0}
+              max={100}
+              className="h-8 w-16 pr-6"
             />
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
           </div>

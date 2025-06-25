@@ -5,7 +5,6 @@ import { CostRow } from "@/components/proforma/CostRow"
 import { PercentageRow } from "@/components/proforma/PercentageRow"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CurrencyInput } from "@/components/ui/CurrencyInput"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/NumberInput"
 import { useSourcesUses } from "@/hooks/useSourcesUses"
 import { formatCurrencyWithSymbol } from "@/lib/utils"
 import { Proforma } from "@/lib/session-storage"
@@ -145,11 +145,14 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                       <div className="grid gap-2">
                         <label htmlFor="land-cost-amount">Amount ($)</label>
-                        <CurrencyInput
+                        <NumberInput
                           id="land-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
                           onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
                           placeholder="Enter amount"
+                          allowDecimals={true}
+                          showCommas={true}
+                          prefix="$"
                         />
                       </div>
                     </div>
@@ -219,11 +222,14 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                       <div className="grid gap-2">
                         <label htmlFor="additional-cost-amount">Amount ($)</label>
-                        <CurrencyInput
+                        <NumberInput
                           id="additional-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
                           onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
                           placeholder="Enter amount"
+                          allowDecimals={true}
+                          showCommas={true}
+                          prefix="$"
                         />
                       </div>
                     </div>
@@ -309,11 +315,14 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                       <div className="grid gap-2">
                         <label htmlFor="hard-cost-amount">Amount ($)</label>
-                        <CurrencyInput
+                        <NumberInput
                           id="hard-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
                           onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
                           placeholder="Enter amount"
+                          allowDecimals={true}
+                          showCommas={true}
+                          prefix="$"
                         />
                       </div>
                     </div>
@@ -419,11 +428,14 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                       <div className="grid gap-2">
                         <label htmlFor="soft-cost-amount">Amount ($)</label>
-                        <CurrencyInput
+                        <NumberInput
                           id="soft-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
                           onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
                           placeholder="Enter amount"
+                          allowDecimals={true}
+                          showCommas={true}
+                          prefix="$"
                         />
                       </div>
                     </div>
