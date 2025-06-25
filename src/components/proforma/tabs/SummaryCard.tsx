@@ -90,12 +90,12 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
             <span className="font-semibold">${proforma.otherIncome.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</span>
           </div> */}
           <div className="flex justify-between text-sm mb-1">
-            <span>Total Expenses</span>
-            <span className="font-semibold border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() || "0"}</span>
+            <span>Total Expenses (Incl. Financing)</span>
+            <span className="font-semibold border-b-2 border-black">${proforma.totalProjectCostInclFinancing?.toLocaleString() || "0"}</span>
           </div>
           <div className="flex justify-between text-base font-bold mt-2">
             <span>Gross Profit</span>
-            <span className="font-bold">${metrics.grossProfit?.toLocaleString() || "0"}</span>
+            <span className="font-bold">${(proforma.totalRevenue - proforma.totalProjectCostInclFinancing)?.toLocaleString() || "0"}</span>
           </div>
         </div>
 
@@ -137,9 +137,13 @@ export function SummaryCard({ proforma }: SummaryCardProps) {
                 proforma.uses.softCosts.contingencyPct / 100) +
               proforma.uses.softCosts.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0)).toLocaleString()}</span>
           </div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Financing Costs</span>
+            <span>${proforma.sources?.financingCosts?.totalFinancingCost?.toLocaleString() || "0"}</span>
+          </div>
           <div className="flex justify-between text-sm font-semibold mt-2">
-            <span>Total Expenses</span>
-            <span className="border-b-2 border-black">${proforma.totalExpenses?.toLocaleString() ? proforma.totalExpenses.toLocaleString() : 0}</span>
+            <span>Total Expenses (Incl. Financing)</span>
+            <span className="border-b-2 border-black">${proforma.totalProjectCostInclFinancing?.toLocaleString() || "0"}</span>
           </div>
         </div>
       </CardContent>

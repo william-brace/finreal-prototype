@@ -153,13 +153,14 @@ export function calculateTotalRevenue(proforma: Proforma): number {
 }
 
 export function calculateProformaMetrics(proforma: Proforma): Proforma {
-    const totalProfit = proforma.totalRevenue - proforma.totalExpenses;
-    const leveredEmx = proforma.totalExpenses > 0 
-        ? proforma.totalRevenue / proforma.totalExpenses 
+    const totalProjectCostInclFinancing = proforma.totalProjectCostInclFinancing || (proforma.totalExpenses + (proforma.sources?.financingCosts?.totalFinancingCost || 0));
+    const totalProfit = proforma.totalRevenue - totalProjectCostInclFinancing;
+    const leveredEmx = totalProjectCostInclFinancing > 0 
+        ? proforma.totalRevenue / totalProjectCostInclFinancing 
         : 0;
     const grossProfit = totalProfit;
-    const roiFormula = (proforma.sources.equityPct && proforma.totalExpenses)
-        ? grossProfit / ((proforma.sources.equityPct / 100) * proforma.totalExpenses)
+    const roiFormula = (proforma.sources.equityPct && totalProjectCostInclFinancing)
+        ? grossProfit / ((proforma.sources.equityPct / 100) * totalProjectCostInclFinancing)
         : 0;
     const annualizedRoi = (roiFormula && proforma.projectLength)
         ? roiFormula / (proforma.projectLength / 12)
