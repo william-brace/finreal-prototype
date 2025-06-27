@@ -17,7 +17,7 @@ export function ResultsTab({ proforma }: Props) {
     }
   }, [proforma.projectId, proforma.id]);
 
-  const { grossProfit, roi, annualizedRoi } = latestProforma.metrics;
+  const { grossProfit, roi, annualizedRoi, unleveredEmx } = latestProforma.metrics;
 
   return (
     <Card>
@@ -42,7 +42,7 @@ export function ResultsTab({ proforma }: Props) {
           </div>
           <div>
             <label className="text-sm font-medium">Unlevered EMx</label>
-            <Input value={proforma.metrics.unleveredEmx?.toFixed(2) || "0.00"} readOnly />
+            <Input value={unleveredEmx !== undefined ? unleveredEmx.toFixed(2) : "0.00"} readOnly />
           </div>
         </div>
       </CardContent>
