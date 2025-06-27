@@ -164,7 +164,7 @@ export function generateFinancingTable(doc: jsPDF, proforma: Proforma, project: 
   y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8);
   doc.setFont('helvetica', 'bold');
   doc.text('Total Uses Incl. Financing', 40, y + 12);
-  doc.text((proforma.totalExpenses ? proforma.totalExpenses.toLocaleString() : '0'), 520, y + 12, { align: 'right' });
+  doc.text((proforma.totalProjectCostInclFinancing ? proforma.totalProjectCostInclFinancing.toLocaleString() : '0'), 520, y + 12, { align: 'right' });
 
   return y + 24;
 }
