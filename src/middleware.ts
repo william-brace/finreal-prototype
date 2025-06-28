@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
         },
       })
     }
-  } catch (error) {
+  } catch {
     // Malformed credentials - return 401
     return new NextResponse('Invalid authentication format', {
       status: 401,
