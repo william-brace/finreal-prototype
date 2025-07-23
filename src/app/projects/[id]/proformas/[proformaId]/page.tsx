@@ -1,5 +1,6 @@
 'use client'
 
+import { CashFlowTab } from "@/components/proforma/tabs/CashFlowTab"
 import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
 import { OtherIncomeTab } from "@/components/proforma/tabs/OtherIncomeTab"
 import { ResultsTab } from "@/components/proforma/tabs/ResultsTab"
@@ -179,11 +180,12 @@ export default function ProformaEditorPage({
             }} 
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
               <TabsTrigger value="other-income">Other Income</TabsTrigger>
               <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
+              <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="info">Info</TabsTrigger>
             </TabsList>
@@ -217,6 +219,10 @@ export default function ProformaEditorPage({
 
             <TabsContent value="sources-uses">
               <SourcesUsesTab proforma={proforma} onProformaChange={setProforma} />
+            </TabsContent>
+
+            <TabsContent value="cash-flow">
+              <CashFlowTab proforma={proforma} />
             </TabsContent>
 
             <TabsContent value="results">
