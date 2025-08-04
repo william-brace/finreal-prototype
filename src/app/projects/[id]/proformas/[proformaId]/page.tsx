@@ -1,142 +1,159 @@
-'use client'
+"use client";
 
-import { CashFlowTab } from "@/components/proforma/tabs/CashFlowTab"
-import { GeneralTab } from "@/components/proforma/tabs/GeneralTab"
-import { OtherIncomeTab } from "@/components/proforma/tabs/OtherIncomeTab"
-import { ResultsTab } from "@/components/proforma/tabs/ResultsTab"
-import { SourcesUsesTab } from "@/components/proforma/tabs/SourcesUsesTab"
-import { SummaryCard } from "@/components/proforma/tabs/SummaryCard"
-import { UnitMixTab } from "@/components/proforma/tabs/UnitMixTab"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { exportProformaPDF } from '@/lib/pdf/exportProformaPDF'
-import { Proforma, Project, getActiveTab, getProforma, getProject, saveProforma, setActiveTab } from "@/lib/session-storage"
-import Link from "next/link"
-import { use, useEffect, useState, useRef } from "react"
-
+import { CashFlowTab } from "@/components/proforma/tabs/CashFlowTab";
+import { GeneralTab } from "@/components/proforma/tabs/GeneralTab";
+import { OtherIncomeTab } from "@/components/proforma/tabs/OtherIncomeTab";
+import { ResultsTab } from "@/components/proforma/tabs/ResultsTab";
+import { SourcesUsesTab } from "@/components/proforma/tabs/SourcesUsesTab";
+import { SummaryCard } from "@/components/proforma/tabs/SummaryCard";
+import { UnitMixTab } from "@/components/proforma/tabs/UnitMixTab";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { exportProformaPDF } from "@/lib/pdf/exportProformaPDF";
+import {
+  Proforma,
+  Project,
+  getActiveTab,
+  getProforma,
+  getProject,
+  saveProforma,
+  setActiveTab,
+} from "@/lib/session-storage";
+import Link from "next/link";
+import { use, useEffect, useState, useRef } from "react";
 
 export default function ProformaEditorPage({
   params,
 }: {
-  params: Promise<{ id: string; proformaId: string }>
+  params: Promise<{ id: string; proformaId: string }>;
 }) {
-  const { id, proformaId } = use(params)
-  const [proforma, setProforma] = useState<Proforma | null>(null)
-  const [project, setProject] = useState<Project | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [proformaName, setProformaName] = useState('')
-  const [activeTab, setActiveTabState] = useState('general')
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editingName, setEditingName] = useState('')
-  const [proformaTypeValue, setProformaTypeValue] = useState('')
-  const nameInputRef = useRef<HTMLInputElement>(null)
+  const { id, proformaId } = use(params);
+  const [proforma, setProforma] = useState<Proforma | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [proformaName, setProformaName] = useState("");
+  const [activeTab, setActiveTabState] = useState("general");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState("");
+  const [proformaTypeValue, setProformaTypeValue] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchData = () => {
       try {
-        const proformaData = getProforma(id, proformaId)
-        const projectData = getProject(id)
+        const proformaData = getProforma(id, proformaId);
+        const projectData = getProject(id);
         if (proformaData) {
-          setProforma(proformaData)
-          setProformaName(proformaData.name)
-          setProformaTypeValue(proformaData.proformaType || '')
-          setActiveTabState(getActiveTab(id, proformaId))
+          setProforma(proformaData);
+          setProformaName(proformaData.name);
+          setProformaTypeValue(proformaData.proformaType || "");
+          setActiveTabState(getActiveTab(id, proformaId));
         }
         if (projectData) {
-          setProject(projectData)
+          setProject(projectData);
           // Set the land cost from the project if it doesn't exist in the proforma
-          if (proformaData && projectData.landCost && proformaData.uses.landCosts.baseCost === 0) {
+          if (
+            proformaData &&
+            projectData.landCost &&
+            proformaData.uses.landCosts.baseCost === 0
+          ) {
             const updatedProforma = {
               ...proformaData,
               uses: {
                 ...proformaData.uses,
                 landCosts: {
                   ...proformaData.uses.landCosts,
-                  baseCost: projectData.landCost
-                }
-              }
-            }
-            setProforma(updatedProforma)
-            saveProforma(id, updatedProforma)
+                  baseCost: projectData.landCost,
+                },
+              },
+            };
+            setProforma(updatedProforma);
+            saveProforma(id, updatedProforma);
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error fetching data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [id, proformaId])
+    fetchData();
+  }, [id, proformaId]);
 
   const handleInputChange = (field: string, value: string | number) => {
-    if (!proforma) return
+    if (!proforma) return;
     const updatedProforma: Proforma = {
       ...proforma,
-      [field]: value
-    }
-    setProforma(prev => {
+      [field]: value,
+    };
+    setProforma((prev) => {
       if (!prev) return prev;
       return updatedProforma;
-    })
-    saveProforma(id, updatedProforma)
-  }
+    });
+    saveProforma(id, updatedProforma);
+  };
 
   const handleNameEdit = () => {
-    setIsEditingName(true)
-    setEditingName(proformaName)
-  }
+    setIsEditingName(true);
+    setEditingName(proformaName);
+  };
 
   const handleNameSave = () => {
-    if (!proforma) return
-    
-    const trimmedName = editingName.trim()
-    const finalName = trimmedName || "Untitled Proforma"
-    
-    setProformaName(finalName)
-    setIsEditingName(false)
-    
+    if (!proforma) return;
+
+    const trimmedName = editingName.trim();
+    const finalName = trimmedName || "Untitled Proforma";
+
+    setProformaName(finalName);
+    setIsEditingName(false);
+
     const updatedProforma: Proforma = {
       ...proforma,
-      name: finalName
-    }
-    setProforma(updatedProforma)
-    saveProforma(id, updatedProforma)
-  }
+      name: finalName,
+    };
+    setProforma(updatedProforma);
+    saveProforma(id, updatedProforma);
+  };
 
   const handleNameCancel = () => {
-    setIsEditingName(false)
-    setEditingName(proformaName)
-  }
+    setIsEditingName(false);
+    setEditingName(proformaName);
+  };
 
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleNameSave()
-    } else if (e.key === 'Escape') {
-      handleNameCancel()
+    if (e.key === "Enter") {
+      handleNameSave();
+    } else if (e.key === "Escape") {
+      handleNameCancel();
     }
-  }
+  };
 
   useEffect(() => {
     if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus()
-      nameInputRef.current.select()
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
     }
-  }, [isEditingName])
+  }, [isEditingName]);
 
   const handleExportPDF = () => {
     if (!proforma) return;
     exportProformaPDF(proforma, project);
-  }
+  };
 
   if (loading) {
-    return <div className="container mx-auto py-8">Loading...</div>
+    return <div className="container mx-auto py-8">Loading...</div>;
   }
 
   if (!proforma) {
-    return <div className="container mx-auto py-8">Proforma not found</div>
+    return <div className="container mx-auto py-8">Proforma not found</div>;
   }
 
   return (
@@ -154,7 +171,7 @@ export default function ProformaEditorPage({
               className="text-3xl font-bold bg-transparent border-b-2 border-primary focus:outline-none focus:border-primary px-2 py-1 rounded"
             />
           ) : (
-            <h1 
+            <h1
               className="text-3xl font-bold cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
               onClick={handleNameEdit}
             >
@@ -163,47 +180,59 @@ export default function ProformaEditorPage({
           )}
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" onClick={handleExportPDF}>Export to PDF</Button>
+          <Button variant="outline" onClick={handleExportPDF}>
+            Export to PDF
+          </Button>
           <Link href={`/projects/${id}`}>
             <Button variant="outline">Back to Project</Button>
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Tabs 
-            value={activeTab} 
-            onValueChange={(value) => {
-              setActiveTabState(value)
-              setActiveTab(id, proformaId, value)
-            }} 
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
-              <TabsTrigger value="other-income">Other Income</TabsTrigger>
-              <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
-              <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
-              <TabsTrigger value="results">Results</TabsTrigger>
-              <TabsTrigger value="info">Info</TabsTrigger>
-            </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTabState(value);
+          setActiveTab(id, proformaId, value);
+        }}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-7 mb-2">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="unit-mix">Unit Mix</TabsTrigger>
+          <TabsTrigger value="other-income">Other Income</TabsTrigger>
+          <TabsTrigger value="sources-uses">Sources & Uses</TabsTrigger>
+          <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
+          <TabsTrigger value="info">Info</TabsTrigger>
+        </TabsList>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div
+            className={
+              activeTab === "cash-flow" ? "lg:col-span-3" : "lg:col-span-2"
+            }
+          >
             <TabsContent value="general">
               <GeneralTab
-                gbaValue={proforma.gba?.toString() ?? ''}
-                setGbaValue={(value) => handleInputChange('gba', value)}
-                storiesValue={proforma.stories?.toString() ?? ''}
-                setStoriesValue={(value) => handleInputChange('stories', value)}
-                projectLengthValue={proforma.projectLength?.toString() ?? ''}
-                setProjectLengthValue={(value) => handleInputChange('projectLength', value)}
-                absorptionPeriodValue={proforma.absorptionPeriod?.toString() ?? ''}
-                setAbsorptionPeriodValue={(value) => handleInputChange('absorptionPeriod', value)}
+                gbaValue={proforma.gba?.toString() ?? ""}
+                setGbaValue={(value) => handleInputChange("gba", value)}
+                storiesValue={proforma.stories?.toString() ?? ""}
+                setStoriesValue={(value) => handleInputChange("stories", value)}
+                projectLengthValue={proforma.projectLength?.toString() ?? ""}
+                setProjectLengthValue={(value) =>
+                  handleInputChange("projectLength", value)
+                }
+                absorptionPeriodValue={
+                  proforma.absorptionPeriod?.toString() ?? ""
+                }
+                setAbsorptionPeriodValue={(value) =>
+                  handleInputChange("absorptionPeriod", value)
+                }
                 proformaTypeValue={proformaTypeValue}
                 setProformaTypeValue={(value) => {
                   setProformaTypeValue(value);
-                  handleInputChange('proformaType', value);
+                  handleInputChange("proformaType", value);
                 }}
                 handleInputChange={handleInputChange}
               />
@@ -214,11 +243,17 @@ export default function ProformaEditorPage({
             </TabsContent>
 
             <TabsContent value="other-income">
-              <OtherIncomeTab proforma={proforma} onProformaChange={setProforma} />
+              <OtherIncomeTab
+                proforma={proforma}
+                onProformaChange={setProforma}
+              />
             </TabsContent>
 
             <TabsContent value="sources-uses">
-              <SourcesUsesTab proforma={proforma} onProformaChange={setProforma} />
+              <SourcesUsesTab
+                proforma={proforma}
+                onProformaChange={setProforma}
+              />
             </TabsContent>
 
             <TabsContent value="cash-flow">
@@ -233,14 +268,18 @@ export default function ProformaEditorPage({
               <Card>
                 <CardHeader>
                   <CardTitle>Info</CardTitle>
-                  <CardDescription>Assumptions and input sources</CardDescription>
+                  <CardDescription>
+                    Assumptions and input sources
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-medium mb-2">Auto-filled Values</h3>
                       <ul className="list-disc list-inside text-sm text-muted-foreground">
-                        <li>Development Charges - Based on Toronto, ON rates</li>
+                        <li>
+                          Development Charges - Based on Toronto, ON rates
+                        </li>
                         <li>Permit Fees - Based on Toronto, ON rates</li>
                         <li>Legal Costs - Based on market averages</li>
                       </ul>
@@ -255,19 +294,23 @@ export default function ProformaEditorPage({
                     </div>
                     <div>
                       <h3 className="font-medium mb-2">Last Updated</h3>
-                      <p className="text-sm text-muted-foreground">March 15, 2024</p>
+                      <p className="text-sm text-muted-foreground">
+                        March 15, 2024
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        </div>
+          </div>
 
-        <div className="lg:col-span-1">
-          <SummaryCard proforma={proforma} />
+          {activeTab !== "cash-flow" && (
+            <div className="lg:col-span-1">
+              <SummaryCard proforma={proforma} />
+            </div>
+          )}
         </div>
-      </div>
+      </Tabs>
     </div>
-  )
+  );
 }
