@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
+import {
+  ModuleRegistry,
+  AllCommunityModule,
+} from 'ag-grid-community';
+
+ModuleRegistry.registerModules([
+  AllCommunityModule,
+]);
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -1,0 +1,148 @@
+.container {
+  height: 500px;
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fixedColumn {
+  background-color: #f9fafb;
+  border-right: 2px solid #d1d5db;
+  min-width: 120px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.fixedColumn::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+.scrollableColumn {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.scrollableTable {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 800px;
+}
+
+.headerCell {
+  border: 1px solid #d1d5db;
+  padding-left: 8px;
+  background-color: #f3f4f6;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  height: 50px;
+}
+
+.headerCellWide {
+  min-width: 130px;
+}
+
+.headerCellExtraWide {
+  min-width: 140px;
+}
+
+.headerCellVeryWide {
+  min-width: 180px;
+}
+
+.monthCell {
+  border: 1px solid #d1d5db;
+  padding-left: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  height: 50px;
+}
+
+.dataCell {
+  border: 1px solid #d1d5db;
+  padding-left: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  height: 50px;
+}
+
+.inputCell {
+  border: 1px solid #d1d5db;
+  padding-left: 8px;
+  padding-right: 8px;
+  width: 75px;
+}
+
+.totalCashOutCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+  color: #dc2626;
+}
+
+.revenueCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.revenueCell.positive {
+  color: #16a34a;
+}
+
+.cashFlowCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.cashFlowCell.positive {
+  color: #16a34a;
+}
+
+.cashFlowCell.negative {
+  color: #dc2626;
+}
+
+.cumulativeCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.cumulativeCell.positive {
+  background-color: #f0f9ff;
+  color: #1d4ed8;
+}
+
+.cumulativeCell.negative {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.rowEven {
+  background-color: white;
+}
+
+.rowOdd {
+  background-color: #f9fafb;
+}
