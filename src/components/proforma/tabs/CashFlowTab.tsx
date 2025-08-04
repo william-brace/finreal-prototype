@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,19 +8,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Proforma } from "@/lib/session-storage";
-import styles from "./CashFlowTab.module.css";
+import { useEffect, useRef, useState } from "react";
 import { CashFlowInputRow } from "../CashFlowInputRow";
+import styles from "./CashFlowTab.module.css";
 
-interface CashFlowData {
-  month: string;
-  landCost: number;
-  constructionCost: number;
-  softCosts: number;
-  totalCashOut: number;
-  revenue: number;
-  netCashFlow: number;
-  cumulativeCashFlow: number;
-}
+// interface CashFlowData {
+//   month: string;
+//   landCost: number;
+//   constructionCost: number;
+//   softCosts: number;
+//   totalCashOut: number;
+//   revenue: number;
+//   netCashFlow: number;
+//   cumulativeCashFlow: number;
+// }
 
 interface CashFlowItemState {
   amount: number;
@@ -214,87 +214,87 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     };
   }, []);
 
-  // Generate cash flow data for 120 months based on current state
-  const cashFlowData = useMemo(() => {
-    const months = 120;
-    const projectLength = proforma.projectLength || 24;
-    const data: CashFlowData[] = [];
+  // // Generate cash flow data for 120 months based on current state
+  // const cashFlowData = useMemo(() => {
+  //   const months = 120;
+  //   const projectLength = proforma.projectLength || 24;
+  //   const data: CashFlowData[] = [];
 
-    for (let month = 1; month <= months; month++) {
-      let revenue = 0;
-      let landCost = 0;
-      let constructionCost = 0;
-      let softCosts = 0;
+  //   for (let month = 1; month <= months; month++) {
+  //     let revenue = 0;
+  //     let landCost = 0;
+  //     let constructionCost = 0;
+  //     let softCosts = 0;
 
-      // Calculate revenue from units and other income based on state
-      Object.values(cashFlowState.units).forEach((unitItem) => {
-        if (
-          month >= unitItem.start &&
-          month < unitItem.start + unitItem.length
-        ) {
-          revenue += unitItem.amount / unitItem.length;
-        }
-      });
+  //     // Calculate revenue from units and other income based on state
+  //     Object.values(cashFlowState.units).forEach((unitItem) => {
+  //       if (
+  //         month >= unitItem.start &&
+  //         month < unitItem.start + unitItem.length
+  //       ) {
+  //         revenue += unitItem.amount / unitItem.length;
+  //       }
+  //     });
 
-      Object.values(cashFlowState.otherIncome).forEach((incomeItem) => {
-        if (
-          month >= incomeItem.start &&
-          month < incomeItem.start + incomeItem.length
-        ) {
-          revenue += incomeItem.amount / incomeItem.length;
-        }
-      });
+  //     Object.values(cashFlowState.otherIncome).forEach((incomeItem) => {
+  //       if (
+  //         month >= incomeItem.start &&
+  //         month < incomeItem.start + incomeItem.length
+  //       ) {
+  //         revenue += incomeItem.amount / incomeItem.length;
+  //       }
+  //     });
 
-      // Calculate costs based on state
-      Object.values(cashFlowState.landCosts).forEach((landItem) => {
-        if (
-          month >= landItem.start &&
-          month < landItem.start + landItem.length
-        ) {
-          landCost += landItem.amount / landItem.length;
-        }
-      });
+  //     // Calculate costs based on state
+  //     Object.values(cashFlowState.landCosts).forEach((landItem) => {
+  //       if (
+  //         month >= landItem.start &&
+  //         month < landItem.start + landItem.length
+  //       ) {
+  //         landCost += landItem.amount / landItem.length;
+  //       }
+  //     });
 
-      Object.values(cashFlowState.hardCosts).forEach((hardItem) => {
-        if (
-          month >= hardItem.start &&
-          month < hardItem.start + hardItem.length
-        ) {
-          constructionCost += hardItem.amount / hardItem.length;
-        }
-      });
+  //     Object.values(cashFlowState.hardCosts).forEach((hardItem) => {
+  //       if (
+  //         month >= hardItem.start &&
+  //         month < hardItem.start + hardItem.length
+  //       ) {
+  //         constructionCost += hardItem.amount / hardItem.length;
+  //       }
+  //     });
 
-      Object.values(cashFlowState.softCosts).forEach((softItem) => {
-        if (
-          month >= softItem.start &&
-          month < softItem.start + softItem.length
-        ) {
-          softCosts += softItem.amount / softItem.length;
-        }
-      });
+  //     Object.values(cashFlowState.softCosts).forEach((softItem) => {
+  //       if (
+  //         month >= softItem.start &&
+  //         month < softItem.start + softItem.length
+  //       ) {
+  //         softCosts += softItem.amount / softItem.length;
+  //       }
+  //     });
 
-      const totalCashOut = landCost + constructionCost + softCosts;
-      const netCashFlow = revenue - totalCashOut;
+  //     const totalCashOut = landCost + constructionCost + softCosts;
+  //     const netCashFlow = revenue - totalCashOut;
 
-      // Calculate cumulative cash flow
-      const prevCumulative: number =
-        data.length > 0 ? data[data.length - 1].cumulativeCashFlow : 0;
-      const cumulativeCashFlow: number = prevCumulative + netCashFlow;
+  //     // Calculate cumulative cash flow
+  //     const prevCumulative: number =
+  //       data.length > 0 ? data[data.length - 1].cumulativeCashFlow : 0;
+  //     const cumulativeCashFlow: number = prevCumulative + netCashFlow;
 
-      data.push({
-        month: `Month ${month}`,
-        landCost: landCost,
-        constructionCost: constructionCost,
-        softCosts: softCosts,
-        totalCashOut: totalCashOut,
-        revenue: revenue,
-        netCashFlow: netCashFlow,
-        cumulativeCashFlow: cumulativeCashFlow,
-      });
-    }
+  //     data.push({
+  //       month: `Month ${month}`,
+  //       landCost: landCost,
+  //       constructionCost: constructionCost,
+  //       softCosts: softCosts,
+  //       totalCashOut: totalCashOut,
+  //       revenue: revenue,
+  //       netCashFlow: netCashFlow,
+  //       cumulativeCashFlow: cumulativeCashFlow,
+  //     });
+  //   }
 
-    return data;
-  }, [proforma, cashFlowState]);
+  //   return data;
+  // }, [proforma, cashFlowState]);
 
   // Helper functions to get display names for cost items
   const getLandCostDisplayName = (key: string, index?: number) => {
@@ -348,13 +348,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return value ? `$${value.toLocaleString()}` : "$0";
-  };
+  // const formatCurrency = (value: number) => {
+  //   return value ? `$${value.toLocaleString()}` : "$0";
+  // };
 
-  const formatNetCashFlow = (value: number) => {
-    return `${value >= 0 ? "+" : ""}$${value.toLocaleString()}`;
-  };
+  // const formatNetCashFlow = (value: number) => {
+  //   return `${value >= 0 ? "+" : ""}$${value.toLocaleString()}`;
+  // };
 
   const getCashFlowClass = (value: number) => {
     return `${styles.cashFlowCell} ${
@@ -362,11 +362,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     }`;
   };
 
-  const getCumulativeClass = (value: number) => {
-    return `${styles.cumulativeCell} ${
-      value >= 0 ? styles.positive : styles.negative
-    }`;
-  };
+  // const getCumulativeClass = (value: number) => {
+  //   return `${styles.cumulativeCell} ${
+  //     value >= 0 ? styles.positive : styles.negative
+  //   }`;
+  // };
 
   const getRevenueClass = (value: number) => {
     return `${styles.revenueCell} ${value > 0 ? styles.positive : ""}`;
