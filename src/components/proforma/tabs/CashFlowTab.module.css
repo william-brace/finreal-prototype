@@ -139,6 +139,42 @@
   color: #dc2626;
 }
 
+.totalCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+  background-color: #f3f4f6;
+  border-top: 2px solid #9ca3af;
+}
+
+.totalCell.revenue {
+  color: #16a34a;
+}
+
+.totalCell.expense {
+  color: #dc2626;
+}
+
+.sectionTotalCell {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #e5e7eb;
+  border-top: 1px solid #9ca3af;
+}
+
+.sectionTotalCell.revenue {
+  color: #15803d;
+}
+
+.sectionTotalCell.expense {
+  color: #b91c1c;
+}
+
 .rowEven {
   background-color: white;
 }

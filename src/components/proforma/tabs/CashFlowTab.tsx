@@ -386,6 +386,63 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     return `$${Math.round(value).toLocaleString()}`;
   };
 
+  // Helper functions to calculate totals for each month
+  const calculateUnitsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.units).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    return total;
+  };
+
+  const calculateOtherIncomeTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.otherIncome).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    return total;
+  };
+
+  const calculateLandCostsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.landCosts).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    return total;
+  };
+
+  const calculateHardCostsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.hardCosts).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    return total;
+  };
+
+  const calculateSoftCostsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.softCosts).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    return total;
+  };
+
+  const calculateRevenueTotal = (month: number) => {
+    return calculateUnitsTotal(month) + calculateOtherIncomeTotal(month);
+  };
+
+  const calculateExpensesTotal = (month: number) => {
+    return (
+      calculateLandCostsTotal(month) +
+      calculateHardCostsTotal(month) +
+      calculateSoftCostsTotal(month)
+    );
+  };
+
+  const calculateNetCashFlow = (month: number) => {
+    return calculateRevenueTotal(month) - calculateExpensesTotal(month);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -436,6 +493,35 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   />
                 ))}
 
+                {/* Units Total Row */}
+                {proforma.unitMix && proforma.unitMix.length > 0 && (
+                  <tr>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      Units Total
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      $
+                      {Object.values(cashFlowState.units)
+                        .reduce((sum, item) => sum + item.amount, 0)
+                        .toLocaleString()}
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      -
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      -
+                    </td>
+                  </tr>
+                )}
+
                 {/* Other Income Section Header */}
                 <tr>
                   <td className={styles.dataCell} colSpan={4}>
@@ -470,6 +556,65 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     }
                   />
                 ))}
+
+                {/* Other Income Total Row */}
+                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+                  <tr>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      Other Income Total
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      $
+                      {Object.values(cashFlowState.otherIncome)
+                        .reduce((sum, item) => sum + item.amount, 0)
+                        .toLocaleString()}
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      -
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      -
+                    </td>
+                  </tr>
+                )}
+
+                {/* Revenue Total Row */}
+                {((proforma.unitMix && proforma.unitMix.length > 0) ||
+                  (proforma.otherIncome &&
+                    proforma.otherIncome.length > 0)) && (
+                  <tr>
+                    <td className={`${styles.totalCell} ${styles.revenue}`}>
+                      Total Revenue
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.revenue}`}>
+                      $
+                      {(
+                        Object.values(cashFlowState.units).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                        Object.values(cashFlowState.otherIncome).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        )
+                      ).toLocaleString()}
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.revenue}`}>
+                      -
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.revenue}`}>
+                      -
+                    </td>
+                  </tr>
+                )}
               </tbody>
 
               {/* Expenses Header */}
@@ -524,6 +669,33 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         );
                       }
                     )}
+
+                    {/* Land Costs Total Row */}
+                    <tr>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        Land Costs Total
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        $
+                        {Object.values(cashFlowState.landCosts)
+                          .reduce((sum, item) => sum + item.amount, 0)
+                          .toLocaleString()}
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                    </tr>
                   </>
                 )}
 
@@ -570,6 +742,33 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         );
                       }
                     )}
+
+                    {/* Hard Costs Total Row */}
+                    <tr>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        Hard Costs Total
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        $
+                        {Object.values(cashFlowState.hardCosts)
+                          .reduce((sum, item) => sum + item.amount, 0)
+                          .toLocaleString()}
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                    </tr>
                   </>
                 )}
 
@@ -616,8 +815,269 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         );
                       }
                     )}
+
+                    {/* Soft Costs Total Row */}
+                    <tr>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        Soft Costs Total
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        $
+                        {Object.values(cashFlowState.softCosts)
+                          .reduce((sum, item) => sum + item.amount, 0)
+                          .toLocaleString()}
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                      <td
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        -
+                      </td>
+                    </tr>
                   </>
                 )}
+
+                {/* Total Expenses Row */}
+                {(Object.keys(cashFlowState.landCosts).length > 0 ||
+                  Object.keys(cashFlowState.hardCosts).length > 0 ||
+                  Object.keys(cashFlowState.softCosts).length > 0) && (
+                  <tr>
+                    <td className={`${styles.totalCell} ${styles.expense}`}>
+                      Total Expenses
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.expense}`}>
+                      $
+                      {(
+                        Object.values(cashFlowState.landCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                        Object.values(cashFlowState.hardCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                        Object.values(cashFlowState.softCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        )
+                      ).toLocaleString()}
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.expense}`}>
+                      -
+                    </td>
+                    <td className={`${styles.totalCell} ${styles.expense}`}>
+                      -
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+
+              {/* Cash Flow Summary Header */}
+              <thead>
+                <tr>
+                  <th className={styles.headerCell} colSpan={4}>
+                    Cash Flow Summary
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Summary Total Revenue Row */}
+                <tr>
+                  <td className={`${styles.totalCell} ${styles.revenue}`}>
+                    Total Revenue
+                  </td>
+                  <td className={`${styles.totalCell} ${styles.revenue}`}>
+                    $
+                    {(
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                      Object.values(cashFlowState.otherIncome).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      )
+                    ).toLocaleString()}
+                  </td>
+                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
+                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
+                </tr>
+
+                {/* Summary Total Expenses Row */}
+                <tr>
+                  <td className={`${styles.totalCell} ${styles.expense}`}>
+                    Total Expenses
+                  </td>
+                  <td className={`${styles.totalCell} ${styles.expense}`}>
+                    $
+                    {(
+                      Object.values(cashFlowState.landCosts).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                      Object.values(cashFlowState.hardCosts).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                      Object.values(cashFlowState.softCosts).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      )
+                    ).toLocaleString()}
+                  </td>
+                  <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
+                  <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
+                </tr>
+
+                {/* Net Cash Flow Row */}
+                <tr>
+                  <td
+                    className={`${styles.totalCell} ${
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                        Object.values(cashFlowState.otherIncome).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) -
+                        (Object.values(cashFlowState.landCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                          Object.values(cashFlowState.hardCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          ) +
+                          Object.values(cashFlowState.softCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          )) >=
+                      0
+                        ? styles.revenue
+                        : styles.expense
+                    }`}
+                  >
+                    Net Cash Flow
+                  </td>
+                  <td
+                    className={`${styles.totalCell} ${
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                        Object.values(cashFlowState.otherIncome).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) -
+                        (Object.values(cashFlowState.landCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                          Object.values(cashFlowState.hardCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          ) +
+                          Object.values(cashFlowState.softCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          )) >=
+                      0
+                        ? styles.revenue
+                        : styles.expense
+                    }`}
+                  >
+                    $
+                    {(
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                      Object.values(cashFlowState.otherIncome).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) -
+                      (Object.values(cashFlowState.landCosts).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                        Object.values(cashFlowState.hardCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                        Object.values(cashFlowState.softCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ))
+                    ).toLocaleString()}
+                  </td>
+                  <td
+                    className={`${styles.totalCell} ${
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                        Object.values(cashFlowState.otherIncome).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) -
+                        (Object.values(cashFlowState.landCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                          Object.values(cashFlowState.hardCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          ) +
+                          Object.values(cashFlowState.softCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          )) >=
+                      0
+                        ? styles.revenue
+                        : styles.expense
+                    }`}
+                  >
+                    -
+                  </td>
+                  <td
+                    className={`${styles.totalCell} ${
+                      Object.values(cashFlowState.units).reduce(
+                        (sum, item) => sum + item.amount,
+                        0
+                      ) +
+                        Object.values(cashFlowState.otherIncome).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) -
+                        (Object.values(cashFlowState.landCosts).reduce(
+                          (sum, item) => sum + item.amount,
+                          0
+                        ) +
+                          Object.values(cashFlowState.hardCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          ) +
+                          Object.values(cashFlowState.softCosts).reduce(
+                            (sum, item) => sum + item.amount,
+                            0
+                          )) >=
+                      0
+                        ? styles.revenue
+                        : styles.expense
+                    }`}
+                  >
+                    -
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -672,6 +1132,24 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     })}
                   </tr>
                 ))}
+
+                {/* Units Total Row - Monthly Values */}
+                {proforma.unitMix && proforma.unitMix.length > 0 && (
+                  <tr>
+                    {Array.from({ length: 120 }, (_, month) => {
+                      const monthNumber = month + 1;
+                      const value = calculateUnitsTotal(monthNumber);
+                      return (
+                        <td
+                          key={monthNumber}
+                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
                 {/* Other Income Section Header */}
                 <tr>
                   {Array.from({ length: 120 }, (_, month) => (
@@ -700,6 +1178,44 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     })}
                   </tr>
                 ))}
+
+                {/* Other Income Total Row - Monthly Values */}
+                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+                  <tr>
+                    {Array.from({ length: 120 }, (_, month) => {
+                      const monthNumber = month + 1;
+                      const value = calculateOtherIncomeTotal(monthNumber);
+                      return (
+                        <td
+                          key={monthNumber}
+                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
+
+                {/* Revenue Total Row - Monthly Values */}
+                {((proforma.unitMix && proforma.unitMix.length > 0) ||
+                  (proforma.otherIncome &&
+                    proforma.otherIncome.length > 0)) && (
+                  <tr>
+                    {Array.from({ length: 120 }, (_, month) => {
+                      const monthNumber = month + 1;
+                      const value = calculateRevenueTotal(monthNumber);
+                      return (
+                        <td
+                          key={monthNumber}
+                          className={`${styles.totalCell} ${styles.revenue}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
                 {/* Expenses Section - only show if there are any costs */}
                 {(Object.keys(cashFlowState.landCosts).length > 0 ||
                   Object.keys(cashFlowState.hardCosts).length > 0 ||
@@ -744,6 +1260,22 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         </tr>
                       )
                     )}
+
+                    {/* Land Costs Total Row - Monthly Values */}
+                    <tr>
+                      {Array.from({ length: 120 }, (_, month) => {
+                        const monthNumber = month + 1;
+                        const value = calculateLandCostsTotal(monthNumber);
+                        return (
+                          <td
+                            key={monthNumber}
+                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                          >
+                            {formatMonthlyCashFlow(value)}
+                          </td>
+                        );
+                      })}
+                    </tr>
                   </>
                 )}
                 {/* Hard Costs Section */}
@@ -780,6 +1312,22 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         </tr>
                       )
                     )}
+
+                    {/* Hard Costs Total Row - Monthly Values */}
+                    <tr>
+                      {Array.from({ length: 120 }, (_, month) => {
+                        const monthNumber = month + 1;
+                        const value = calculateHardCostsTotal(monthNumber);
+                        return (
+                          <td
+                            key={monthNumber}
+                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                          >
+                            {formatMonthlyCashFlow(value)}
+                          </td>
+                        );
+                      })}
+                    </tr>
                   </>
                 )}
                 {/* Soft Costs Section */}
@@ -816,8 +1364,101 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         </tr>
                       )
                     )}
+
+                    {/* Soft Costs Total Row - Monthly Values */}
+                    <tr>
+                      {Array.from({ length: 120 }, (_, month) => {
+                        const monthNumber = month + 1;
+                        const value = calculateSoftCostsTotal(monthNumber);
+                        return (
+                          <td
+                            key={monthNumber}
+                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                          >
+                            {formatMonthlyCashFlow(value)}
+                          </td>
+                        );
+                      })}
+                    </tr>
                   </>
                 )}
+
+                {/* Total Expenses Row - Monthly Values */}
+                {(Object.keys(cashFlowState.landCosts).length > 0 ||
+                  Object.keys(cashFlowState.hardCosts).length > 0 ||
+                  Object.keys(cashFlowState.softCosts).length > 0) && (
+                  <tr>
+                    {Array.from({ length: 120 }, (_, month) => {
+                      const monthNumber = month + 1;
+                      const value = calculateExpensesTotal(monthNumber);
+                      return (
+                        <td
+                          key={monthNumber}
+                          className={`${styles.totalCell} ${styles.expense}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
+
+                {/* Cash Flow Summary Section Header */}
+                <tr>
+                  {Array.from({ length: 120 }, (_, month) => (
+                    <td key={month + 1} className={styles.monthCell}></td>
+                  ))}
+                </tr>
+
+                {/* Summary Total Revenue Row - Monthly Values */}
+                <tr>
+                  {Array.from({ length: 120 }, (_, month) => {
+                    const monthNumber = month + 1;
+                    const value = calculateRevenueTotal(monthNumber);
+                    return (
+                      <td
+                        key={monthNumber}
+                        className={`${styles.totalCell} ${styles.revenue}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Summary Total Expenses Row - Monthly Values */}
+                <tr>
+                  {Array.from({ length: 120 }, (_, month) => {
+                    const monthNumber = month + 1;
+                    const value = calculateExpensesTotal(monthNumber);
+                    return (
+                      <td
+                        key={monthNumber}
+                        className={`${styles.totalCell} ${styles.expense}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Net Cash Flow Row - Monthly Values */}
+                <tr>
+                  {Array.from({ length: 120 }, (_, month) => {
+                    const monthNumber = month + 1;
+                    const value = calculateNetCashFlow(monthNumber);
+                    return (
+                      <td
+                        key={monthNumber}
+                        className={`${styles.totalCell} ${
+                          value >= 0 ? styles.revenue : styles.expense
+                        }`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </td>
+                    );
+                  })}
+                </tr>
               </tbody>
             </table>
           </div>
