@@ -357,14 +357,58 @@ export function useCashFlowTab(proforma: Proforma) {
   const monthlyInterestRate =
     (proforma.sources?.financingCosts?.interestPct || 0) / 100 / 12;
   const debtPct = proforma.sources?.debtPct || 0;
+  const equityPct = proforma.sources?.equityPct || 0;
   const interestOnBasis = proforma.sources?.interestOnBasis || "drawnBalance";
   const payoutType = proforma.sources?.payoutType || "rolledUp";
   const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
   const constructionDebtAmount = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
+  const availableEquity = Math.round(
+    (equityPct / 100) * (proforma.totalExpenses || 0)
+  );
 
-  // Precompute interest payments for 120 months based on draw schedule from monthly expenses
+  // Helper functions to calculate financing draws
+  const calculateEquityContribution = (month: number) => {
+    const monthlyExpenses = calculateExpensesTotal(month);
+    if (monthlyExpenses <= 0) return 0;
+
+    // Calculate cumulative expenses and equity used up to this month
+    let cumulativeExpenses = 0;
+    let cumulativeEquityUsed = 0;
+
+    for (let m = 1; m <= month; m++) {
+      const expenses = calculateExpensesTotal(m);
+      cumulativeExpenses += expenses;
+
+      if (m < month) {
+        // Calculate equity used in previous months
+        const equityForThisMonth = Math.min(
+          expenses,
+          Math.max(0, availableEquity - cumulativeEquityUsed)
+        );
+        cumulativeEquityUsed += equityForThisMonth;
+      }
+    }
+
+    // For current month, use equity first up to available limit
+    const remainingEquity = Math.max(0, availableEquity - cumulativeEquityUsed);
+    return Math.min(monthlyExpenses, remainingEquity);
+  };
+
+  const calculateDebtDraw = (month: number) => {
+    const monthlyExpenses = calculateExpensesTotal(month);
+    const equityContribution = calculateEquityContribution(month);
+
+    // Debt draw covers expenses not covered by equity
+    return Math.max(0, monthlyExpenses - equityContribution);
+  };
+
+  const calculateTotalFinancingInflows = (month: number) => {
+    return calculateEquityContribution(month) + calculateDebtDraw(month);
+  };
+
+  // Precompute interest payments for 120 months based on actual debt draws
   const interestPaymentsByMonth = useMemo(() => {
     const months = 120;
     const payments = new Array<number>(months).fill(0);
@@ -391,18 +435,15 @@ export function useCashFlowTab(proforma: Proforma) {
 
     for (let idx = 0; idx < months; idx++) {
       const monthNum = idx + 1;
-      const monthlyExpensesBeforeInterest = calculateExpensesTotal(monthNum);
       const isLoanActive =
         monthNum >= loanStartMonth && monthNum <= loanEndMonth;
-      const monthlyDraw = isLoanActive
-        ? (debtPct / 100) * monthlyExpensesBeforeInterest
-        : 0;
+      const monthlyDraw = isLoanActive ? calculateDebtDraw(monthNum) : 0;
 
       // Basis for interest this month
       const basis = isLoanActive
         ? interestOnBasis === "entireLoan"
           ? constructionDebtAmount
-          : outstandingPrincipal + monthlyDraw / 2 // average draw during month
+          : outstandingPrincipal + monthlyDraw // average draw during month
         : 0;
 
       const accrual = basis * monthlyInterestRate;
@@ -431,6 +472,8 @@ export function useCashFlowTab(proforma: Proforma) {
   }, [
     monthlyInterestRate,
     debtPct,
+    equityPct,
+    availableEquity,
     interestOnBasis,
     payoutType,
     loanTerm,
@@ -458,6 +501,14 @@ export function useCashFlowTab(proforma: Proforma) {
   const calculateNetCashFlowIncludingInterest = (month: number) => {
     return (
       calculateRevenueTotal(month) -
+      calculateTotalExpensesIncludingInterest(month)
+    );
+  };
+
+  const calculateCompleteNetCashFlow = (month: number) => {
+    return (
+      calculateRevenueTotal(month) +
+      calculateTotalFinancingInflows(month) -
       calculateTotalExpensesIncludingInterest(month)
     );
   };
@@ -498,6 +549,7 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateExpensesTotal,
     monthlyInterestRate,
     debtPct,
+    equityPct,
     loanTerm,
     payoutType,
     sumInterestPayments,
@@ -505,5 +557,9 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateTotalExpensesIncludingInterest,
     calculateNetCashFlowIncludingInterest,
     loanStartMonth,
+    calculateEquityContribution,
+    calculateDebtDraw,
+    calculateTotalFinancingInflows,
+    calculateCompleteNetCashFlow,
   } as const;
 }
