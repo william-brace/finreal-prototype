@@ -46,7 +46,24 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     calculateDebtDraw,
     calculateTotalFinancingInflows,
     calculateCompleteNetCashFlow,
+    leveredIrrAnnual,
+    leveredEMx,
+    unleveredIrrAnnual,
+    unleveredEMx,
   } = useCashFlowTab(proforma);
+
+  const formatPct = (v: number | null | undefined) =>
+    v == null ? "–" : `${(v * 100).toFixed(2)}%`;
+  const formatMult = (v: number | null | undefined) =>
+    v == null ? "–" : `${v.toFixed(2)}x`;
+
+  const irrClass = (v: number | null | undefined) =>
+    v == null
+      ? styles.metricNeutral
+      : v >= 0
+      ? styles.metricPositive
+      : styles.metricNegative;
+  const emxClass = irrClass;
 
   const getCashFlowClass = (value: number) => {
     return `${styles.cashFlowCell} ${
@@ -67,6 +84,38 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className={styles.metricsGrid}>
+          <div className={styles.metricCard}>
+            <div className={styles.metricLabel}>Levered IRR (annual)</div>
+            <div
+              className={`${styles.metricValue} ${irrClass(leveredIrrAnnual)}`}
+            >
+              {formatPct(leveredIrrAnnual)}
+            </div>
+          </div>
+          <div className={styles.metricCard}>
+            <div className={styles.metricLabel}>Levered EMx</div>
+            <div className={`${styles.metricValue} ${emxClass(leveredEMx)}`}>
+              {formatMult(leveredEMx)}
+            </div>
+          </div>
+          <div className={styles.metricCard}>
+            <div className={styles.metricLabel}>Unlevered IRR (annual)</div>
+            <div
+              className={`${styles.metricValue} ${irrClass(
+                unleveredIrrAnnual
+              )}`}
+            >
+              {formatPct(unleveredIrrAnnual)}
+            </div>
+          </div>
+          <div className={styles.metricCard}>
+            <div className={styles.metricLabel}>Unlevered EMx</div>
+            <div className={`${styles.metricValue} ${emxClass(unleveredEMx)}`}>
+              {formatMult(unleveredEMx)}
+            </div>
+          </div>
+        </div>
         <div className={styles.container}>
           {/* Fixed left column */}
           <div ref={fixedColumnRef} className={styles.fixedColumn}>

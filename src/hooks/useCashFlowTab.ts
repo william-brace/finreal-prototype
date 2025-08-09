@@ -530,6 +530,101 @@ export function useCashFlowTab(proforma: Proforma) {
     cashFlowState.softCosts,
   ]);
 
+  // --- IRR & EMx calculations (monthly then annualized) ---
+  const unleveredCashFlows = useMemo(() => {
+    return Array.from({ length: 120 }, (_, i) => {
+      const month = i + 1;
+      return calculateRevenueTotal(month) - calculateExpensesTotal(month);
+    });
+  }, [cashFlowState, calculateRevenueTotal, calculateExpensesTotal]);
+
+  const leveredCashFlows = useMemo(() => {
+    return Array.from({ length: 120 }, (_, i) => {
+      const month = i + 1;
+      return calculateCompleteNetCashFlow(month);
+    });
+  }, [cashFlowState, calculateCompleteNetCashFlow]);
+
+  const computeIRRNewtonRaphson = (
+    cashFlows: number[],
+    initialGuessMonthlyRate = 0.01
+  ) => {
+    // If all non-negative or all non-positive, IRR is undefined
+    const hasPositive = cashFlows.some((v) => v > 0);
+    const hasNegative = cashFlows.some((v) => v < 0);
+    if (!hasPositive || !hasNegative) return null;
+
+    // Use periods starting at t = 1 to avoid divide-by-zero at t=0 with no CF0
+    const f = (r: number) => {
+      let npv = 0;
+      for (let t = 1; t <= cashFlows.length; t++) {
+        npv += cashFlows[t - 1] / Math.pow(1 + r, t);
+      }
+      return npv;
+    };
+    const fPrime = (r: number) => {
+      let d = 0;
+      for (let t = 1; t <= cashFlows.length; t++) {
+        d += (-t * cashFlows[t - 1]) / Math.pow(1 + r, t + 1);
+      }
+      return d;
+    };
+
+    let r = initialGuessMonthlyRate;
+    const maxIter = 100;
+    const tol = 1e-7;
+
+    for (let i = 0; i < maxIter; i++) {
+      // Clamp to > -1 to avoid invalid bases
+      if (r <= -0.999999) r = -0.999999;
+      const value = f(r);
+      const deriv = fPrime(r);
+      if (Math.abs(deriv) < 1e-12) break;
+      const next = r - value / deriv;
+      if (isNaN(next) || !isFinite(next)) break;
+      if (Math.abs(next - r) < tol) {
+        return next;
+      }
+      r = next;
+    }
+
+    return null; // did not converge
+  };
+
+  const computeEMx = (cashFlows: number[]) => {
+    const positives = cashFlows.filter((v) => v > 0).reduce((s, v) => s + v, 0);
+    const negatives = cashFlows.filter((v) => v < 0).reduce((s, v) => s + v, 0);
+    if (negatives === 0) return null;
+    return positives / Math.abs(negatives);
+  };
+
+  const unleveredIrrMonthly = useMemo(() => {
+    return computeIRRNewtonRaphson(unleveredCashFlows);
+  }, [unleveredCashFlows]);
+
+  const leveredIrrMonthly = useMemo(() => {
+    return computeIRRNewtonRaphson(leveredCashFlows);
+  }, [leveredCashFlows]);
+
+  const unleveredIrrAnnual = useMemo(() => {
+    if (unleveredIrrMonthly == null) return null;
+    return Math.pow(1 + unleveredIrrMonthly, 12) - 1;
+  }, [unleveredIrrMonthly]);
+
+  const leveredIrrAnnual = useMemo(() => {
+    if (leveredIrrMonthly == null) return null;
+    return Math.pow(1 + leveredIrrMonthly, 12) - 1;
+  }, [leveredIrrMonthly]);
+
+  const unleveredEMx = useMemo(
+    () => computeEMx(unleveredCashFlows),
+    [unleveredCashFlows]
+  );
+  const leveredEMx = useMemo(
+    () => computeEMx(leveredCashFlows),
+    [leveredCashFlows]
+  );
+
   return {
     fixedColumnRef,
     scrollableColumnRef,
@@ -561,5 +656,10 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateDebtDraw,
     calculateTotalFinancingInflows,
     calculateCompleteNetCashFlow,
+    // New metrics
+    unleveredIrrAnnual,
+    leveredIrrAnnual,
+    unleveredEMx,
+    leveredEMx,
   } as const;
 }
