@@ -194,6 +194,9 @@ export default function ProformaEditorPage({
         onValueChange={(value) => {
           setActiveTabState(value);
           setActiveTab(id, proformaId, value);
+          // Refresh proforma from session storage so timing changes persist across tab switches
+          const latest = getProforma(id, proformaId);
+          if (latest) setProforma(latest);
         }}
         className="w-full"
       >

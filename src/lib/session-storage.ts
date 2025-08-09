@@ -4,6 +4,19 @@ import { Project } from "./mock-data";
 export type { Project };
 
 // Types
+export interface CashFlowTiming {
+  start: number;
+  length: number;
+}
+
+export interface CashFlowSchedule {
+  units: Record<string, CashFlowTiming>;
+  otherIncome: Record<string, CashFlowTiming>;
+  landCosts: Record<string, CashFlowTiming>;
+  hardCosts: Record<string, CashFlowTiming>;
+  softCosts: Record<string, CashFlowTiming>;
+}
+
 export interface Proforma {
   id: string;
   name: string;
@@ -61,6 +74,7 @@ export interface Proforma {
     annualizedRoi: number;
     unleveredEmx: number;
   };
+  cashFlowSchedule: CashFlowSchedule;
 }
 
 export interface Unit {
@@ -300,6 +314,13 @@ export function createNewProforma(
       roi: 0,
       annualizedRoi: 0,
       unleveredEmx: 0,
+    },
+    cashFlowSchedule: {
+      units: {},
+      otherIncome: {},
+      landCosts: {},
+      hardCosts: {},
+      softCosts: {},
     },
   };
 }

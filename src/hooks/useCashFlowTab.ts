@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Proforma } from "@/lib/session-storage";
+import { Proforma, saveProforma, getProforma } from "@/lib/session-storage";
 
 interface CashFlowItemState {
   amount: number;
@@ -38,10 +38,11 @@ export function useCashFlowTab(proforma: Proforma) {
           (sum, unit) => sum + unit.area * unit.value,
           0
         );
+        const timing = proforma.cashFlowSchedule?.units?.[unitType.id];
         initialState.units[unitType.id] = {
           amount: totalValue,
-          start: 1,
-          length: 1,
+          start: timing?.start ?? 1,
+          length: timing?.length ?? 1,
         };
       });
     }
@@ -49,85 +50,98 @@ export function useCashFlowTab(proforma: Proforma) {
     // Initialize other income from proforma
     if (proforma.otherIncome) {
       proforma.otherIncome.forEach((income) => {
+        const timing = proforma.cashFlowSchedule?.otherIncome?.[income.id];
         initialState.otherIncome[income.id] = {
           amount: income.numberOfUnits * income.valuePerUnit,
-          start: 1,
-          length: 1,
+          start: timing?.start ?? 1,
+          length: timing?.length ?? 1,
         };
       });
     }
 
     // Initialize land costs dynamically
     if (proforma.uses.landCosts.baseCost > 0) {
+      const timing = proforma.cashFlowSchedule?.landCosts?.["baseCost"];
       initialState.landCosts["baseCost"] = {
         amount: proforma.uses.landCosts.baseCost,
-        start: 1,
-        length: 1,
+        start: timing?.start ?? 1,
+        length: timing?.length ?? 1,
       };
     }
     if (proforma.uses.landCosts.closingCost > 0) {
+      const timing = proforma.cashFlowSchedule?.landCosts?.["closingCost"];
       initialState.landCosts["closingCost"] = {
         amount: proforma.uses.landCosts.closingCost,
-        start: 1,
-        length: 1,
+        start: timing?.start ?? 1,
+        length: timing?.length ?? 1,
       };
     }
     proforma.uses.landCosts.additionalCosts?.forEach((cost, index) => {
       if (cost.amount > 0) {
-        initialState.landCosts[`additional_${index}`] = {
+        const key = `additional_${index}`;
+        const timing = proforma.cashFlowSchedule?.landCosts?.[key];
+        initialState.landCosts[key] = {
           amount: cost.amount,
-          start: 1,
-          length: 1,
+          start: timing?.start ?? 1,
+          length: timing?.length ?? 1,
         };
       }
     });
 
     // Initialize hard costs dynamically
     if (proforma.uses.hardCosts.baseCost > 0) {
+      const timing = proforma.cashFlowSchedule?.hardCosts?.["baseCost"];
       initialState.hardCosts["baseCost"] = {
         amount: proforma.uses.hardCosts.baseCost,
-        start: 3,
-        length: 18,
+        start: timing?.start ?? 3,
+        length: timing?.length ?? 18,
       };
     }
     proforma.uses.hardCosts.additionalCosts?.forEach((cost, index) => {
       if (cost.amount > 0) {
-        initialState.hardCosts[`additional_${index}`] = {
+        const key = `additional_${index}`;
+        const timing = proforma.cashFlowSchedule?.hardCosts?.[key];
+        initialState.hardCosts[key] = {
           amount: cost.amount,
-          start: 3,
-          length: 18,
+          start: timing?.start ?? 3,
+          length: timing?.length ?? 18,
         };
       }
     });
 
     // Initialize soft costs dynamically
     if (proforma.uses.softCosts.development > 0) {
+      const timing = proforma.cashFlowSchedule?.softCosts?.["development"];
       initialState.softCosts["development"] = {
         amount: proforma.uses.softCosts.development,
-        start: 2,
-        length: 12,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? 12,
       };
     }
     if (proforma.uses.softCosts.consultants > 0) {
+      const timing = proforma.cashFlowSchedule?.softCosts?.["consultants"];
       initialState.softCosts["consultants"] = {
         amount: proforma.uses.softCosts.consultants,
-        start: 1,
-        length: 6,
+        start: timing?.start ?? 1,
+        length: timing?.length ?? 6,
       };
     }
     if (proforma.uses.softCosts.adminMarketing > 0) {
+      const timing = proforma.cashFlowSchedule?.softCosts?.["adminMarketing"];
       initialState.softCosts["adminMarketing"] = {
         amount: proforma.uses.softCosts.adminMarketing,
-        start: 1,
-        length: 24,
+        start: timing?.start ?? 1,
+        length: timing?.length ?? 24,
       };
     }
     proforma.uses.softCosts.additionalCosts?.forEach((cost, index) => {
       if (cost.amount > 0) {
-        initialState.softCosts[`additional_${index}`] = {
+        const key = `additional_${index}`;
+        const timing = proforma.cashFlowSchedule?.softCosts?.[key];
+        initialState.softCosts[key] = {
           amount: cost.amount,
-          start: 2,
-          length: 12,
+          start: timing?.start ?? 2,
+          length: timing?.length ?? 12,
         };
       }
     });
@@ -135,23 +149,53 @@ export function useCashFlowTab(proforma: Proforma) {
     return initialState;
   });
 
-  // Helper function to update cash flow item
+  // Helper to build a persistable schedule from current state
+  const buildScheduleFromState = (state: CashFlowState) => {
+    const pickTiming = (obj: Record<string, CashFlowItemState>) =>
+      Object.fromEntries(
+        Object.entries(obj).map(([k, v]) => [
+          k,
+          { start: v.start, length: v.length },
+        ])
+      );
+    return {
+      units: pickTiming(state.units),
+      otherIncome: pickTiming(state.otherIncome),
+      landCosts: pickTiming(state.landCosts),
+      hardCosts: pickTiming(state.hardCosts),
+      softCosts: pickTiming(state.softCosts),
+    } as Proforma["cashFlowSchedule"];
+  };
+
+  // Helper function to update cash flow item and persist timing
   const updateCashFlowItem = (
     section: keyof CashFlowState,
     itemId: string,
     field: keyof CashFlowItemState,
     value: number
   ) => {
-    setCashFlowState((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [itemId]: {
-          ...prev[section][itemId],
-          [field]: value,
+    setCashFlowState((prev) => {
+      const next: CashFlowState = {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [itemId]: {
+            ...prev[section][itemId],
+            [field]: value,
+          },
         },
-      },
-    }));
+      };
+
+      // Persist timing to session storage via proforma
+      const nextSchedule = buildScheduleFromState(next);
+      const latest = getProforma(proforma.projectId, proforma.id) || proforma;
+      saveProforma(proforma.projectId, {
+        ...latest,
+        cashFlowSchedule: nextSchedule,
+      });
+
+      return next;
+    });
   };
 
   // Synchronize vertical scrolling between both columns
