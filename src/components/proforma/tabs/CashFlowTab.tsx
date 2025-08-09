@@ -1254,6 +1254,33 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
           </div>
           {"\u00A0"}
         </div>
+
+        <div className="bg-orange-400 flex flex-row overflow-x-auto">
+          <div className="bg-blue-400 w-[500px] flex-none sticky left-0">
+            I'll add new computations for levered/unlevered IRR and EMx using
+            Newton–Raphson in the useCashFlowTab hook, then render those four
+            metrics at the top of the CashFlowTab above the tables. I'll update
+            the CSS module to style a simple metrics grid. After the edits, I'll
+            run a build to catch any type errors.
+          </div>
+          <div className="bg-pink-400 flex-shrink-0 pr-4">
+            I'll add new computations for levered/unlevered IRR and EMx using
+            Newton–Raphson in the useCashFlowTab hook, then render those four
+            metrics at the top of the CashFlowTab above the tables. I'll update
+            the CSS module to style a simple metrics grid. After the edits, I'll
+            run a build to catch any type errors.I'll add new computations for
+            levered/unlevered IRR and EMx using Newton–Raphson in the
+            useCashFlowTab hook, then render those four metrics at the top of
+            the CashFlowTab above the tables. I'll update the CSS module to
+            style a simple metrics grid. After the edits, I'll run a build to
+            catch any type errors.I'll add new computations for
+            levered/unlevered IRR and EMx using Newton–Raphson in the
+            useCashFlowTab hook, then render those four metrics at the top of
+            the CashFlowTab above the tables. I'll update the CSS module to
+            style a simple metrics grid. After the edits, I'll run a build to
+            catch any type errors.
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
