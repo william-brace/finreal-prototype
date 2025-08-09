@@ -371,30 +371,45 @@ export function useCashFlowTab(proforma: Proforma) {
     if (monthlyInterestRate <= 0 || debtPct <= 0 || loanTerm <= 0)
       return payments;
 
+    // Find when expenses (and thus loan draws) first start
+    let loanStartMonth = months + 1; // default to beyond our range
+    for (let month = 1; month <= months; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        loanStartMonth = month;
+        break;
+      }
+    }
+
+    // If no expenses found, no loan needed
+    if (loanStartMonth > months) return payments;
+
+    // Loan runs for loanTerm months starting from loanStartMonth
+    const loanEndMonth = loanStartMonth + loanTerm - 1;
+
     let outstandingPrincipal = 0; // principal drawn, excludes accrued interest
     const accruedByMonth: number[] = new Array(months).fill(0);
 
     for (let idx = 0; idx < months; idx++) {
       const monthNum = idx + 1;
       const monthlyExpensesBeforeInterest = calculateExpensesTotal(monthNum);
-      const monthlyDraw =
-        monthNum <= loanTerm
-          ? (debtPct / 100) * monthlyExpensesBeforeInterest
-          : 0;
+      const isLoanActive =
+        monthNum >= loanStartMonth && monthNum <= loanEndMonth;
+      const monthlyDraw = isLoanActive
+        ? (debtPct / 100) * monthlyExpensesBeforeInterest
+        : 0;
 
       // Basis for interest this month
-      const basis =
-        monthNum <= loanTerm
-          ? interestOnBasis === "entireLoan"
-            ? constructionDebtAmount
-            : outstandingPrincipal + monthlyDraw / 2 // average draw during month
-          : 0;
+      const basis = isLoanActive
+        ? interestOnBasis === "entireLoan"
+          ? constructionDebtAmount
+          : outstandingPrincipal + monthlyDraw / 2 // average draw during month
+        : 0;
 
       const accrual = basis * monthlyInterestRate;
       accruedByMonth[idx] = accrual;
 
       if (payoutType === "serviced") {
-        payments[idx] = monthNum <= loanTerm ? accrual : 0;
+        payments[idx] = isLoanActive ? accrual : 0;
       } else {
         payments[idx] = 0; // rolled-up: paid at end
       }
@@ -405,9 +420,9 @@ export function useCashFlowTab(proforma: Proforma) {
 
     if (payoutType === "rolledUp") {
       const totalAccrued = accruedByMonth
-        .slice(0, Math.min(loanTerm, months))
+        .slice(loanStartMonth - 1, Math.min(loanEndMonth, months))
         .reduce((s, v) => s + v, 0);
-      const payIndex = Math.min(loanTerm, months) - 1;
+      const payIndex = Math.min(loanEndMonth, months) - 1;
       if (payIndex >= 0) payments[payIndex] = totalAccrued;
     }
 
@@ -447,6 +462,23 @@ export function useCashFlowTab(proforma: Proforma) {
     );
   };
 
+  // Calculate loan start month for display purposes
+  const loanStartMonth = useMemo(() => {
+    if (loanTerm <= 0) return 1;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        return month;
+      }
+    }
+    return 1;
+  }, [
+    loanTerm,
+    calculateExpensesTotal,
+    cashFlowState.landCosts,
+    cashFlowState.hardCosts,
+    cashFlowState.softCosts,
+  ]);
+
   return {
     fixedColumnRef,
     scrollableColumnRef,
@@ -472,5 +504,6 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateInterestPayment,
     calculateTotalExpensesIncludingInterest,
     calculateNetCashFlowIncludingInterest,
+    loanStartMonth,
   } as const;
 }

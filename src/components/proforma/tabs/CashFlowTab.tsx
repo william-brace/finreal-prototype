@@ -41,6 +41,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     calculateInterestPayment,
     calculateTotalExpensesIncludingInterest,
     calculateNetCashFlowIncludingInterest,
+    loanStartMonth,
   } = useCashFlowTab(proforma);
 
   const getCashFlowClass = (value: number) => {
@@ -471,7 +472,9 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     <td
                       className={`${styles.sectionTotalCell} ${styles.expense}`}
                     >
-                      {payoutType === "serviced" ? 1 : loanTerm}
+                      {payoutType === "serviced"
+                        ? loanStartMonth
+                        : loanStartMonth + loanTerm - 1}
                     </td>
                     <td
                       className={`${styles.sectionTotalCell} ${styles.expense}`}
