@@ -52,6 +52,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     unleveredEMx,
   } = useCashFlowTab(proforma);
 
+  // Local refs and scroll sync for the div-based grid
+
   const formatPct = (v: number | null | undefined) =>
     v == null ? "–" : `${(v * 100).toFixed(2)}%`;
   const formatMult = (v: number | null | undefined) =>
@@ -116,1169 +118,922 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
             </div>
           </div>
         </div>
+
+        {/* Cashflow grid */}
         <div className={styles.container}>
           {/* Fixed left column */}
-          <div ref={fixedColumnRef} className={styles.fixedColumn}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.headerCell} colSpan={4}>
-                    Revenue
-                  </th>
-                </tr>
-                <tr>
-                  <th className={styles.headerCell}>Item</th>
-                  <th className={styles.headerCell}>Amount</th>
-                  <th className={styles.headerCell}>Start</th>
-                  <th className={styles.headerCell}>Length</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className={styles.dataCell} colSpan={4}>
-                    Units
-                  </td>
-                </tr>
-                {/* Dynamic Unit Rows */}
-                {proforma.unitMix?.map((unitType) => (
-                  <CashFlowInputRow
-                    key={unitType.id}
-                    label={unitType.name}
-                    amount={cashFlowState.units[unitType.id]?.amount || 0}
-                    start={cashFlowState.units[unitType.id]?.start || 1}
-                    length={cashFlowState.units[unitType.id]?.length || 1}
-                    disabled={true}
-                    onStartChange={(value) =>
-                      updateCashFlowItem("units", unitType.id, "start", value)
-                    }
-                    onLengthChange={(value) =>
-                      updateCashFlowItem("units", unitType.id, "length", value)
-                    }
-                  />
-                ))}
+          <div className={styles.fixedColumn}>
+            {/* Revenue header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
+                Revenue
+              </div>
+            </div>
+            {/* Sub header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>Item</div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+            {/* Units section title */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                Units
+              </div>
+            </div>
+            {/* Dynamic unit rows */}
+            {proforma.unitMix?.map((unitType) => (
+              <div
+                key={unitType.id}
+                className={`${styles.leftRow} ${styles.rowHeight}`}
+              >
+                <div className={`${styles.leftDataCell}`}>{unitType.name}</div>
+                <div className={`${styles.leftAmountCell}`}>
+                  $
+                  {(
+                    cashFlowState.units[unitType.id]?.amount || 0
+                  ).toLocaleString()}
+                </div>
+                <div className={styles.inputWrap}>
+                  {cashFlowState.units[unitType.id]?.start ?? 1}
+                </div>
+                <div className={styles.inputWrap}>
+                  {cashFlowState.units[unitType.id]?.length ?? 1}
+                </div>
+              </div>
+            ))}
+            {/* Units total */}
+            {proforma.unitMix && proforma.unitMix.length > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>Units Total</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Object.values(cashFlowState.units)
+                    .reduce((s, v) => s + v.amount, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
 
-                {/* Units Total Row */}
-                {proforma.unitMix && proforma.unitMix.length > 0 && (
-                  <tr>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      Units Total
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      $
-                      {Object.values(cashFlowState.units)
-                        .reduce((sum, item) => sum + item.amount, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                  </tr>
+            {/* Other Income header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                Other Income
+              </div>
+            </div>
+            {proforma.otherIncome?.map((income) => (
+              <div
+                key={income.id}
+                className={`${styles.leftRow} ${styles.rowHeight}`}
+              >
+                <div className={styles.leftDataCell}>{income.name}</div>
+                <div className={styles.leftAmountCell}>
+                  $
+                  {(
+                    cashFlowState.otherIncome[income.id]?.amount || 0
+                  ).toLocaleString()}
+                </div>
+                <div className={styles.inputWrap}>
+                  {cashFlowState.otherIncome[income.id]?.start ?? 1}
+                </div>
+                <div className={styles.inputWrap}>
+                  {cashFlowState.otherIncome[income.id]?.length ?? 1}
+                </div>
+              </div>
+            ))}
+            {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Other Income Total
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Object.values(cashFlowState.otherIncome)
+                    .reduce((s, v) => s + v.amount, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+            {/* Revenue total */}
+            {((proforma.unitMix && proforma.unitMix.length > 0) ||
+              (proforma.otherIncome && proforma.otherIncome.length > 0)) && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.totalCell}`}>Total Revenue</div>
+                <div className={`${styles.totalCell}`}>
+                  $
+                  {(
+                    Object.values(cashFlowState.units).reduce(
+                      (s, v) => s + v.amount,
+                      0
+                    ) +
+                    Object.values(cashFlowState.otherIncome).reduce(
+                      (s, v) => s + v.amount,
+                      0
+                    )
+                  ).toLocaleString()}
+                </div>
+                <div className={`${styles.totalCell}`}>-</div>
+                <div className={`${styles.totalCell}`}>-</div>
+              </div>
+            )}
+
+            {/* Financing header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
+                Financing
+              </div>
+            </div>
+            {/* Equity contribution row */}
+            {proforma.sources?.equityPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Equity Contribution
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateEquityContribution(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+            {/* Debt draw row */}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateDebtDraw(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {loanStartMonth}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
+              </div>
+            )}
+            {(proforma.sources?.equityPct > 0 ||
+              (loanTerm > 0 && debtPct > 0)) && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.totalCell}`}>Total Financing</div>
+                <div className={`${styles.totalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateTotalFinancingInflows(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.totalCell}`}>-</div>
+                <div className={`${styles.totalCell}`}>-</div>
+              </div>
+            )}
+
+            {/* Expenses header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
+                Expenses
+              </div>
+            </div>
+            {/* Land costs */}
+            {Object.keys(cashFlowState.landCosts).length > 0 && (
+              <>
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                    Land Costs
+                  </div>
+                </div>
+                {Object.entries(cashFlowState.landCosts).map(
+                  ([key, landCost]) => {
+                    const index = key.startsWith("additional_")
+                      ? parseInt(key.split("_")[1])
+                      : undefined;
+                    return (
+                      <div
+                        key={key}
+                        className={`${styles.leftRow} ${styles.rowHeight}`}
+                      >
+                        <div className={styles.leftDataCell}>
+                          {getLandCostDisplayName(key, index)}
+                        </div>
+                        <div className={styles.leftAmountCell}>
+                          ${(landCost.amount || 0).toLocaleString()}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {landCost.start || 1}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {landCost.length || 1}
+                        </div>
+                      </div>
+                    );
+                  }
                 )}
-
-                {/* Other Income Section Header */}
-                <tr>
-                  <td className={styles.dataCell} colSpan={4}>
-                    Other Income
-                  </td>
-                </tr>
-
-                {/* Dynamic Other Income Rows */}
-                {proforma.otherIncome?.map((income) => (
-                  <CashFlowInputRow
-                    key={income.id}
-                    label={income.name}
-                    amount={cashFlowState.otherIncome[income.id]?.amount || 0}
-                    start={cashFlowState.otherIncome[income.id]?.start || 1}
-                    length={cashFlowState.otherIncome[income.id]?.length || 1}
-                    disabled={true}
-                    onStartChange={(value) =>
-                      updateCashFlowItem(
-                        "otherIncome",
-                        income.id,
-                        "start",
-                        value
-                      )
-                    }
-                    onLengthChange={(value) =>
-                      updateCashFlowItem(
-                        "otherIncome",
-                        income.id,
-                        "length",
-                        value
-                      )
-                    }
-                  />
-                ))}
-
-                {/* Other Income Total Row */}
-                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
-                  <tr>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      Other Income Total
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      $
-                      {Object.values(cashFlowState.otherIncome)
-                        .reduce((sum, item) => sum + item.amount, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                  </tr>
-                )}
-
-                {/* Revenue Total Row */}
-                {((proforma.unitMix && proforma.unitMix.length > 0) ||
-                  (proforma.otherIncome &&
-                    proforma.otherIncome.length > 0)) && (
-                  <tr>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      Total Revenue
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      $
-                      {(
-                        Object.values(cashFlowState.units).reduce(
-                          (sum, item) => sum + item.amount,
-                          0
-                        ) +
-                        Object.values(cashFlowState.otherIncome).reduce(
-                          (sum, item) => sum + item.amount,
-                          0
-                        )
-                      ).toLocaleString()}
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-
-              {/* Financing Header */}
-              <thead>
-                <tr>
-                  <th className={styles.headerCell} colSpan={4}>
-                    Financing
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Equity Contribution Row */}
-                {proforma.sources?.equityPct > 0 && (
-                  <tr>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      Equity Contribution
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      $
-                      {Array.from({ length: 120 }, (_, month) =>
-                        calculateEquityContribution(month + 1)
-                      )
-                        .reduce((sum, val) => sum + val, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      -
-                    </td>
-                  </tr>
-                )}
-
-                {/* Debt Draw Row */}
-                {loanTerm > 0 && debtPct > 0 && (
-                  <tr>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      Debt Draw
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      $
-                      {Array.from({ length: 120 }, (_, month) =>
-                        calculateDebtDraw(month + 1)
-                      )
-                        .reduce((sum, val) => sum + val, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {loanStartMonth}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {loanTerm}
-                    </td>
-                  </tr>
-                )}
-
-                {/* Total Financing Row */}
-                {(proforma.sources?.equityPct > 0 ||
-                  (loanTerm > 0 && debtPct > 0)) && (
-                  <tr>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      Total Financing
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      $
-                      {Array.from({ length: 120 }, (_, month) =>
-                        calculateTotalFinancingInflows(month + 1)
-                      )
-                        .reduce((sum, val) => sum + val, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-
-              {/* Expenses Header */}
-              <thead>
-                <tr>
-                  <th className={styles.headerCell} colSpan={4}>
-                    Expenses
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.keys(cashFlowState.landCosts).length > 0 && (
-                  <>
-                    {/* Land Costs Section Header */}
-                    <tr>
-                      <td className={styles.dataCell} colSpan={4}>
-                        Land Costs
-                      </td>
-                    </tr>
-
-                    {/* Dynamic Land Cost Rows */}
-                    {Object.entries(cashFlowState.landCosts).map(
-                      ([key, landCost]) => {
-                        const index = key.startsWith("additional_")
-                          ? parseInt(key.split("_")[1])
-                          : undefined;
-                        return (
-                          <CashFlowInputRow
-                            key={key}
-                            label={getLandCostDisplayName(key, index)}
-                            amount={landCost.amount || 0}
-                            start={landCost.start || 1}
-                            length={landCost.length || 1}
-                            disabled={true}
-                            onStartChange={(value) =>
-                              updateCashFlowItem(
-                                "landCosts",
-                                key,
-                                "start",
-                                value
-                              )
-                            }
-                            onLengthChange={(value) =>
-                              updateCashFlowItem(
-                                "landCosts",
-                                key,
-                                "length",
-                                value
-                              )
-                            }
-                          />
-                        );
-                      }
-                    )}
-
-                    {/* Land Costs Total Row */}
-                    <tr>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        Land Costs Total
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        $
-                        {Object.values(cashFlowState.landCosts)
-                          .reduce((sum, item) => sum + item.amount, 0)
-                          .toLocaleString()}
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                    </tr>
-                  </>
-                )}
-
-                {Object.keys(cashFlowState.hardCosts).length > 0 && (
-                  <>
-                    {/* Hard Costs Section Header */}
-                    <tr>
-                      <td className={styles.dataCell} colSpan={4}>
-                        Hard Costs
-                      </td>
-                    </tr>
-
-                    {/* Dynamic Hard Cost Rows */}
-                    {Object.entries(cashFlowState.hardCosts).map(
-                      ([key, hardCost]) => {
-                        const index = key.startsWith("additional_")
-                          ? parseInt(key.split("_")[1])
-                          : undefined;
-                        return (
-                          <CashFlowInputRow
-                            key={key}
-                            label={getHardCostDisplayName(key, index)}
-                            amount={hardCost.amount || 0}
-                            start={hardCost.start || 1}
-                            length={hardCost.length || 1}
-                            disabled={true}
-                            onStartChange={(value) =>
-                              updateCashFlowItem(
-                                "hardCosts",
-                                key,
-                                "start",
-                                value
-                              )
-                            }
-                            onLengthChange={(value) =>
-                              updateCashFlowItem(
-                                "hardCosts",
-                                key,
-                                "length",
-                                value
-                              )
-                            }
-                          />
-                        );
-                      }
-                    )}
-
-                    {/* Hard Costs Total Row */}
-                    <tr>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        Hard Costs Total
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        $
-                        {Object.values(cashFlowState.hardCosts)
-                          .reduce((sum, item) => sum + item.amount, 0)
-                          .toLocaleString()}
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                    </tr>
-                  </>
-                )}
-
-                {Object.keys(cashFlowState.softCosts).length > 0 && (
-                  <>
-                    {/* Soft Costs Section Header */}
-                    <tr>
-                      <td className={styles.dataCell} colSpan={4}>
-                        Soft Costs
-                      </td>
-                    </tr>
-
-                    {/* Dynamic Soft Cost Rows */}
-                    {Object.entries(cashFlowState.softCosts).map(
-                      ([key, softCost]) => {
-                        const index = key.startsWith("additional_")
-                          ? parseInt(key.split("_")[1])
-                          : undefined;
-                        return (
-                          <CashFlowInputRow
-                            key={key}
-                            label={getSoftCostDisplayName(key, index)}
-                            amount={softCost.amount || 0}
-                            start={softCost.start || 2}
-                            length={softCost.length || 12}
-                            disabled={true}
-                            onStartChange={(value) =>
-                              updateCashFlowItem(
-                                "softCosts",
-                                key,
-                                "start",
-                                value
-                              )
-                            }
-                            onLengthChange={(value) =>
-                              updateCashFlowItem(
-                                "softCosts",
-                                key,
-                                "length",
-                                value
-                              )
-                            }
-                          />
-                        );
-                      }
-                    )}
-
-                    {/* Soft Costs Total Row */}
-                    <tr>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        Soft Costs Total
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        $
-                        {Object.values(cashFlowState.softCosts)
-                          .reduce((sum, item) => sum + item.amount, 0)
-                          .toLocaleString()}
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                      <td
-                        className={`${styles.sectionTotalCell} ${styles.expense}`}
-                      >
-                        -
-                      </td>
-                    </tr>
-                  </>
-                )}
-
-                {/* Interest (Financing) Row in Fixed Column */}
-                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-                  <tr>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      Interest
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      ${Math.round(sumInterestPayments).toLocaleString()}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      {payoutType === "serviced"
-                        ? loanStartMonth
-                        : loanStartMonth + loanTerm - 1}
-                    </td>
-                    <td
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      {payoutType === "serviced" ? loanTerm : 1}
-                    </td>
-                  </tr>
-                )}
-
-                {/* Total Expenses Row (including Interest) */}
-                {(Object.keys(cashFlowState.landCosts).length > 0 ||
-                  Object.keys(cashFlowState.hardCosts).length > 0 ||
-                  Object.keys(cashFlowState.softCosts).length > 0 ||
-                  (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
-                  <tr>
-                    <td className={`${styles.totalCell} ${styles.expense}`}>
-                      Total Expenses
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.expense}`}>
-                      $
-                      {(
-                        Object.values(cashFlowState.landCosts).reduce(
-                          (sum, item) => sum + item.amount,
-                          0
-                        ) +
-                        Object.values(cashFlowState.hardCosts).reduce(
-                          (sum, item) => sum + item.amount,
-                          0
-                        ) +
-                        Object.values(cashFlowState.softCosts).reduce(
-                          (sum, item) => sum + item.amount,
-                          0
-                        ) +
-                        Math.round(sumInterestPayments)
-                      ).toLocaleString()}
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.expense}`}>
-                      -
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.expense}`}>
-                      -
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-
-              {/* Cash Flow Summary Header */}
-              <thead>
-                <tr>
-                  <th className={styles.headerCell} colSpan={4}>
-                    Cash Flow Summary
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Summary Total Revenue Row */}
-                <tr>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>
-                    Total Revenue
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Land Costs Total
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
                     $
-                    {(
-                      Object.values(cashFlowState.units).reduce(
-                        (sum, item) => sum + item.amount,
-                        0
-                      ) +
-                      Object.values(cashFlowState.otherIncome).reduce(
-                        (sum, item) => sum + item.amount,
-                        0
-                      )
-                    ).toLocaleString()}
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
-                </tr>
-
-                {/* Summary Total Expenses Row (including Interest) */}
-                <tr>
-                  <td className={`${styles.totalCell} ${styles.expense}`}>
-                    Total Expenses
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.expense}`}>
+                    {Object.values(cashFlowState.landCosts)
+                      .reduce((s, v) => s + v.amount, 0)
+                      .toLocaleString()}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                </div>
+              </>
+            )}
+            {/* Hard costs */}
+            {Object.keys(cashFlowState.hardCosts).length > 0 && (
+              <>
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                    Hard Costs
+                  </div>
+                </div>
+                {Object.entries(cashFlowState.hardCosts).map(
+                  ([key, hardCost]) => {
+                    const index = key.startsWith("additional_")
+                      ? parseInt(key.split("_")[1])
+                      : undefined;
+                    return (
+                      <div
+                        key={key}
+                        className={`${styles.leftRow} ${styles.rowHeight}`}
+                      >
+                        <div className={styles.leftDataCell}>
+                          {getHardCostDisplayName(key, index)}
+                        </div>
+                        <div className={styles.leftAmountCell}>
+                          ${(hardCost.amount || 0).toLocaleString()}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {hardCost.start || 1}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {hardCost.length || 1}
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Hard Costs Total
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
                     $
-                    {(
-                      Object.values(cashFlowState.landCosts).reduce(
-                        (sum, item) => sum + item.amount,
-                        0
-                      ) +
-                      Object.values(cashFlowState.hardCosts).reduce(
-                        (sum, item) => sum + item.amount,
-                        0
-                      ) +
-                      Object.values(cashFlowState.softCosts).reduce(
-                        (sum, item) => sum + item.amount,
-                        0
-                      ) +
-                      Math.round(sumInterestPayments)
-                    ).toLocaleString()}
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
-                  <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
-                </tr>
-
-                {/* Total Financing Row */}
-                {(proforma.sources?.equityPct > 0 ||
-                  (loanTerm > 0 && debtPct > 0)) && (
-                  <tr>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      Total Financing
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      $
-                      {Array.from({ length: 120 }, (_, month) =>
-                        calculateTotalFinancingInflows(month + 1)
-                      )
-                        .reduce((sum, val) => sum + val, 0)
-                        .toLocaleString()}
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                    <td className={`${styles.totalCell} ${styles.revenue}`}>
-                      -
-                    </td>
-                  </tr>
+                    {Object.values(cashFlowState.hardCosts)
+                      .reduce((s, v) => s + v.amount, 0)
+                      .toLocaleString()}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                </div>
+              </>
+            )}
+            {/* Soft costs */}
+            {Object.keys(cashFlowState.softCosts).length > 0 && (
+              <>
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                    Soft Costs
+                  </div>
+                </div>
+                {Object.entries(cashFlowState.softCosts).map(
+                  ([key, softCost]) => {
+                    const index = key.startsWith("additional_")
+                      ? parseInt(key.split("_")[1])
+                      : undefined;
+                    return (
+                      <div
+                        key={key}
+                        className={`${styles.leftRow} ${styles.rowHeight}`}
+                      >
+                        <div className={styles.leftDataCell}>
+                          {getSoftCostDisplayName(key, index)}
+                        </div>
+                        <div className={styles.leftAmountCell}>
+                          ${(softCost.amount || 0).toLocaleString()}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {softCost.start || 2}
+                        </div>
+                        <div className={styles.inputWrap}>
+                          {softCost.length || 12}
+                        </div>
+                      </div>
+                    );
+                  }
                 )}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Soft Costs Total
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    $
+                    {Object.values(cashFlowState.softCosts)
+                      .reduce((s, v) => s + v.amount, 0)
+                      .toLocaleString()}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                </div>
+              </>
+            )}
 
-                {/* Net Cash Flow Row (Revenue + Financing - Expenses) */}
-                <tr>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>
-                    Net Cash Flow
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>
-                    $0
-                  </td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
-                  <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
-                </tr>
-              </tbody>
-            </table>
+            {/* Interest row */}
+            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>Interest</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  ${Math.round(sumInterestPayments).toLocaleString()}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {payoutType === "serviced"
+                    ? loanStartMonth
+                    : loanStartMonth + loanTerm - 1}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {payoutType === "serviced" ? loanTerm : 1}
+                </div>
+              </div>
+            )}
+
+            {/* Total expenses */}
+            {(Object.keys(cashFlowState.landCosts).length > 0 ||
+              Object.keys(cashFlowState.hardCosts).length > 0 ||
+              Object.keys(cashFlowState.softCosts).length > 0 ||
+              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.totalCell} ${styles.expense}`}>
+                  Total Expenses
+                </div>
+                <div className={`${styles.totalCell} ${styles.expense}`}>
+                  $
+                  {(
+                    Object.values(cashFlowState.landCosts).reduce(
+                      (s, v) => s + v.amount,
+                      0
+                    ) +
+                    Object.values(cashFlowState.hardCosts).reduce(
+                      (s, v) => s + v.amount,
+                      0
+                    ) +
+                    Object.values(cashFlowState.softCosts).reduce(
+                      (s, v) => s + v.amount,
+                      0
+                    ) +
+                    Math.round(sumInterestPayments)
+                  ).toLocaleString()}
+                </div>
+                <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
+                <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
+              </div>
+            )}
+
+            {/* Summary header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
+                Cash Flow Summary
+              </div>
+            </div>
+            {/* Summary totals */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                Total Revenue
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {(
+                  Object.values(cashFlowState.units).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.otherIncome).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString()}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+            </div>
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                Total Expenses
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                $
+                {(
+                  Object.values(cashFlowState.landCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.hardCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.softCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Math.round(sumInterestPayments)
+                ).toLocaleString()}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
+            </div>
+            {(proforma.sources?.equityPct > 0 ||
+              (loanTerm > 0 && debtPct > 0)) && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.totalCell} ${styles.revenue}`}>
+                  Total Financing
+                </div>
+                <div className={`${styles.totalCell} ${styles.revenue}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateTotalFinancingInflows(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString()}
+                </div>
+                <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+                <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+              </div>
+            )}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                Net Cash Flow
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>$0</div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+            </div>
           </div>
-          {/* Scrollable right columns */}
-          <div ref={scrollableColumnRef} className={styles.scrollableColumn}>
-            <table className={styles.scrollableTable}>
-              <thead>
-                <tr>
-                  {/* Generate Month headers for 120 months */}
-                  {Array.from({ length: 120 }, (_, index) => (
-                    <th
-                      key={index + 1}
-                      className={`${styles.headerCell} ${styles.headerCellWide}`}
+
+          {/* Right content, scrolls with container */}
+          <div className={styles.rightColumn}>
+            {/* Blank separator aligning with Revenue header row */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+
+            {/* Month headers (aligns with left subheader) */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.monthHeaderCell}>
+                  Month {idx + 1}
+                </div>
+              ))}
+            </div>
+
+            {/* Units section header spacing */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+            {/* Dynamic Unit monthly rows */}
+            {proforma.unitMix?.map((unitType) => (
+              <div
+                key={unitType.id}
+                className={`${styles.rightRow} ${styles.rowHeight}`}
+              >
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const item = cashFlowState.units[unitType.id];
+                  const value = item ? getMonthlyValue(item, monthNumber) : 0;
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.monthCell} ${getRevenueClass(
+                        value
+                      )}`}
                     >
-                      Month {index + 1}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {/* Revenue Section Header */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => (
-                    <td key={month + 1} className={styles.monthCell}></td>
-                  ))}
-                </tr>
-                {/* Units Section Header */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => (
-                    <td key={month + 1} className={styles.monthCell}></td>
-                  ))}
-                </tr>
-                {/* Dynamic Unit Rows - Monthly Values */}
-                {proforma.unitMix?.map((unitType) => (
-                  <tr key={unitType.id}>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const item = cashFlowState.units[unitType.id];
-                      const value = item
-                        ? getMonthlyValue(item, monthNumber)
-                        : 0;
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.monthCell} ${getRevenueClass(
-                            value
-                          )}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            {/* Units total row */}
+            {proforma.unitMix && proforma.unitMix.length > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateUnitsTotal(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Spacer before Other Income list header */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+            {/* Other Income monthly rows */}
+            {proforma.otherIncome?.map((income) => (
+              <div
+                key={income.id}
+                className={`${styles.rightRow} ${styles.rowHeight}`}
+              >
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const item = cashFlowState.otherIncome[income.id];
+                  const value = item ? getMonthlyValue(item, monthNumber) : 0;
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.monthCell} ${getRevenueClass(
+                        value
+                      )}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            {/* Other Income total */}
+            {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateOtherIncomeTotal(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Revenue total */}
+            {((proforma.unitMix && proforma.unitMix.length > 0) ||
+              (proforma.otherIncome && proforma.otherIncome.length > 0)) && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateRevenueTotal(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.totalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Financing spacer rows to align with left labels */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+            {proforma.sources?.equityPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateEquityContribution(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateDebtDraw(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {(proforma.sources?.equityPct > 0 ||
+              (loanTerm > 0 && debtPct > 0)) && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateTotalFinancingInflows(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.totalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Expenses spacers */}
+            {(Object.keys(cashFlowState.landCosts).length > 0 ||
+              Object.keys(cashFlowState.hardCosts).length > 0 ||
+              Object.keys(cashFlowState.softCosts).length > 0) && (
+              <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, idx) => (
+                  <div key={idx} className={styles.separatorCell}></div>
                 ))}
+              </div>
+            )}
 
-                {/* Units Total Row - Monthly Values */}
-                {proforma.unitMix && proforma.unitMix.length > 0 && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateUnitsTotal(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-                {/* Other Income Section Header */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => (
-                    <td key={month + 1} className={styles.monthCell}></td>
+            {/* Land costs monthly rows */}
+            {Object.keys(cashFlowState.landCosts).length > 0 && (
+              <>
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
                   ))}
-                </tr>
-                {/* Dynamic Other Income Rows - Monthly Values */}
-                {proforma.otherIncome?.map((income) => (
-                  <tr key={income.id}>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const item = cashFlowState.otherIncome[income.id];
-                      const value = item
-                        ? getMonthlyValue(item, monthNumber)
-                        : 0;
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.monthCell} ${getRevenueClass(
-                            value
-                          )}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-
-                {/* Other Income Total Row - Monthly Values */}
-                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateOtherIncomeTotal(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Revenue Total Row - Monthly Values */}
-                {((proforma.unitMix && proforma.unitMix.length > 0) ||
-                  (proforma.otherIncome &&
-                    proforma.otherIncome.length > 0)) && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateRevenueTotal(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.totalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Financing Section Header */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => (
-                    <td key={month + 1} className={styles.monthCell}></td>
-                  ))}
-                </tr>
-
-                {/* Equity Contribution Monthly Row */}
-                {proforma.sources?.equityPct > 0 && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateEquityContribution(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Debt Draw Monthly Row */}
-                {loanTerm > 0 && debtPct > 0 && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateDebtDraw(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Total Financing Monthly Row */}
-                {(proforma.sources?.equityPct > 0 ||
-                  (loanTerm > 0 && debtPct > 0)) && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateTotalFinancingInflows(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.totalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Expenses Section - only show if there are any costs */}
-                {(Object.keys(cashFlowState.landCosts).length > 0 ||
-                  Object.keys(cashFlowState.hardCosts).length > 0 ||
-                  Object.keys(cashFlowState.softCosts).length > 0) && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => (
-                      <td key={month + 1} className={styles.monthCell}></td>
-                    ))}
-                  </tr>
-                )}
-                {/* Land Costs Section */}
-                {Object.keys(cashFlowState.landCosts).length > 0 && (
-                  <>
-                    {/* Land Costs Section Header */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => (
-                        <td key={month + 1} className={styles.monthCell}></td>
-                      ))}
-                    </tr>
-
-                    {/* Dynamic Land Cost Rows - Monthly Values */}
-                    {Object.entries(cashFlowState.landCosts).map(
-                      ([key, landCost]) => (
-                        <tr key={key}>
-                          {Array.from({ length: 120 }, (_, month) => {
-                            const monthNumber = month + 1;
-                            const value = getMonthlyValue(
-                              landCost,
-                              monthNumber
-                            );
-                            return (
-                              <td
-                                key={monthNumber}
-                                className={`${
-                                  styles.monthCell
-                                } ${getCashFlowClass(-value)}`}
-                              >
-                                {formatMonthlyCashFlow(value)}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      )
-                    )}
-
-                    {/* Land Costs Total Row - Monthly Values */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => {
-                        const monthNumber = month + 1;
-                        const value = calculateLandCostsTotal(monthNumber);
+                </div>
+                {Object.entries(cashFlowState.landCosts).map(
+                  ([key, landCost]) => (
+                    <div
+                      key={key}
+                      className={`${styles.rightRow} ${styles.rowHeight}`}
+                    >
+                      {Array.from({ length: 120 }, (_, m) => {
+                        const monthNumber = m + 1;
+                        const value = getMonthlyValue(landCost, monthNumber);
                         return (
-                          <td
+                          <div
                             key={monthNumber}
-                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                            className={`${styles.monthCell} ${getCashFlowClass(
+                              -value
+                            )}`}
                           >
                             {formatMonthlyCashFlow(value)}
-                          </td>
+                          </div>
                         );
                       })}
-                    </tr>
-                  </>
+                    </div>
+                  )
                 )}
-                {/* Hard Costs Section */}
-                {Object.keys(cashFlowState.hardCosts).length > 0 && (
-                  <>
-                    {/* Hard Costs Section Header */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => (
-                        <td key={month + 1} className={styles.monthCell}></td>
-                      ))}
-                    </tr>
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateLandCostsTotal(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
-                    {/* Dynamic Hard Cost Rows - Monthly Values */}
-                    {Object.entries(cashFlowState.hardCosts).map(
-                      ([key, hardCost]) => (
-                        <tr key={key}>
-                          {Array.from({ length: 120 }, (_, month) => {
-                            const monthNumber = month + 1;
-                            const value = getMonthlyValue(
-                              hardCost,
-                              monthNumber
-                            );
-                            return (
-                              <td
-                                key={monthNumber}
-                                className={`${
-                                  styles.monthCell
-                                } ${getCashFlowClass(-value)}`}
-                              >
-                                {formatMonthlyCashFlow(value)}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      )
-                    )}
-
-                    {/* Hard Costs Total Row - Monthly Values */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => {
-                        const monthNumber = month + 1;
-                        const value = calculateHardCostsTotal(monthNumber);
-                        return (
-                          <td
-                            key={monthNumber}
-                            className={`${styles.sectionTotalCell} ${styles.expense}`}
-                          >
-                            {formatMonthlyCashFlow(value)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </>
-                )}
-                {/* Soft Costs Section */}
-                {Object.keys(cashFlowState.softCosts).length > 0 && (
-                  <>
-                    {/* Soft Costs Section Header */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => (
-                        <td key={month + 1} className={styles.monthCell}></td>
-                      ))}
-                    </tr>
-
-                    {/* Dynamic Soft Cost Rows - Monthly Values */}
-                    {Object.entries(cashFlowState.softCosts).map(
-                      ([key, softCost]) => (
-                        <tr key={key}>
-                          {Array.from({ length: 120 }, (_, month) => {
-                            const monthNumber = month + 1;
-                            const value = getMonthlyValue(
-                              softCost,
-                              monthNumber
-                            );
-                            return (
-                              <td
-                                key={monthNumber}
-                                className={`${
-                                  styles.monthCell
-                                } ${getCashFlowClass(-value)}`}
-                              >
-                                {formatMonthlyCashFlow(value)}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      )
-                    )}
-
-                    {/* Soft Costs Total Row - Monthly Values */}
-                    <tr>
-                      {Array.from({ length: 120 }, (_, month) => {
-                        const monthNumber = month + 1;
-                        const value = calculateSoftCostsTotal(monthNumber);
-                        return (
-                          <td
-                            key={monthNumber}
-                            className={`${styles.sectionTotalCell} ${styles.expense}`}
-                          >
-                            {formatMonthlyCashFlow(value)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </>
-                )}
-
-                {/* Interest (Financing) Monthly Row */}
-                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateInterestPayment(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.expense}`}
-                        >
-                          {value
-                            ? `$${Math.round(value).toLocaleString()}`
-                            : ""}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Total Expenses Row - Monthly Values (including Interest) */}
-                {(Object.keys(cashFlowState.landCosts).length > 0 ||
-                  Object.keys(cashFlowState.hardCosts).length > 0 ||
-                  Object.keys(cashFlowState.softCosts).length > 0 ||
-                  (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value =
-                        calculateTotalExpensesIncludingInterest(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.totalCell} ${styles.expense}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )}
-
-                {/* Cash Flow Summary Section Header */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => (
-                    <td key={month + 1} className={styles.monthCell}></td>
+            {/* Hard costs monthly rows */}
+            {Object.keys(cashFlowState.hardCosts).length > 0 && (
+              <>
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
                   ))}
-                </tr>
-
-                {/* Summary Total Revenue Row - Monthly Values */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => {
-                    const monthNumber = month + 1;
-                    const value = calculateRevenueTotal(monthNumber);
-                    return (
-                      <td
-                        key={monthNumber}
-                        className={`${styles.totalCell} ${styles.revenue}`}
-                      >
-                        {formatMonthlyCashFlow(value)}
-                      </td>
-                    );
-                  })}
-                </tr>
-
-                {/* Summary Total Expenses Row - Monthly Values (including Interest) */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => {
-                    const monthNumber = month + 1;
-                    const value =
-                      calculateTotalExpensesIncludingInterest(monthNumber);
-                    return (
-                      <td
-                        key={monthNumber}
-                        className={`${styles.totalCell} ${styles.expense}`}
-                      >
-                        {formatMonthlyCashFlow(value)}
-                      </td>
-                    );
-                  })}
-                </tr>
-
-                {/* Total Financing Monthly Row */}
-                {(proforma.sources?.equityPct > 0 ||
-                  (loanTerm > 0 && debtPct > 0)) && (
-                  <tr>
-                    {Array.from({ length: 120 }, (_, month) => {
-                      const monthNumber = month + 1;
-                      const value = calculateTotalFinancingInflows(monthNumber);
-                      return (
-                        <td
-                          key={monthNumber}
-                          className={`${styles.totalCell} ${styles.revenue}`}
-                        >
-                          {formatMonthlyCashFlow(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                </div>
+                {Object.entries(cashFlowState.hardCosts).map(
+                  ([key, hardCost]) => (
+                    <div
+                      key={key}
+                      className={`${styles.rightRow} ${styles.rowHeight}`}
+                    >
+                      {Array.from({ length: 120 }, (_, m) => {
+                        const monthNumber = m + 1;
+                        const value = getMonthlyValue(hardCost, monthNumber);
+                        return (
+                          <div
+                            key={monthNumber}
+                            className={`${styles.monthCell} ${getCashFlowClass(
+                              -value
+                            )}`}
+                          >
+                            {formatMonthlyCashFlow(value)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
                 )}
-
-                {/* Net Cash Flow Row - Monthly Values (Revenue + Financing - Expenses) */}
-                <tr>
-                  {Array.from({ length: 120 }, (_, month) => {
-                    const monthNumber = month + 1;
-                    const value = calculateCompleteNetCashFlow(monthNumber);
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateHardCostsTotal(monthNumber);
                     return (
-                      <td
+                      <div
                         key={monthNumber}
-                        className={`${styles.totalCell} ${
-                          value >= 0 ? styles.revenue : styles.expense
-                        }`}
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
                       >
                         {formatMonthlyCashFlow(value)}
-                      </td>
+                      </div>
                     );
                   })}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          {"\u00A0"}
-        </div>
+                </div>
+              </>
+            )}
 
-        <div className="bg-orange-400 flex flex-row overflow-x-auto">
-          <div className="bg-blue-400 w-[500px] flex-none sticky left-0">
-            I'll add new computations for levered/unlevered IRR and EMx using
-            Newton–Raphson in the useCashFlowTab hook, then render those four
-            metrics at the top of the CashFlowTab above the tables. I'll update
-            the CSS module to style a simple metrics grid. After the edits, I'll
-            run a build to catch any type errors.
-          </div>
-          <div className="bg-pink-400 flex-shrink-0 pr-4">
-            I'll add new computations for levered/unlevered IRR and EMx using
-            Newton–Raphson in the useCashFlowTab hook, then render those four
-            metrics at the top of the CashFlowTab above the tables. I'll update
-            the CSS module to style a simple metrics grid. After the edits, I'll
-            run a build to catch any type errors.I'll add new computations for
-            levered/unlevered IRR and EMx using Newton–Raphson in the
-            useCashFlowTab hook, then render those four metrics at the top of
-            the CashFlowTab above the tables. I'll update the CSS module to
-            style a simple metrics grid. After the edits, I'll run a build to
-            catch any type errors.I'll add new computations for
-            levered/unlevered IRR and EMx using Newton–Raphson in the
-            useCashFlowTab hook, then render those four metrics at the top of
-            the CashFlowTab above the tables. I'll update the CSS module to
-            style a simple metrics grid. After the edits, I'll run a build to
-            catch any type errors.
+            {/* Soft costs monthly rows */}
+            {Object.keys(cashFlowState.softCosts).length > 0 && (
+              <>
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+                {Object.entries(cashFlowState.softCosts).map(
+                  ([key, softCost]) => (
+                    <div
+                      key={key}
+                      className={`${styles.rightRow} ${styles.rowHeight}`}
+                    >
+                      {Array.from({ length: 120 }, (_, m) => {
+                        const monthNumber = m + 1;
+                        const value = getMonthlyValue(softCost, monthNumber);
+                        return (
+                          <div
+                            key={monthNumber}
+                            className={`${styles.monthCell} ${getCashFlowClass(
+                              -value
+                            )}`}
+                          >
+                            {formatMonthlyCashFlow(value)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                )}
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateSoftCostsTotal(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Interest monthly */}
+            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateInterestPayment(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      {value ? `$${Math.round(value).toLocaleString()}` : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Total expenses monthly (including interest) */}
+            {(Object.keys(cashFlowState.landCosts).length > 0 ||
+              Object.keys(cashFlowState.hardCosts).length > 0 ||
+              Object.keys(cashFlowState.softCosts).length > 0 ||
+              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value =
+                    calculateTotalExpensesIncludingInterest(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.totalCell} ${styles.expense}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Summary spacer */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+            {/* Summary totals monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateRevenueTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.revenue}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value =
+                  calculateTotalExpensesIncludingInterest(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.expense}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+            {(proforma.sources?.equityPct > 0 ||
+              (loanTerm > 0 && debtPct > 0)) && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateTotalFinancingInflows(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.totalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateCompleteNetCashFlow(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${
+                      value >= 0 ? styles.revenue : styles.expense
+                    }`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </CardContent>

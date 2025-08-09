@@ -1,101 +1,124 @@
+/* CashFlowTab styles (grid-based approach only) */
+
+/* Container and columns */
 .container {
   height: 500px;
   display: flex;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--cell-border);
   border-radius: 6px;
-  overflow: hidden;
+  overflow: auto; /* single scroll container */
+  /* shared sizing vars for alignment */
+  --row-h: 50px;
+  --month-col-w: 130px;
+  --cell-border: rgba(209, 213, 219, 0.35);
 }
 
 .fixedColumn {
+  position: sticky;
+  left: 0;
+  z-index: 2;
   background-color: #f9fafb;
-  border-right: 2px solid #d1d5db;
-  min-width: 120px;
-  overflow-y: auto;
+  border-right: 1px solid var(--cell-border);
+  min-width: 520px; /* 4 cols combined */
   flex-shrink: 0;
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.fixedColumn::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
-}
-
-.scrollableColumn {
+.rightColumn {
   flex: 1;
-  overflow-x: auto;
-  overflow-y: auto;
 }
 
-.table {
-  border-collapse: collapse;
-  width: 100%;
+/* Grid rows */
+.leftRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 0.8fr 0.8fr;
+  align-items: center;
 }
 
-.scrollableTable {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 800px;
+.rightRow {
+  display: grid;
+  grid-template-columns: repeat(120, var(--month-col-w));
+  align-items: center;
 }
 
-.headerCell {
-  border: 1px solid #d1d5db;
+.rowHeight {
+  height: var(--row-h);
+}
+
+.spanAll {
+  grid-column: 1 / -1;
+}
+
+/* Left column cells */
+.leftHeaderCell {
+  border: 1px solid var(--cell-border);
   padding-left: 8px;
   background-color: #f3f4f6;
   font-weight: 600;
   font-size: 14px;
   text-align: left;
-  height: 50px;
 }
 
-.headerCellWide {
-  min-width: 130px;
+.leftDataCell {
+  white-space: nowrap;
+  border: 1px solid var(--cell-border);
+  padding-left: 8px;
 }
 
-.headerCellExtraWide {
-  min-width: 140px;
+.leftAmountCell {
+  white-space: nowrap;
+  border: 1px solid var(--cell-border);
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
-.headerCellVeryWide {
-  min-width: 180px;
+.inputWrap {
+  border: 1px solid var(--cell-border);
+  padding-left: 8px;
+  padding-right: 8px;
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+}
+
+.sectionHeader {
+  border: 1px solid var(--cell-border);
+  background-color: #f3f4f6;
+  padding-left: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Right grid cells */
+.monthHeaderCell {
+  border: 1px solid var(--cell-border);
+  background-color: #f3f4f6;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  padding-left: 8px;
+}
+
+.separatorRow {
+  display: grid;
+  grid-template-columns: repeat(120, var(--month-col-w));
+}
+
+.separatorCell {
+  border: 1px solid var(--cell-border);
 }
 
 .monthCell {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cell-border);
   padding-left: 8px;
   padding-right: 8px;
   white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
-  height: 50px;
 }
 
-.dataCell {
-  border: 1px solid #d1d5db;
-  padding-left: 8px;
-  white-space: nowrap;
-  font-size: 13px;
-  height: 50px;
-}
-
-.inputCell {
-  border: 1px solid #d1d5db;
-  padding-left: 8px;
-  padding-right: 8px;
-  width: 75px;
-}
-
-.totalCashOutCell {
-  border: 1px solid #d1d5db;
-  padding: 8px;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: bold;
-  color: #dc2626;
-}
-
+/* Totals and revenue/expense styles */
 .revenueCell {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cell-border);
   padding: 8px;
   white-space: nowrap;
   font-size: 13px;
@@ -106,7 +129,7 @@
 }
 
 .cashFlowCell {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cell-border);
   padding: 8px;
   white-space: nowrap;
   font-size: 13px;
@@ -116,73 +139,45 @@
 .cashFlowCell.positive {
   color: #16a34a;
 }
-
 .cashFlowCell.negative {
   color: #dc2626;
 }
 
-.cumulativeCell {
-  border: 1px solid #d1d5db;
-  padding: 8px;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.cumulativeCell.positive {
-  background-color: #f0f9ff;
-  color: #1d4ed8;
-}
-
-.cumulativeCell.negative {
-  background-color: #fef2f2;
-  color: #dc2626;
-}
-
 .totalCell {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cell-border);
   padding: 8px;
   white-space: nowrap;
   font-size: 13px;
   font-weight: bold;
   background-color: #f3f4f6;
-  border-top: 2px solid #9ca3af;
+  border-top: 1px solid var(--cell-border);
 }
 
 .totalCell.revenue {
   color: #16a34a;
 }
-
 .totalCell.expense {
   color: #dc2626;
 }
 
 .sectionTotalCell {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cell-border);
   padding: 8px;
   white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
-  background-color: #e5e7eb;
-  border-top: 1px solid #9ca3af;
+  background-color: #f5f6f7;
+  border-top: 1px solid var(--cell-border);
 }
 
 .sectionTotalCell.revenue {
   color: #15803d;
 }
-
 .sectionTotalCell.expense {
   color: #b91c1c;
 }
 
-.rowEven {
-  background-color: white;
-}
-
-.rowOdd {
-  background-color: #f9fafb;
-}
-
+/* Metrics cards */
 .metricsGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
@@ -211,11 +206,36 @@
 .metricPositive {
   color: #16a34a;
 }
-
 .metricNeutral {
   color: #1f2937;
 }
-
 .metricNegative {
   color: #dc2626;
+}
+
+/* Uniform heights for all cells within the grid-based cashflow only */
+.container .leftHeaderCell,
+.container .leftDataCell,
+.container .leftAmountCell,
+.container .inputWrap,
+.container .sectionHeader,
+.container .sectionTotalCell,
+.container .totalCell,
+.container .monthCell,
+.container .monthHeaderCell {
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.container .separatorCell {
+  height: var(--row-h);
+}
+
+/* Opaque backgrounds for sticky left cells */
+.container .leftDataCell,
+.container .leftAmountCell,
+.container .inputWrap {
+  background-color: #f9fafb;
 }
