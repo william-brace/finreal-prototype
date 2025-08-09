@@ -77,6 +77,28 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     return `${styles.revenueCell} ${value > 0 ? styles.positive : ""}`;
   };
 
+  // Helpers for timing inputs: allow 0 for start, require >=1 for length
+  const clampTiming = (field: "start" | "length", value: number) => {
+    const min = field === "length" ? 1 : 0;
+    const max = 120;
+    return Math.max(min, Math.min(max, value));
+  };
+
+  const commitTiming = (
+    section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
+    itemId: string,
+    field: "start" | "length",
+    inputEl: HTMLInputElement
+  ) => {
+    const raw = inputEl.value.trim();
+    const emptyFallback = field === "length" ? 1 : 0;
+    let parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed)) parsed = emptyFallback;
+    const clamped = clampTiming(field, parsed);
+    if (clamped !== parsed) inputEl.value = String(clamped);
+    updateCashFlowItem(section, itemId, field, clamped);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -156,10 +178,68 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   ).toLocaleString()}
                 </div>
                 <div className={styles.inputWrap}>
-                  {cashFlowState.units[unitType.id]?.start ?? 1}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    max={120}
+                    step={1}
+                    className={styles.inputField}
+                    defaultValue={cashFlowState.units[unitType.id]?.start ?? 1}
+                    onBlur={(e) =>
+                      commitTiming(
+                        "units",
+                        unitType.id,
+                        "start",
+                        e.currentTarget
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        commitTiming(
+                          "units",
+                          unitType.id,
+                          "start",
+                          e.currentTarget as HTMLInputElement
+                        );
+                        (e.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
                 </div>
                 <div className={styles.inputWrap}>
-                  {cashFlowState.units[unitType.id]?.length ?? 1}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={1}
+                    max={120}
+                    step={1}
+                    className={styles.inputField}
+                    defaultValue={cashFlowState.units[unitType.id]?.length ?? 1}
+                    onBlur={(e) =>
+                      commitTiming(
+                        "units",
+                        unitType.id,
+                        "length",
+                        e.currentTarget
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        commitTiming(
+                          "units",
+                          unitType.id,
+                          "length",
+                          e.currentTarget as HTMLInputElement
+                        );
+                        (e.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
                 </div>
               </div>
             ))}
@@ -197,10 +277,72 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   ).toLocaleString()}
                 </div>
                 <div className={styles.inputWrap}>
-                  {cashFlowState.otherIncome[income.id]?.start ?? 1}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    max={120}
+                    step={1}
+                    className={styles.inputField}
+                    defaultValue={
+                      cashFlowState.otherIncome[income.id]?.start ?? 1
+                    }
+                    onBlur={(e) =>
+                      commitTiming(
+                        "otherIncome",
+                        income.id,
+                        "start",
+                        e.currentTarget
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        commitTiming(
+                          "otherIncome",
+                          income.id,
+                          "start",
+                          e.currentTarget as HTMLInputElement
+                        );
+                        (e.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
                 </div>
                 <div className={styles.inputWrap}>
-                  {cashFlowState.otherIncome[income.id]?.length ?? 1}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={1}
+                    max={120}
+                    step={1}
+                    className={styles.inputField}
+                    defaultValue={
+                      cashFlowState.otherIncome[income.id]?.length ?? 1
+                    }
+                    onBlur={(e) =>
+                      commitTiming(
+                        "otherIncome",
+                        income.id,
+                        "length",
+                        e.currentTarget
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        commitTiming(
+                          "otherIncome",
+                          income.id,
+                          "length",
+                          e.currentTarget as HTMLInputElement
+                        );
+                        (e.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
                 </div>
               </div>
             ))}
@@ -332,10 +474,68 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           ${(landCost.amount || 0).toLocaleString()}
                         </div>
                         <div className={styles.inputWrap}>
-                          {landCost.start || 1}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={0}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={landCost.start ?? 1}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "landCosts",
+                                key,
+                                "start",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "landCosts",
+                                  key,
+                                  "start",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                         <div className={styles.inputWrap}>
-                          {landCost.length || 1}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={1}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={landCost.length ?? 1}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "landCosts",
+                                key,
+                                "length",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "landCosts",
+                                  key,
+                                  "length",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                       </div>
                     );
@@ -381,10 +581,68 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           ${(hardCost.amount || 0).toLocaleString()}
                         </div>
                         <div className={styles.inputWrap}>
-                          {hardCost.start || 1}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={0}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={hardCost.start ?? 1}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "hardCosts",
+                                key,
+                                "start",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "hardCosts",
+                                  key,
+                                  "start",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                         <div className={styles.inputWrap}>
-                          {hardCost.length || 1}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={1}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={hardCost.length ?? 1}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "hardCosts",
+                                key,
+                                "length",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "hardCosts",
+                                  key,
+                                  "length",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                       </div>
                     );
@@ -430,10 +688,68 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           ${(softCost.amount || 0).toLocaleString()}
                         </div>
                         <div className={styles.inputWrap}>
-                          {softCost.start || 2}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={0}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={softCost.start ?? 2}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "softCosts",
+                                key,
+                                "start",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "softCosts",
+                                  key,
+                                  "start",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                         <div className={styles.inputWrap}>
-                          {softCost.length || 12}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            min={1}
+                            max={120}
+                            step={1}
+                            className={styles.inputField}
+                            defaultValue={softCost.length ?? 12}
+                            onBlur={(e) =>
+                              commitTiming(
+                                "softCosts",
+                                key,
+                                "length",
+                                e.currentTarget
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitTiming(
+                                  "softCosts",
+                                  key,
+                                  "length",
+                                  e.currentTarget as HTMLInputElement
+                                );
+                                (e.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
                         </div>
                       </div>
                     );
