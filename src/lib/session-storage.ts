@@ -25,6 +25,9 @@ export interface Proforma {
   sources: {
     equityPct: number;
     debtPct: number;
+    interestOnBasis: "drawnBalance" | "entireLoan";
+    payoutType: "serviced" | "rolledUp";
+    loanTerms: number;
     financingCosts: {
       interestPct: number;
       brokerFeePct: number;
@@ -262,6 +265,9 @@ export function createNewProforma(
     sources: {
       equityPct: 30,
       debtPct: 70,
+      interestOnBasis: "drawnBalance",
+      payoutType: "rolledUp",
+      loanTerms: 0,
       financingCosts: {
         interestPct: 4.95,
         brokerFeePct: 0,

@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Proforma } from "@/lib/session-storage";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { CashFlowInputRow } from "../CashFlowInputRow";
 import styles from "./CashFlowTab.module.css";
 
@@ -443,6 +443,100 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     return calculateRevenueTotal(month) - calculateExpensesTotal(month);
   };
 
+  // Interest calculation helpers
+  const monthlyInterestRate =
+    (proforma.sources?.financingCosts?.interestPct || 0) / 100 / 12;
+  const debtPct = proforma.sources?.debtPct || 0;
+  const interestOnBasis = proforma.sources?.interestOnBasis || "drawnBalance";
+  const payoutType = proforma.sources?.payoutType || "rolledUp";
+  const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
+  const constructionDebtAmount = Math.round(
+    (debtPct / 100) * (proforma.totalExpenses || 0)
+  );
+
+  // Precompute interest payments for 120 months based on draw schedule from monthly expenses
+  const interestPaymentsByMonth = useMemo(() => {
+    const months = 120;
+    const payments = new Array<number>(months).fill(0);
+    if (monthlyInterestRate <= 0 || debtPct <= 0 || loanTerm <= 0)
+      return payments;
+
+    let outstandingPrincipal = 0; // principal drawn, excludes accrued interest
+    const accruedByMonth: number[] = new Array(months).fill(0);
+
+    for (let idx = 0; idx < months; idx++) {
+      const monthNum = idx + 1;
+      const monthlyExpensesBeforeInterest = calculateExpensesTotal(monthNum);
+      const monthlyDraw =
+        monthNum <= loanTerm
+          ? (debtPct / 100) * monthlyExpensesBeforeInterest
+          : 0;
+
+      // Basis for interest this month
+      const basis =
+        monthNum <= loanTerm
+          ? interestOnBasis === "entireLoan"
+            ? constructionDebtAmount
+            : outstandingPrincipal + monthlyDraw / 2 // average draw during month
+          : 0;
+
+      const accrual = basis * monthlyInterestRate;
+      accruedByMonth[idx] = accrual;
+
+      if (payoutType === "serviced") {
+        payments[idx] = monthNum <= loanTerm ? accrual : 0;
+      } else {
+        payments[idx] = 0; // rolled-up: paid at end
+      }
+
+      // Update outstanding principal after this month's draws
+      outstandingPrincipal += monthlyDraw;
+    }
+
+    if (payoutType === "rolledUp") {
+      const totalAccrued = accruedByMonth
+        .slice(0, Math.min(loanTerm, months))
+        .reduce((s, v) => s + v, 0);
+      const payIndex = Math.min(loanTerm, months) - 1;
+      if (payIndex >= 0) payments[payIndex] = totalAccrued;
+    }
+
+    return payments;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    monthlyInterestRate,
+    debtPct,
+    interestOnBasis,
+    payoutType,
+    loanTerm,
+    // Dependencies that influence monthly expenses schedule
+    cashFlowState.landCosts,
+    cashFlowState.hardCosts,
+    cashFlowState.softCosts,
+  ]);
+
+  const calculateInterestPayment = (month: number) => {
+    if (month < 1 || month > 120) return 0;
+    return interestPaymentsByMonth[month - 1] || 0;
+  };
+
+  const sumInterestPayments = useMemo(
+    () => interestPaymentsByMonth.reduce((s, v) => s + v, 0),
+    [interestPaymentsByMonth]
+  );
+
+  // Extend expenses and net cash flow to include interest payments
+  const calculateTotalExpensesIncludingInterest = (month: number) => {
+    return calculateExpensesTotal(month) + calculateInterestPayment(month);
+  };
+
+  const calculateNetCashFlowIncludingInterest = (month: number) => {
+    return (
+      calculateRevenueTotal(month) -
+      calculateTotalExpensesIncludingInterest(month)
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -845,10 +939,37 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   </>
                 )}
 
-                {/* Total Expenses Row */}
+                {/* Interest (Financing) Row in Fixed Column */}
+                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+                  <tr>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      Interest
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      ${Math.round(sumInterestPayments).toLocaleString()}
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      {payoutType === "serviced" ? 1 : loanTerm}
+                    </td>
+                    <td
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      {payoutType === "serviced" ? loanTerm : 1}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Total Expenses Row (including Interest) */}
                 {(Object.keys(cashFlowState.landCosts).length > 0 ||
                   Object.keys(cashFlowState.hardCosts).length > 0 ||
-                  Object.keys(cashFlowState.softCosts).length > 0) && (
+                  Object.keys(cashFlowState.softCosts).length > 0 ||
+                  (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
                   <tr>
                     <td className={`${styles.totalCell} ${styles.expense}`}>
                       Total Expenses
@@ -867,7 +988,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         Object.values(cashFlowState.softCosts).reduce(
                           (sum, item) => sum + item.amount,
                           0
-                        )
+                        ) +
+                        Math.round(sumInterestPayments)
                       ).toLocaleString()}
                     </td>
                     <td className={`${styles.totalCell} ${styles.expense}`}>
@@ -911,7 +1033,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   <td className={`${styles.totalCell} ${styles.revenue}`}>-</td>
                 </tr>
 
-                {/* Summary Total Expenses Row */}
+                {/* Summary Total Expenses Row (including Interest) */}
                 <tr>
                   <td className={`${styles.totalCell} ${styles.expense}`}>
                     Total Expenses
@@ -930,14 +1052,15 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       Object.values(cashFlowState.softCosts).reduce(
                         (sum, item) => sum + item.amount,
                         0
-                      )
+                      ) +
+                      Math.round(sumInterestPayments)
                     ).toLocaleString()}
                   </td>
                   <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
                   <td className={`${styles.totalCell} ${styles.expense}`}>-</td>
                 </tr>
 
-                {/* Net Cash Flow Row */}
+                {/* Net Cash Flow Row (including Interest) */}
                 <tr>
                   <td
                     className={`${styles.totalCell} ${
@@ -960,7 +1083,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           Object.values(cashFlowState.softCosts).reduce(
                             (sum, item) => sum + item.amount,
                             0
-                          )) >=
+                          ) +
+                          Math.round(sumInterestPayments)) >=
                       0
                         ? styles.revenue
                         : styles.expense
@@ -989,7 +1113,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           Object.values(cashFlowState.softCosts).reduce(
                             (sum, item) => sum + item.amount,
                             0
-                          )) >=
+                          ) +
+                          Math.round(sumInterestPayments)) >=
                       0
                         ? styles.revenue
                         : styles.expense
@@ -1016,7 +1141,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         Object.values(cashFlowState.softCosts).reduce(
                           (sum, item) => sum + item.amount,
                           0
-                        ))
+                        ) +
+                        Math.round(sumInterestPayments))
                     ).toLocaleString()}
                   </td>
                   <td
@@ -1040,7 +1166,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           Object.values(cashFlowState.softCosts).reduce(
                             (sum, item) => sum + item.amount,
                             0
-                          )) >=
+                          ) +
+                          Math.round(sumInterestPayments)) >=
                       0
                         ? styles.revenue
                         : styles.expense
@@ -1069,7 +1196,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           Object.values(cashFlowState.softCosts).reduce(
                             (sum, item) => sum + item.amount,
                             0
-                          )) >=
+                          ) +
+                          Math.round(sumInterestPayments)) >=
                       0
                         ? styles.revenue
                         : styles.expense
@@ -1383,14 +1511,36 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   </>
                 )}
 
-                {/* Total Expenses Row - Monthly Values */}
-                {(Object.keys(cashFlowState.landCosts).length > 0 ||
-                  Object.keys(cashFlowState.hardCosts).length > 0 ||
-                  Object.keys(cashFlowState.softCosts).length > 0) && (
+                {/* Interest (Financing) Monthly Row */}
+                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
                   <tr>
                     {Array.from({ length: 120 }, (_, month) => {
                       const monthNumber = month + 1;
-                      const value = calculateExpensesTotal(monthNumber);
+                      const value = calculateInterestPayment(monthNumber);
+                      return (
+                        <td
+                          key={monthNumber}
+                          className={`${styles.sectionTotalCell} ${styles.expense}`}
+                        >
+                          {value
+                            ? `$${Math.round(value).toLocaleString()}`
+                            : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
+
+                {/* Total Expenses Row - Monthly Values (including Interest) */}
+                {(Object.keys(cashFlowState.landCosts).length > 0 ||
+                  Object.keys(cashFlowState.hardCosts).length > 0 ||
+                  Object.keys(cashFlowState.softCosts).length > 0 ||
+                  (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
+                  <tr>
+                    {Array.from({ length: 120 }, (_, month) => {
+                      const monthNumber = month + 1;
+                      const value =
+                        calculateTotalExpensesIncludingInterest(monthNumber);
                       return (
                         <td
                           key={monthNumber}
@@ -1426,11 +1576,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   })}
                 </tr>
 
-                {/* Summary Total Expenses Row - Monthly Values */}
+                {/* Summary Total Expenses Row - Monthly Values (including Interest) */}
                 <tr>
                   {Array.from({ length: 120 }, (_, month) => {
                     const monthNumber = month + 1;
-                    const value = calculateExpensesTotal(monthNumber);
+                    const value =
+                      calculateTotalExpensesIncludingInterest(monthNumber);
                     return (
                       <td
                         key={monthNumber}
@@ -1442,11 +1593,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   })}
                 </tr>
 
-                {/* Net Cash Flow Row - Monthly Values */}
+                {/* Net Cash Flow Row - Monthly Values (including Interest) */}
                 <tr>
                   {Array.from({ length: 120 }, (_, month) => {
                     const monthNumber = month + 1;
-                    const value = calculateNetCashFlow(monthNumber);
+                    const value =
+                      calculateNetCashFlowIncludingInterest(monthNumber);
                     return (
                       <td
                         key={monthNumber}

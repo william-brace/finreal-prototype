@@ -1,39 +1,75 @@
-import { useState, useEffect } from "react"
-import { Proforma, saveProforma } from "@/lib/session-storage"
-import { formatCurrency } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { Proforma, saveProforma } from "@/lib/session-storage";
+import { formatCurrency } from "@/lib/utils";
 
 interface UseSourcesUsesProps {
   proforma: Proforma;
   onProformaChange: (proforma: Proforma) => void;
 }
 
-export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesProps) {
-  const [newAdditionalCost, setNewAdditionalCost] = useState({ name: '', amount: '' })
-  const [isLandCostDialogOpen, setIsLandCostDialogOpen] = useState(false)
-  const [isHardCostDialogOpen, setIsHardCostDialogOpen] = useState(false)
-  const [isSoftCostDialogOpen, setIsSoftCostDialogOpen] = useState(false)
-  const [isAdditionalCostDialogOpen, setIsAdditionalCostDialogOpen] = useState(false)
-  const [editingCostName, setEditingCostName] = useState<string | null>(null)
-  const [editingCostType, setEditingCostType] = useState<'land' | 'hard' | 'soft' | null>(null)
+export function useSourcesUses({
+  proforma,
+  onProformaChange,
+}: UseSourcesUsesProps) {
+  const [newAdditionalCost, setNewAdditionalCost] = useState({
+    name: "",
+    amount: "",
+  });
+  const [isLandCostDialogOpen, setIsLandCostDialogOpen] = useState(false);
+  const [isHardCostDialogOpen, setIsHardCostDialogOpen] = useState(false);
+  const [isSoftCostDialogOpen, setIsSoftCostDialogOpen] = useState(false);
+  const [isAdditionalCostDialogOpen, setIsAdditionalCostDialogOpen] =
+    useState(false);
+  const [editingCostName, setEditingCostName] = useState<string | null>(null);
+  const [editingCostType, setEditingCostType] = useState<
+    "land" | "hard" | "soft" | null
+  >(null);
 
   // Initialize state from proforma with proper type checking
-  const [constructionCost, setConstructionCost] = useState<number>(proforma.uses.hardCosts.baseCost || 0)
-  const [hardCostContingencyPct, setHardCostContingencyPct] = useState<number>(proforma.uses.hardCosts.contingencyPct || 0)
-  const [softDev, setSoftDev] = useState<number>(proforma.uses.softCosts.development || 0)
-  const [softConsultants, setSoftConsultants] = useState<number>(proforma.uses.softCosts.consultants || 0)
-  const [adminMarketing, setAdminMarketing] = useState<number>(proforma.uses.softCosts.adminMarketing || 0)
-  const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(proforma.uses.softCosts.contingencyPct || 0)
-  const [equityPct, setEquityPct] = useState(proforma.sources.equityPct || 30)
-  const [debtPct, setDebtPct] = useState(proforma.sources.debtPct || 70)
-  const [interestPct, setInterestPct] = useState(proforma.sources.financingCosts.interestPct || 4.95)
-  const [brokerFeePct, setBrokerFeePct] = useState(proforma.sources.financingCosts.brokerFeePct || 0)
+  const [constructionCost, setConstructionCost] = useState<number>(
+    proforma.uses.hardCosts.baseCost || 0
+  );
+  const [hardCostContingencyPct, setHardCostContingencyPct] = useState<number>(
+    proforma.uses.hardCosts.contingencyPct || 0
+  );
+  const [softDev, setSoftDev] = useState<number>(
+    proforma.uses.softCosts.development || 0
+  );
+  const [softConsultants, setSoftConsultants] = useState<number>(
+    proforma.uses.softCosts.consultants || 0
+  );
+  const [adminMarketing, setAdminMarketing] = useState<number>(
+    proforma.uses.softCosts.adminMarketing || 0
+  );
+  const [softCostContingencyPct, setSoftCostContingencyPct] = useState<number>(
+    proforma.uses.softCosts.contingencyPct || 0
+  );
+  const [equityPct, setEquityPct] = useState(proforma.sources.equityPct || 30);
+  const [debtPct, setDebtPct] = useState(proforma.sources.debtPct || 70);
+  const [interestPct, setInterestPct] = useState(
+    proforma.sources.financingCosts.interestPct || 4.95
+  );
+  const [brokerFeePct, setBrokerFeePct] = useState(
+    proforma.sources.financingCosts.brokerFeePct || 0
+  );
+  const [interestOnBasis, setInterestOnBasis] = useState<
+    "drawnBalance" | "entireLoan"
+  >(proforma.sources.interestOnBasis || "drawnBalance");
+  const [payoutType, setPayoutType] = useState<"serviced" | "rolledUp">(
+    proforma.sources.payoutType || "rolledUp"
+  );
+  const [loanTerms, setLoanTerms] = useState<number>(
+    proforma.sources.loanTerms || 0
+  );
 
   // Land Costs specific state
-  const [landCost, setLandCost] = useState(proforma.uses.landCosts.baseCost || 0);
+  const [landCost, setLandCost] = useState(
+    proforma.uses.landCosts.baseCost || 0
+  );
   const [closingCostPercentage, setClosingCostPercentage] = useState(() => {
     const landCost = proforma.uses.landCosts.baseCost || 0;
     const closingCost = proforma.uses.landCosts.closingCost || 0;
-    return landCost > 0 ? (closingCost / landCost * 100) : 0;
+    return landCost > 0 ? (closingCost / landCost) * 100 : 0;
   });
 
   const additionalLandCosts = proforma.uses.landCosts.additionalCosts || [];
@@ -41,32 +77,57 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
   const additionalSoftCosts = proforma.uses.softCosts.additionalCosts || [];
 
   // Calculate totals with safe array checks
-  const landCosts = landCost + 
-    Math.round(landCost * closingCostPercentage / 100) + 
-    (Array.isArray(additionalLandCosts) ? additionalLandCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
-  
-  const hardCostsTotal = constructionCost + 
-    Math.round(constructionCost * (hardCostContingencyPct || 0) / 100) + 
-    (Array.isArray(additionalHardCosts) ? additionalHardCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
-  
-  const softCostsTotal = softDev + 
-    softConsultants + 
-    adminMarketing + 
-    Math.round((softDev + softConsultants + adminMarketing) * (softCostContingencyPct || 0) / 100) + 
-    (Array.isArray(additionalSoftCosts) ? additionalSoftCosts.reduce((sum, c) => sum + (c.amount || 0), 0) : 0);
-  
+  const landCosts =
+    landCost +
+    Math.round((landCost * closingCostPercentage) / 100) +
+    (Array.isArray(additionalLandCosts)
+      ? additionalLandCosts.reduce((sum, c) => sum + (c.amount || 0), 0)
+      : 0);
+
+  const hardCostsTotal =
+    constructionCost +
+    Math.round((constructionCost * (hardCostContingencyPct || 0)) / 100) +
+    (Array.isArray(additionalHardCosts)
+      ? additionalHardCosts.reduce((sum, c) => sum + (c.amount || 0), 0)
+      : 0);
+
+  const softCostsTotal =
+    softDev +
+    softConsultants +
+    adminMarketing +
+    Math.round(
+      ((softDev + softConsultants + adminMarketing) *
+        (softCostContingencyPct || 0)) /
+        100
+    ) +
+    (Array.isArray(additionalSoftCosts)
+      ? additionalSoftCosts.reduce((sum, c) => sum + (c.amount || 0), 0)
+      : 0);
+
   const totalProjectCost = landCosts + hardCostsTotal + softCostsTotal;
-  const equityAmount = formatCurrency(Math.round((equityPct / 100) * totalProjectCost));
-  const debtAmount = formatCurrency(Math.round((debtPct / 100) * totalProjectCost));
+  const equityAmount = formatCurrency(
+    Math.round((equityPct / 100) * totalProjectCost)
+  );
+  const debtAmount = formatCurrency(
+    Math.round((debtPct / 100) * totalProjectCost)
+  );
   const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
   const projectLength = proforma?.projectLength || 0;
-  const interestCostAmount = formatCurrency(Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount));
-  const brokerFeeAmount = formatCurrency(Math.round((brokerFeePct / 100) * constructionDebtAmount));
+  const interestCostAmount = formatCurrency(
+    Math.round(
+      (interestPct / 100 / 12) * projectLength * constructionDebtAmount
+    )
+  );
+  const brokerFeeAmount = formatCurrency(
+    Math.round((brokerFeePct / 100) * constructionDebtAmount)
+  );
 
   // Update proforma and save to session storage when state changes
   useEffect(() => {
     // Calculate financing costs
-    const interestCost = Math.round((interestPct / 100 / 12) * projectLength * constructionDebtAmount);
+    const interestCost = Math.round(
+      (interestPct / 100 / 12) * projectLength * constructionDebtAmount
+    );
     const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
     const totalFinancingCost = interestCost + brokerFee;
 
@@ -80,35 +141,38 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
         ...proforma.sources,
         equityPct,
         debtPct,
+        payoutType,
+        interestOnBasis,
+        loanTerms,
         financingCosts: {
           interestPct,
           brokerFeePct,
           interestCost,
           brokerFee,
-          totalFinancingCost
-        }
+          totalFinancingCost,
+        },
       },
       uses: {
         ...proforma.uses,
         landCosts: {
           baseCost: landCost,
-          closingCost: Math.round(landCost * closingCostPercentage / 100),
-          additionalCosts: additionalLandCosts
+          closingCost: Math.round((landCost * closingCostPercentage) / 100),
+          additionalCosts: additionalLandCosts,
         },
         hardCosts: {
           baseCost: constructionCost,
           contingencyPct: hardCostContingencyPct,
-          additionalCosts: additionalHardCosts
+          additionalCosts: additionalHardCosts,
         },
         softCosts: {
           development: softDev,
           consultants: softConsultants,
           adminMarketing: adminMarketing,
           contingencyPct: softCostContingencyPct,
-          additionalCosts: additionalSoftCosts
-        }
+          additionalCosts: additionalSoftCosts,
+        },
       },
-      totalExpenses: totalProjectCost
+      totalExpenses: totalProjectCost,
     };
     onProformaChange(updatedProforma);
     saveProforma(proforma.projectId, updatedProforma);
@@ -123,45 +187,73 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     debtPct,
     interestPct,
     brokerFeePct,
+    interestOnBasis,
+    payoutType,
+    loanTerms,
     landCost,
     closingCostPercentage,
     totalProjectCost,
     additionalLandCosts,
     additionalHardCosts,
-    additionalSoftCosts
+    additionalSoftCosts,
   ]);
 
-  const handleAddCost = (type: 'land' | 'hard' | 'soft') => {
+  const handleAddCost = (type: "land" | "hard" | "soft") => {
     if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
 
     const updatedProforma: Proforma = {
       ...proforma,
       uses: {
         ...proforma.uses,
-        [type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts']: {
-          ...proforma.uses[type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts'],
+        [type === "land"
+          ? "landCosts"
+          : type === "hard"
+          ? "hardCosts"
+          : "softCosts"]: {
+          ...proforma.uses[
+            type === "land"
+              ? "landCosts"
+              : type === "hard"
+              ? "hardCosts"
+              : "softCosts"
+          ],
           additionalCosts: editingCostName
-            ? proforma.uses[type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts'].additionalCosts.map(cost => 
+            ? proforma.uses[
+                type === "land"
+                  ? "landCosts"
+                  : type === "hard"
+                  ? "hardCosts"
+                  : "softCosts"
+              ].additionalCosts.map((cost) =>
                 cost.name === editingCostName
-                  ? { name: newAdditionalCost.name, amount: parseInt(newAdditionalCost.amount) || 0 }
+                  ? {
+                      name: newAdditionalCost.name,
+                      amount: parseInt(newAdditionalCost.amount) || 0,
+                    }
                   : cost
               )
             : [
-                ...proforma.uses[type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts'].additionalCosts,
+                ...proforma.uses[
+                  type === "land"
+                    ? "landCosts"
+                    : type === "hard"
+                    ? "hardCosts"
+                    : "softCosts"
+                ].additionalCosts,
                 {
                   name: newAdditionalCost.name,
-                  amount: parseInt(newAdditionalCost.amount) || 0
-                }
-              ]
-        }
-      }
+                  amount: parseInt(newAdditionalCost.amount) || 0,
+                },
+              ],
+        },
+      },
     };
 
     onProformaChange(updatedProforma);
     saveProforma(proforma.projectId, updatedProforma);
 
     // Reset state
-    setNewAdditionalCost({ name: '', amount: '' });
+    setNewAdditionalCost({ name: "", amount: "" });
     setEditingCostName(null);
     setEditingCostType(null);
     setIsAdditionalCostDialogOpen(false);
@@ -170,18 +262,35 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     setIsSoftCostDialogOpen(false);
   };
 
-  const handleDeleteAdditionalCost = (type: 'land' | 'hard' | 'soft', name: string) => {
+  const handleDeleteAdditionalCost = (
+    type: "land" | "hard" | "soft",
+    name: string
+  ) => {
     const updatedProforma: Proforma = {
       ...proforma,
       uses: {
         ...proforma.uses,
-        [type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts']: {
-          ...proforma.uses[type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts'],
-          additionalCosts: proforma.uses[type === 'land' ? 'landCosts' : type === 'hard' ? 'hardCosts' : 'softCosts'].additionalCosts.filter(
-            c => c.name !== name
-          )
-        }
-      }
+        [type === "land"
+          ? "landCosts"
+          : type === "hard"
+          ? "hardCosts"
+          : "softCosts"]: {
+          ...proforma.uses[
+            type === "land"
+              ? "landCosts"
+              : type === "hard"
+              ? "hardCosts"
+              : "softCosts"
+          ],
+          additionalCosts: proforma.uses[
+            type === "land"
+              ? "landCosts"
+              : type === "hard"
+              ? "hardCosts"
+              : "softCosts"
+          ].additionalCosts.filter((c) => c.name !== name),
+        },
+      },
     };
     onProformaChange(updatedProforma);
     saveProforma(proforma.projectId, updatedProforma);
@@ -223,6 +332,12 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     setInterestPct,
     brokerFeePct,
     setBrokerFeePct,
+    interestOnBasis,
+    setInterestOnBasis,
+    payoutType,
+    setPayoutType,
+    loanTerms,
+    setLoanTerms,
 
     // Handlers
     handleAddCost,
@@ -233,7 +348,9 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     hardCostsTotal,
     softCostsTotal,
     totalProjectCost,
-    totalProjectCostInclFinancing: totalProjectCost + (proforma.sources?.financingCosts?.totalFinancingCost || 0),
+    totalProjectCostInclFinancing:
+      totalProjectCost +
+      (proforma.sources?.financingCosts?.totalFinancingCost || 0),
     equityAmount,
     debtAmount,
     constructionDebtAmount,
@@ -249,5 +366,5 @@ export function useSourcesUses({ proforma, onProformaChange }: UseSourcesUsesPro
     additionalLandCosts,
     additionalHardCosts,
     additionalSoftCosts,
-  }
-} 
+  };
+}
