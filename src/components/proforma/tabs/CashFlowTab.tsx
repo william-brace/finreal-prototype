@@ -7,10 +7,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Proforma } from "@/lib/session-storage";
-import { CashFlowInputRow } from "../CashFlowInputRow";
-import styles from "./CashFlowTab.module.css";
 import { useCashFlowTab } from "@/hooks/useCashFlowTab";
+import { Proforma } from "@/lib/session-storage";
+import styles from "./CashFlowTab.module.css";
 
 interface CashFlowTabProps {
   proforma: Proforma;
@@ -18,8 +17,6 @@ interface CashFlowTabProps {
 
 export function CashFlowTab({ proforma }: CashFlowTabProps) {
   const {
-    fixedColumnRef,
-    scrollableColumnRef,
     cashFlowState,
     updateCashFlowItem,
     getLandCostDisplayName,
@@ -40,7 +37,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     sumInterestPayments,
     calculateInterestPayment,
     calculateTotalExpensesIncludingInterest,
-    calculateNetCashFlowIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,
     calculateDebtDraw,

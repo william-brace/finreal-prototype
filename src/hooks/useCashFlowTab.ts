@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Proforma, saveProforma, getProforma } from "@/lib/session-storage";
+import { getProforma, Proforma, saveProforma } from "@/lib/session-storage";
+import { useMemo, useState } from "react";
 
 interface CashFlowItemState {
   amount: number;
@@ -18,9 +18,6 @@ interface CashFlowState {
 }
 
 export function useCashFlowTab(proforma: Proforma) {
-  const fixedColumnRef = useRef<HTMLDivElement>(null);
-  const scrollableColumnRef = useRef<HTMLDivElement>(null);
-
   // Initialize cash flow state based on proforma data
   const [cashFlowState, setCashFlowState] = useState<CashFlowState>(() => {
     const initialState: CashFlowState = {
@@ -197,43 +194,6 @@ export function useCashFlowTab(proforma: Proforma) {
       return next;
     });
   };
-
-  // Synchronize vertical scrolling between both columns
-  useEffect(() => {
-    const fixedColumn = fixedColumnRef.current;
-    const scrollableColumn = scrollableColumnRef.current;
-
-    if (!fixedColumn || !scrollableColumn) return;
-
-    let isScrolling = false;
-
-    const syncScrollFromFixed = () => {
-      if (isScrolling) return;
-      isScrolling = true;
-      scrollableColumn.scrollTop = fixedColumn.scrollTop;
-      requestAnimationFrame(() => {
-        isScrolling = false;
-      });
-    };
-
-    const syncScrollFromScrollable = () => {
-      if (isScrolling) return;
-      isScrolling = true;
-      fixedColumn.scrollTop = scrollableColumn.scrollTop;
-      requestAnimationFrame(() => {
-        isScrolling = false;
-      });
-    };
-
-    fixedColumn.addEventListener("scroll", syncScrollFromFixed);
-    scrollableColumn.addEventListener("scroll", syncScrollFromScrollable);
-
-    return () => {
-      fixedColumn.removeEventListener("scroll", syncScrollFromFixed);
-      scrollableColumn.removeEventListener("scroll", syncScrollFromScrollable);
-    };
-  }, []);
-
   // Helper functions to get display names for cost items
   const getLandCostDisplayName = (key: string, index?: number) => {
     switch (key) {
@@ -374,12 +334,10 @@ export function useCashFlowTab(proforma: Proforma) {
     if (monthlyExpenses <= 0) return 0;
 
     // Calculate cumulative expenses and equity used up to this month
-    let cumulativeExpenses = 0;
     let cumulativeEquityUsed = 0;
 
     for (let m = 1; m <= month; m++) {
       const expenses = calculateExpensesTotal(m);
-      cumulativeExpenses += expenses;
 
       if (m < month) {
         // Calculate equity used in previous months
@@ -496,13 +454,6 @@ export function useCashFlowTab(proforma: Proforma) {
   // Extend expenses and net cash flow to include interest payments
   const calculateTotalExpensesIncludingInterest = (month: number) => {
     return calculateExpensesTotal(month) + calculateInterestPayment(month);
-  };
-
-  const calculateNetCashFlowIncludingInterest = (month: number) => {
-    return (
-      calculateRevenueTotal(month) -
-      calculateTotalExpensesIncludingInterest(month)
-    );
   };
 
   const calculateCompleteNetCashFlow = (month: number) => {
@@ -626,8 +577,6 @@ export function useCashFlowTab(proforma: Proforma) {
   );
 
   return {
-    fixedColumnRef,
-    scrollableColumnRef,
     cashFlowState,
     updateCashFlowItem,
     getLandCostDisplayName,
@@ -650,7 +599,6 @@ export function useCashFlowTab(proforma: Proforma) {
     sumInterestPayments,
     calculateInterestPayment,
     calculateTotalExpensesIncludingInterest,
-    calculateNetCashFlowIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,
     calculateDebtDraw,
