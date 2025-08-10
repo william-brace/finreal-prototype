@@ -46,6 +46,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     leveredEMx,
     unleveredIrrAnnual,
     unleveredEMx,
+    calculatePrincipalRepayment,
+    sumPrincipalRepayments,
   } = useCashFlowTab(proforma);
 
   // Local refs and scroll sync for the div-based grid
@@ -785,6 +787,18 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* Principal Repayment row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.sectionTotalCell}`}>
+                Principal Repayment
+              </div>
+              <div className={`${styles.sectionTotalCell}`}>
+                ${Math.round(sumPrincipalRepayments).toLocaleString()}
+              </div>
+              <div className={`${styles.sectionTotalCell}`}>-</div>
+              <div className={`${styles.sectionTotalCell}`}>-</div>
+            </div>
+
             {/* Total expenses */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
               Object.keys(cashFlowState.hardCosts).length > 0 ||
@@ -809,7 +823,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       (s, v) => s + v.amount,
                       0
                     ) +
-                    Math.round(sumInterestPayments)
+                    Math.round(sumInterestPayments) +
+                    Math.round(sumPrincipalRepayments)
                   ).toLocaleString()}
                 </div>
                 <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
@@ -863,7 +878,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     (s, v) => s + v.amount,
                     0
                   ) +
-                  Math.round(sumInterestPayments)
+                  Math.round(sumInterestPayments) +
+                  Math.round(sumPrincipalRepayments)
                 ).toLocaleString()}
               </div>
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
@@ -1254,6 +1270,22 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+
+            {/* Principal Repayment monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculatePrincipalRepayment(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.sectionTotalCell} ${styles.expense}`}
+                  >
+                    {value ? `$${Math.round(value).toLocaleString()}` : ""}
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Total expenses monthly (including interest) */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
