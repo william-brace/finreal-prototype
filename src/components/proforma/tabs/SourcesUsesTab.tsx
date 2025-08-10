@@ -1,10 +1,16 @@
-'use client'
+"use client";
 
-import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow"
-import { CostRow } from "@/components/proforma/CostRow"
-import { PercentageRow } from "@/components/proforma/PercentageRow"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdditionalCostRow } from "@/components/proforma/AdditionalCostRow";
+import { CostRow } from "@/components/proforma/CostRow";
+import { PercentageRow } from "@/components/proforma/PercentageRow";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,19 +19,29 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { NumberInput } from "@/components/ui/NumberInput"
-import { useSourcesUses } from "@/hooks/useSourcesUses"
-import { formatCurrencyWithSymbol } from "@/lib/utils"
-import { Proforma } from "@/lib/session-storage"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/NumberInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSourcesUses } from "@/hooks/useSourcesUses";
+import { formatCurrencyWithSymbol } from "@/lib/utils";
+import { Proforma } from "@/lib/session-storage";
 
 interface SourcesUsesTabProps {
   proforma: Proforma;
   onProformaChange: (proforma: Proforma) => void;
 }
 
-export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabProps) {
+export function SourcesUsesTab({
+  proforma,
+  onProformaChange,
+}: SourcesUsesTabProps) {
   const {
     // State
     newAdditionalCost,
@@ -61,6 +77,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
     setInterestPct,
     brokerFeePct,
     setBrokerFeePct,
+    interestOnBasis,
+    setInterestOnBasis,
+    payoutType,
+    setPayoutType,
+    loanTerms,
+    setLoanTerms,
 
     // Handlers
     handleAddCost,
@@ -97,13 +119,15 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
             <div>
               <div className="text-sm font-medium">Total GBA</div>
               <div className="text-lg font-semibold">
-                {proforma.gba?.toLocaleString() || '0'} SF
+                {proforma.gba?.toLocaleString() || "0"} SF
               </div>
             </div>
             <div>
               <div className="text-sm font-medium">Total Units</div>
               <div className="text-lg font-semibold">
-                {proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0).toLocaleString()}
+                {proforma.unitMix
+                  .reduce((sum, unitType) => sum + unitType.units.length, 0)
+                  .toLocaleString()}
               </div>
             </div>
           </div>
@@ -112,7 +136,9 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
           <div className="space-y-8">
             <div className="border-b pb-4">
               <h2 className="text-2xl font-bold text-primary mb-2">Uses</h2>
-              <p className="text-muted-foreground">Project costs and expenses breakdown</p>
+              <p className="text-muted-foreground">
+                Project costs and expenses breakdown
+              </p>
             </div>
 
             {/* Land Costs Section */}
@@ -120,11 +146,22 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-semibold">Land Costs</h3>
-                  <p className="text-sm text-muted-foreground">Costs associated with land acquisition and related expenses</p>
+                  <p className="text-sm text-muted-foreground">
+                    Costs associated with land acquisition and related expenses
+                  </p>
                 </div>
-                <Dialog open={isLandCostDialogOpen} onOpenChange={setIsLandCostDialogOpen}>
+                <Dialog
+                  open={isLandCostDialogOpen}
+                  onOpenChange={setIsLandCostDialogOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setIsLandCostDialogOpen(true)}>Add Land Cost</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLandCostDialogOpen(true)}
+                    >
+                      Add Land Cost
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -139,7 +176,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="land-cost-name"
                           value={newAdditionalCost.name}
-                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., Survey Costs"
                         />
                       </div>
@@ -148,7 +190,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <NumberInput
                           id="land-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
-                          onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
+                          onChange={(value) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              amount: value.toString(),
+                            }))
+                          }
                           placeholder="Enter amount"
                           allowDecimals={true}
                           showCommas={true}
@@ -157,7 +204,9 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={() => handleAddCost('land')}>Add Cost</Button>
+                      <Button onClick={() => handleAddCost("land")}>
+                        Add Cost
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -185,24 +234,32 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => handleDeleteAdditionalCost('land', cost.name)}
+                    onDelete={() =>
+                      handleDeleteAdditionalCost("land", cost.name)
+                    }
                     onEdit={() => {
-                      setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                      setNewAdditionalCost({
+                        name: cost.name,
+                        amount: cost.amount.toString(),
+                      });
                       setEditingCostName(cost.name);
-                      setEditingCostType('land');
+                      setEditingCostType("land");
                       setIsAdditionalCostDialogOpen(true);
                     }}
                   />
                 ))}
 
-                <Dialog open={isAdditionalCostDialogOpen} onOpenChange={(open) => {
-                  setIsAdditionalCostDialogOpen(open);
-                  if (!open) {
-                    setEditingCostName(null);
-                    setEditingCostType(null);
-                    setNewAdditionalCost({ name: '', amount: '' });
-                  }
-                }}>
+                <Dialog
+                  open={isAdditionalCostDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsAdditionalCostDialogOpen(open);
+                    if (!open) {
+                      setEditingCostName(null);
+                      setEditingCostType(null);
+                      setNewAdditionalCost({ name: "", amount: "" });
+                    }
+                  }}
+                >
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Edit Additional Cost</DialogTitle>
@@ -216,16 +273,28 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="additional-cost-name"
                           value={newAdditionalCost.name}
-                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., Survey Costs"
                         />
                       </div>
                       <div className="grid gap-2">
-                        <label htmlFor="additional-cost-amount">Amount ($)</label>
+                        <label htmlFor="additional-cost-amount">
+                          Amount ($)
+                        </label>
                         <NumberInput
                           id="additional-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
-                          onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
+                          onChange={(value) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              amount: value.toString(),
+                            }))
+                          }
                           placeholder="Enter amount"
                           allowDecimals={true}
                           showCommas={true}
@@ -234,17 +303,21 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={() => {
-                        if (editingCostType) {
-                          handleAddCost(editingCostType);
-                        } else if (isHardCostDialogOpen) {
-                          handleAddCost('hard');
-                        } else if (isSoftCostDialogOpen) {
-                          handleAddCost('soft');
-                        } else {
-                          handleAddCost('land');
-                        }
-                      }}>Save Changes</Button>
+                      <Button
+                        onClick={() => {
+                          if (editingCostType) {
+                            handleAddCost(editingCostType);
+                          } else if (isHardCostDialogOpen) {
+                            handleAddCost("hard");
+                          } else if (isSoftCostDialogOpen) {
+                            handleAddCost("soft");
+                          } else {
+                            handleAddCost("land");
+                          }
+                        }}
+                      >
+                        Save Changes
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -255,12 +328,22 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 {/* Per Unit and Per SF Calculations */}
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium">Total Cost per Unit</div>
+                    <div className="text-sm font-medium">
+                      Total Cost per Unit
+                    </div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalCost = landCosts + hardCostsTotal + softCostsTotal;
-                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? formatCurrencyWithSymbol(Number(totalCost / totalUnits)) : formatCurrencyWithSymbol(0);
+                        const totalCost =
+                          landCosts + hardCostsTotal + softCostsTotal;
+                        const totalUnits = proforma.unitMix.reduce(
+                          (sum, unitType) => sum + unitType.units.length,
+                          0
+                        );
+                        return totalUnits > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(totalCost / totalUnits)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -268,9 +351,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total Cost per SF</div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalCost = landCosts + hardCostsTotal + softCostsTotal;
+                        const totalCost =
+                          landCosts + hardCostsTotal + softCostsTotal;
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? formatCurrencyWithSymbol(Number(totalCost / gba)) : formatCurrencyWithSymbol(0);
+                        return gba > 0
+                          ? formatCurrencyWithSymbol(Number(totalCost / gba))
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -290,11 +376,22 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-semibold">Hard Costs</h3>
-                  <p className="text-sm text-muted-foreground">Costs associated with construction and related expenses</p>
+                  <p className="text-sm text-muted-foreground">
+                    Costs associated with construction and related expenses
+                  </p>
                 </div>
-                <Dialog open={isHardCostDialogOpen} onOpenChange={setIsHardCostDialogOpen}>
+                <Dialog
+                  open={isHardCostDialogOpen}
+                  onOpenChange={setIsHardCostDialogOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setIsHardCostDialogOpen(true)}>Add Hard Cost</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsHardCostDialogOpen(true)}
+                    >
+                      Add Hard Cost
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -309,7 +406,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="hard-cost-name"
                           value={newAdditionalCost.name}
-                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., Site Work"
                         />
                       </div>
@@ -318,7 +420,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <NumberInput
                           id="hard-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
-                          onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
+                          onChange={(value) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              amount: value.toString(),
+                            }))
+                          }
                           placeholder="Enter amount"
                           allowDecimals={true}
                           showCommas={true}
@@ -327,10 +434,18 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={() => {
-                        if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
-                        handleAddCost('hard');
-                      }}>Add Cost</Button>
+                      <Button
+                        onClick={() => {
+                          if (
+                            !newAdditionalCost.name ||
+                            !newAdditionalCost.amount
+                          )
+                            return;
+                          handleAddCost("hard");
+                        }}
+                      >
+                        Add Cost
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -356,11 +471,16 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => handleDeleteAdditionalCost('hard', cost.name)}
+                    onDelete={() =>
+                      handleDeleteAdditionalCost("hard", cost.name)
+                    }
                     onEdit={() => {
-                      setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                      setNewAdditionalCost({
+                        name: cost.name,
+                        amount: cost.amount.toString(),
+                      });
                       setEditingCostName(cost.name);
-                      setEditingCostType('hard');
+                      setEditingCostType("hard");
                       setIsAdditionalCostDialogOpen(true);
                     }}
                   />
@@ -371,11 +491,20 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="mt-6 pt-4 border-t border-border/50">
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium">Total Cost per Unit</div>
+                    <div className="text-sm font-medium">
+                      Total Cost per Unit
+                    </div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? formatCurrencyWithSymbol(Number(hardCostsTotal / totalUnits)) : formatCurrencyWithSymbol(0);
+                        const totalUnits = proforma.unitMix.reduce(
+                          (sum, unitType) => sum + unitType.units.length,
+                          0
+                        );
+                        return totalUnits > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(hardCostsTotal / totalUnits)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -384,7 +513,11 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-semibold">
                       {(() => {
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? formatCurrencyWithSymbol(Number(hardCostsTotal / gba)) : formatCurrencyWithSymbol(0);
+                        return gba > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(hardCostsTotal / gba)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -403,11 +536,23 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-semibold">Soft Costs</h3>
-                  <p className="text-sm text-muted-foreground">Costs associated with development, consultants, admin, and marketing</p>
+                  <p className="text-sm text-muted-foreground">
+                    Costs associated with development, consultants, admin, and
+                    marketing
+                  </p>
                 </div>
-                <Dialog open={isSoftCostDialogOpen} onOpenChange={setIsSoftCostDialogOpen}>
+                <Dialog
+                  open={isSoftCostDialogOpen}
+                  onOpenChange={setIsSoftCostDialogOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setIsSoftCostDialogOpen(true)}>Add Soft Cost</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSoftCostDialogOpen(true)}
+                    >
+                      Add Soft Cost
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -422,7 +567,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <Input
                           id="soft-cost-name"
                           value={newAdditionalCost.name}
-                          onChange={(e) => setNewAdditionalCost(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., Legal Fees"
                         />
                       </div>
@@ -431,7 +581,12 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                         <NumberInput
                           id="soft-cost-amount"
                           value={parseFloat(newAdditionalCost.amount) || 0}
-                          onChange={(value) => setNewAdditionalCost(prev => ({ ...prev, amount: value.toString() }))}
+                          onChange={(value) =>
+                            setNewAdditionalCost((prev) => ({
+                              ...prev,
+                              amount: value.toString(),
+                            }))
+                          }
                           placeholder="Enter amount"
                           allowDecimals={true}
                           showCommas={true}
@@ -440,10 +595,18 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={() => {
-                        if (!newAdditionalCost.name || !newAdditionalCost.amount) return;
-                        handleAddCost('soft');
-                      }}>Add Cost</Button>
+                      <Button
+                        onClick={() => {
+                          if (
+                            !newAdditionalCost.name ||
+                            !newAdditionalCost.amount
+                          )
+                            return;
+                          handleAddCost("soft");
+                        }}
+                      >
+                        Add Cost
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -481,11 +644,16 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     key={cost.name}
                     name={cost.name}
                     amount={cost.amount}
-                    onDelete={() => handleDeleteAdditionalCost('soft', cost.name)}
+                    onDelete={() =>
+                      handleDeleteAdditionalCost("soft", cost.name)
+                    }
                     onEdit={() => {
-                      setNewAdditionalCost({ name: cost.name, amount: cost.amount.toString() });
+                      setNewAdditionalCost({
+                        name: cost.name,
+                        amount: cost.amount.toString(),
+                      });
                       setEditingCostName(cost.name);
-                      setEditingCostType('soft');
+                      setEditingCostType("soft");
                       setIsAdditionalCostDialogOpen(true);
                     }}
                   />
@@ -496,11 +664,20 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
               <div className="mt-6 pt-4 border-t border-border/50">
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium">Total Cost per Unit</div>
+                    <div className="text-sm font-medium">
+                      Total Cost per Unit
+                    </div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? formatCurrencyWithSymbol(Number(softCostsTotal / totalUnits)) : formatCurrencyWithSymbol(0);
+                        const totalUnits = proforma.unitMix.reduce(
+                          (sum, unitType) => sum + unitType.units.length,
+                          0
+                        );
+                        return totalUnits > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(softCostsTotal / totalUnits)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -509,7 +686,11 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-semibold">
                       {(() => {
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? formatCurrencyWithSymbol(Number(softCostsTotal / gba)) : formatCurrencyWithSymbol(0);
+                        return gba > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(softCostsTotal / gba)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -538,7 +719,9 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
           <div className="space-y-8">
             <div className="border-b pb-4">
               <h2 className="text-2xl font-bold text-primary mb-2">Sources</h2>
-              <p className="text-muted-foreground">How the project is financed</p>
+              <p className="text-muted-foreground">
+                How the project is financed
+              </p>
             </div>
 
             <div className="bg-muted/30 p-6 rounded-lg space-y-4">
@@ -565,6 +748,61 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 }}
               />
 
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Interest On</label>
+                  <Select
+                    value={interestOnBasis}
+                    onValueChange={(val) =>
+                      setInterestOnBasis(val as "drawnBalance" | "entireLoan")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select basis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="drawnBalance">
+                        Drawn Balance
+                      </SelectItem>
+                      <SelectItem value="entireLoan">Entire Loan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Payout</label>
+                  <Select
+                    value={payoutType}
+                    onValueChange={(val) =>
+                      setPayoutType(val as "serviced" | "rolledUp")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payout" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="serviced">Serviced</SelectItem>
+                      <SelectItem value="rolledUp">Rolled up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label
+                    htmlFor="loan-term-months"
+                    className="text-sm font-medium"
+                  >
+                    Term (months)
+                  </label>
+                  <NumberInput
+                    id="loan-term-months"
+                    value={loanTerms || 0}
+                    onChange={(value) => setLoanTerms(Number(value) || 0)}
+                    placeholder="Enter months"
+                    allowDecimals={false}
+                    showCommas={false}
+                  />
+                </div>
+              </div>
+
               {/* Total Sources */}
               <div className="mt-6 pt-4 border-t border-border/50">
                 <div className="space-y-2 mb-4">
@@ -572,8 +810,15 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total per Unit</div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? formatCurrencyWithSymbol(Number(totalProjectCost / totalUnits)) : formatCurrencyWithSymbol(0);
+                        const totalUnits = proforma.unitMix.reduce(
+                          (sum, unitType) => sum + unitType.units.length,
+                          0
+                        );
+                        return totalUnits > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(totalProjectCost / totalUnits)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -582,7 +827,11 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-semibold">
                       {(() => {
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? formatCurrencyWithSymbol(Number(totalProjectCost / gba)) : formatCurrencyWithSymbol(0);
+                        return gba > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(totalProjectCost / gba)
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -600,11 +849,17 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
           {/* FINANCING COSTS SECTION */}
           <div className="space-y-8">
             <div className="border-b pb-4">
-              <h2 className="text-2xl font-bold text-primary mb-2">Financing Costs</h2>
-              <p className="text-muted-foreground">Costs associated with financing the project</p>
+              <h2 className="text-2xl font-bold text-primary mb-2">
+                Financing Costs
+              </h2>
+              <p className="text-muted-foreground">
+                Costs associated with financing the project
+              </p>
             </div>
 
             <div className="bg-muted/30 p-6 rounded-lg space-y-4">
+              {/* Financing Options */}
+
               {/* Interest Cost */}
               <PercentageRow
                 label="Interest cost"
@@ -635,8 +890,18 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-medium">Total per Unit</div>
                     <div className="text-sm font-semibold">
                       {(() => {
-                        const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                        return totalUnits > 0 ? formatCurrencyWithSymbol(Number(proforma.sources.financingCosts.totalFinancingCost / totalUnits)) : formatCurrencyWithSymbol(0);
+                        const totalUnits = proforma.unitMix.reduce(
+                          (sum, unitType) => sum + unitType.units.length,
+                          0
+                        );
+                        return totalUnits > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(
+                                proforma.sources.financingCosts
+                                  .totalFinancingCost / totalUnits
+                              )
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
@@ -645,15 +910,26 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                     <div className="text-sm font-semibold">
                       {(() => {
                         const gba = proforma.gba || 0;
-                        return gba > 0 ? formatCurrencyWithSymbol(Number(proforma.sources.financingCosts.totalFinancingCost / gba)) : formatCurrencyWithSymbol(0);
+                        return gba > 0
+                          ? formatCurrencyWithSymbol(
+                              Number(
+                                proforma.sources.financingCosts
+                                  .totalFinancingCost / gba
+                              )
+                            )
+                          : formatCurrencyWithSymbol(0);
                       })()}
                     </div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <div className="text-lg font-semibold">Total Financing Costs</div>
+                  <div className="text-lg font-semibold">
+                    Total Financing Costs
+                  </div>
                   <div className="text-lg font-bold">
-                    {formatCurrencyWithSymbol(proforma.sources?.financingCosts?.totalFinancingCost || 0)}
+                    {formatCurrencyWithSymbol(
+                      proforma.sources?.financingCosts?.totalFinancingCost || 0
+                    )}
                   </div>
                 </div>
               </div>
@@ -664,12 +940,14 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
           <div className="bg-primary/5 p-6 rounded-lg border border-primary/20">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <div className="text-xl font-bold">Total Project Cost Incl. Financing</div>
+                <div className="text-xl font-bold">
+                  Total Project Cost Incl. Financing
+                </div>
                 <div className="text-xl font-bold">
                   {formatCurrencyWithSymbol(totalProjectCostInclFinancing)}
                 </div>
               </div>
-              
+
               {/* Breakdown */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
@@ -678,18 +956,29 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="text-muted-foreground">Financing Costs</div>
-                  <div>{formatCurrencyWithSymbol(proforma.sources?.financingCosts?.totalFinancingCost || 0)}</div>
+                  <div>
+                    {formatCurrencyWithSymbol(
+                      proforma.sources?.financingCosts?.totalFinancingCost || 0
+                    )}
+                  </div>
                 </div>
               </div>
-              
+
               {/* Per Unit and Per SF Calculations */}
               <div className="space-y-2 pt-2 border-t border-primary/20">
                 <div className="flex justify-between items-center">
                   <div className="text-sm font-medium">Total Cost per Unit</div>
                   <div className="text-sm font-semibold">
                     {(() => {
-                      const totalUnits = proforma.unitMix.reduce((sum, unitType) => sum + unitType.units.length, 0);
-                      return totalUnits > 0 ? formatCurrencyWithSymbol(Number(totalProjectCostInclFinancing / totalUnits)) : formatCurrencyWithSymbol(0);
+                      const totalUnits = proforma.unitMix.reduce(
+                        (sum, unitType) => sum + unitType.units.length,
+                        0
+                      );
+                      return totalUnits > 0
+                        ? formatCurrencyWithSymbol(
+                            Number(totalProjectCostInclFinancing / totalUnits)
+                          )
+                        : formatCurrencyWithSymbol(0);
                     })()}
                   </div>
                 </div>
@@ -698,7 +987,11 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
                   <div className="text-sm font-semibold">
                     {(() => {
                       const gba = proforma.gba || 0;
-                      return gba > 0 ? formatCurrencyWithSymbol(Number(totalProjectCostInclFinancing / gba)) : formatCurrencyWithSymbol(0);
+                      return gba > 0
+                        ? formatCurrencyWithSymbol(
+                            Number(totalProjectCostInclFinancing / gba)
+                          )
+                        : formatCurrencyWithSymbol(0);
                     })()}
                   </div>
                 </div>
@@ -708,5 +1001,5 @@ export function SourcesUsesTab({ proforma, onProformaChange }: SourcesUsesTabPro
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}
