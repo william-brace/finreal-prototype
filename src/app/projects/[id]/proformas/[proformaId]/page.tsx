@@ -291,7 +291,7 @@ export default function ProformaEditorPage({
                       <h3 className="font-medium mb-2">Manual Inputs</h3>
                       <ul className="list-disc list-inside text-sm text-muted-foreground">
                         <li>Unit Mix - User defined</li>
-                        <li>Construction Debt Ratio - User defined</li>
+                        <li>Debt Ratio - User defined</li>
                         <li>Interest Rate - User defined</li>
                       </ul>
                     </div>

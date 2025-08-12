@@ -111,24 +111,22 @@ export function useSourcesUses({
   const debtAmount = formatCurrency(
     Math.round((debtPct / 100) * totalProjectCost)
   );
-  const constructionDebtAmount = Math.round((debtPct / 100) * totalProjectCost);
+  const debtAmountRaw = Math.round((debtPct / 100) * totalProjectCost);
   const projectLength = proforma?.projectLength || 0;
   const interestCostAmount = formatCurrency(
-    Math.round(
-      (interestPct / 100 / 12) * projectLength * constructionDebtAmount
-    )
+    Math.round((interestPct / 100 / 12) * projectLength * debtAmountRaw)
   );
   const brokerFeeAmount = formatCurrency(
-    Math.round((brokerFeePct / 100) * constructionDebtAmount)
+    Math.round((brokerFeePct / 100) * debtAmountRaw)
   );
 
   // Update proforma and save to session storage when state changes
   useEffect(() => {
     // Calculate financing costs
     const interestCost = Math.round(
-      (interestPct / 100 / 12) * projectLength * constructionDebtAmount
+      (interestPct / 100 / 12) * projectLength * debtAmountRaw
     );
-    const brokerFee = Math.round((brokerFeePct / 100) * constructionDebtAmount);
+    const brokerFee = Math.round((brokerFeePct / 100) * debtAmountRaw);
     const totalFinancingCost = interestCost + brokerFee;
 
     // Calculate total project cost including financing
@@ -353,7 +351,7 @@ export function useSourcesUses({
       (proforma.sources?.financingCosts?.totalFinancingCost || 0),
     equityAmount,
     debtAmount,
-    constructionDebtAmount,
+    debtAmountRaw,
     projectLength,
     interestCostAmount,
     brokerFeeAmount,

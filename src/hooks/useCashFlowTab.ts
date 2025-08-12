@@ -1,7 +1,7 @@
 "use client";
 
 import { getProforma, Proforma, saveProforma } from "@/lib/session-storage";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface CashFlowItemState {
   amount: number;
@@ -18,6 +18,35 @@ interface CashFlowState {
 }
 
 export function useCashFlowTab(proforma: Proforma) {
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener("keydown", handleEscape);
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   // Initialize cash flow state based on proforma data
   const [cashFlowState, setCashFlowState] = useState<CashFlowState>(() => {
     const initialState: CashFlowState = {
@@ -257,7 +286,10 @@ export function useCashFlowTab(proforma: Proforma) {
   // Helper function to format monthly cash flow values
   const formatMonthlyCashFlow = (value: number) => {
     if (value === 0) return "";
-    return `$${Math.round(value).toLocaleString()}`;
+    return `$${value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   // Helper functions to calculate totals for each month
@@ -320,7 +352,7 @@ export function useCashFlowTab(proforma: Proforma) {
   const equityPct = proforma.sources?.equityPct || 0;
   const payoutType = proforma.sources?.payoutType || "rolledUp";
   const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
-  const constructionDebtAmount = Math.round(
+  const debtAmountRaw = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
   const availableEquity = Math.round(
@@ -420,14 +452,11 @@ export function useCashFlowTab(proforma: Proforma) {
 
       // 4) Update outstanding principal after this month's draws
       outstandingPrincipal += debtDrawByMonth[idx];
-      // Optional: cap by constructionDebtAmount; if exceeded, truncate draws
-      if (
-        constructionDebtAmount > 0 &&
-        outstandingPrincipal > constructionDebtAmount
-      ) {
-        const overflow = outstandingPrincipal - constructionDebtAmount;
+      // Optional: cap by debtAmountRaw; if exceeded, truncate draws
+      if (debtAmountRaw > 0 && outstandingPrincipal > debtAmountRaw) {
+        const overflow = outstandingPrincipal - debtAmountRaw;
         debtDrawByMonth[idx] = Math.max(0, debtDrawByMonth[idx] - overflow);
-        outstandingPrincipal = constructionDebtAmount;
+        outstandingPrincipal = debtAmountRaw;
       }
 
       outstandingByMonth[idx] = outstandingPrincipal;
@@ -444,7 +473,7 @@ export function useCashFlowTab(proforma: Proforma) {
   }, [
     monthlyInterestRate,
     availableEquity,
-    constructionDebtAmount,
+    debtAmountRaw,
     payoutType,
     // Dependencies that influence monthly revenue/expenses schedule
     cashFlowState.landCosts,
@@ -649,5 +678,8 @@ export function useCashFlowTab(proforma: Proforma) {
     // Debt service
     calculatePrincipalRepayment,
     sumPrincipalRepayments,
+    // Fullscreen functionality
+    isFullscreen,
+    toggleFullscreen,
   } as const;
 }
