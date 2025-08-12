@@ -465,10 +465,6 @@ export function useCashFlowTab(proforma: Proforma) {
     return financingSim.debtDrawByMonth[month - 1] || 0;
   };
 
-  const calculateTotalFinancingInflows = (month: number) => {
-    return calculateEquityContribution(month) + calculateDebtDraw(month);
-  };
-
   // Precomputed interest payments from simulation
   const interestPaymentsByMonth = financingSim.interestPaymentByMonth;
 
@@ -505,7 +501,7 @@ export function useCashFlowTab(proforma: Proforma) {
   const calculateCompleteNetCashFlow = (month: number) => {
     return (
       calculateRevenueTotal(month) +
-      calculateTotalFinancingInflows(month) -
+      calculateDebtDraw(month) -
       calculateTotalExpensesIncludingInterest(month)
     );
   };
@@ -644,7 +640,6 @@ export function useCashFlowTab(proforma: Proforma) {
     loanStartMonth,
     calculateEquityContribution,
     calculateDebtDraw,
-    calculateTotalFinancingInflows,
     calculateCompleteNetCashFlow,
     // New metrics
     unleveredIrrAnnual,

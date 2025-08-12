@@ -40,7 +40,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     loanStartMonth,
     calculateEquityContribution,
     calculateDebtDraw,
-    calculateTotalFinancingInflows,
     calculateCompleteNetCashFlow,
     leveredIrrAnnual,
     leveredEMx,
@@ -424,22 +423,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
               </div>
             )}
-            {(proforma.sources?.equityPct > 0 ||
-              (loanTerm > 0 && debtPct > 0)) && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.totalCell}`}>Total Financing</div>
-                <div className={`${styles.totalCell}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateTotalFinancingInflows(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString()}
-                </div>
-                <div className={`${styles.totalCell}`}>-</div>
-                <div className={`${styles.totalCell}`}>-</div>
-              </div>
-            )}
+            {/* Removed Total Financing summary since equity is not an inflow */}
 
             {/* Expenses header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -885,24 +869,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
             </div>
-            {(proforma.sources?.equityPct > 0 ||
-              (loanTerm > 0 && debtPct > 0)) && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.totalCell} ${styles.revenue}`}>
-                  Total Financing
-                </div>
-                <div className={`${styles.totalCell} ${styles.revenue}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateTotalFinancingInflows(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString()}
-                </div>
-                <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
-                <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
-              </div>
-            )}
+            {/* Removed Total Financing from summary */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={`${styles.totalCell} ${styles.revenue}`}>
                 Net Cash Flow
@@ -1080,23 +1047,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
-            {(proforma.sources?.equityPct > 0 ||
-              (loanTerm > 0 && debtPct > 0)) && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateTotalFinancingInflows(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.totalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* Removed Total Financing monthly series */}
 
             {/* Expenses spacers */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
@@ -1345,23 +1296,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 );
               })}
             </div>
-            {(proforma.sources?.equityPct > 0 ||
-              (loanTerm > 0 && debtPct > 0)) && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateTotalFinancingInflows(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.totalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* Removed Total Financing from summary */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;
