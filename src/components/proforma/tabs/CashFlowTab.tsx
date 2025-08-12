@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { useCashFlowTab } from "@/hooks/useCashFlowTab";
 import { Proforma } from "@/lib/session-storage";
+import { Maximize, X } from "lucide-react";
 import styles from "./CashFlowTab.module.css";
 
 interface CashFlowTabProps {
@@ -47,6 +48,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     unleveredEMx,
     calculatePrincipalRepayment,
     sumPrincipalRepayments,
+    isFullscreen,
+    toggleFullscreen,
   } = useCashFlowTab(proforma);
 
   // Local refs and scroll sync for the div-based grid
@@ -97,12 +100,23 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className={isFullscreen ? styles.fullscreenCard : ""}>
+      <CardHeader className="relative">
         <CardTitle>Cash Flow Analysis</CardTitle>
         <CardDescription>
           Monthly cash flow projections throughout the project timeline
         </CardDescription>
+        <button
+          onClick={toggleFullscreen}
+          className={styles.fullscreenButton}
+          title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
+        >
+          {isFullscreen ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
+        </button>
       </CardHeader>
       <CardContent>
         <div className={styles.metricsGrid}>
@@ -139,7 +153,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
         </div>
 
         {/* Cashflow grid */}
-        <div className={styles.container}>
+        <div
+          className={`${styles.container} ${
+            isFullscreen ? styles.fullscreenContainer : ""
+          }`}
+        >
           {/* Fixed left column */}
           <div className={styles.fixedColumn}>
             {/* Revenue header */}

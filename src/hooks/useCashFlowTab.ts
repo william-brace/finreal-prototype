@@ -1,7 +1,7 @@
 "use client";
 
 import { getProforma, Proforma, saveProforma } from "@/lib/session-storage";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface CashFlowItemState {
   amount: number;
@@ -18,6 +18,35 @@ interface CashFlowState {
 }
 
 export function useCashFlowTab(proforma: Proforma) {
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener("keydown", handleEscape);
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   // Initialize cash flow state based on proforma data
   const [cashFlowState, setCashFlowState] = useState<CashFlowState>(() => {
     const initialState: CashFlowState = {
@@ -649,5 +678,8 @@ export function useCashFlowTab(proforma: Proforma) {
     // Debt service
     calculatePrincipalRepayment,
     sumPrincipalRepayments,
+    // Fullscreen functionality
+    isFullscreen,
+    toggleFullscreen,
   } as const;
 }
