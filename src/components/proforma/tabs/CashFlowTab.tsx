@@ -172,7 +172,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   $
                   {(
                     cashFlowState.units[unitType.id]?.amount || 0
-                  ).toLocaleString()}
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className={styles.inputWrap}>
                   <input
@@ -248,7 +251,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   $
                   {Object.values(cashFlowState.units)
                     .reduce((s, v) => s + v.amount, 0)
-                    .toLocaleString()}
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                 </div>
                 <div className={`${styles.sectionTotalCell}`}>-</div>
                 <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -271,7 +277,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   $
                   {(
                     cashFlowState.otherIncome[income.id]?.amount || 0
-                  ).toLocaleString()}
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className={styles.inputWrap}>
                   <input
@@ -352,7 +361,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   $
                   {Object.values(cashFlowState.otherIncome)
                     .reduce((s, v) => s + v.amount, 0)
-                    .toLocaleString()}
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                 </div>
                 <div className={`${styles.sectionTotalCell}`}>-</div>
                 <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -374,56 +386,15 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       (s, v) => s + v.amount,
                       0
                     )
-                  ).toLocaleString()}
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className={`${styles.totalCell}`}>-</div>
                 <div className={`${styles.totalCell}`}>-</div>
               </div>
             )}
-
-            {/* Financing header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
-                Financing
-              </div>
-            </div>
-            {/* Equity contribution row */}
-            {proforma.sources?.equityPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>
-                  Equity Contribution
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateEquityContribution(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString()}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-              </div>
-            )}
-            {/* Debt draw row */}
-            {loanTerm > 0 && debtPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateDebtDraw(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString()}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {loanStartMonth}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
-              </div>
-            )}
-            {/* Removed Total Financing summary since equity is not an inflow */}
 
             {/* Expenses header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -453,7 +424,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           {getLandCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
-                          ${(landCost.amount || 0).toLocaleString()}
+                          $
+                          {(landCost.amount || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
                         <div className={styles.inputWrap}>
                           <input
@@ -531,7 +506,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     $
                     {Object.values(cashFlowState.landCosts)
                       .reduce((s, v) => s + v.amount, 0)
-                      .toLocaleString()}
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -560,7 +538,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           {getHardCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
-                          ${(hardCost.amount || 0).toLocaleString()}
+                          $
+                          {(hardCost.amount || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
                         <div className={styles.inputWrap}>
                           <input
@@ -638,7 +620,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     $
                     {Object.values(cashFlowState.hardCosts)
                       .reduce((s, v) => s + v.amount, 0)
-                      .toLocaleString()}
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -667,7 +652,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                           {getSoftCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
-                          ${(softCost.amount || 0).toLocaleString()}
+                          $
+                          {(softCost.amount || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
                         <div className={styles.inputWrap}>
                           <input
@@ -745,7 +734,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     $
                     {Object.values(cashFlowState.softCosts)
                       .reduce((s, v) => s + v.amount, 0)
-                      .toLocaleString()}
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -758,7 +750,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                 <div className={`${styles.sectionTotalCell}`}>Interest</div>
                 <div className={`${styles.sectionTotalCell}`}>
-                  ${Math.round(sumInterestPayments).toLocaleString()}
+                  $
+                  {sumInterestPayments.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className={`${styles.sectionTotalCell}`}>
                   {payoutType === "serviced"
@@ -777,7 +773,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 Principal Repayment
               </div>
               <div className={`${styles.sectionTotalCell}`}>
-                ${Math.round(sumPrincipalRepayments).toLocaleString()}
+                $
+                {sumPrincipalRepayments.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
               <div className={`${styles.sectionTotalCell}`}>-</div>
               <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -807,12 +807,64 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       (s, v) => s + v.amount,
                       0
                     ) +
-                    Math.round(sumInterestPayments) +
-                    Math.round(sumPrincipalRepayments)
-                  ).toLocaleString()}
+                    sumInterestPayments +
+                    sumPrincipalRepayments
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
                 <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
+              </div>
+            )}
+
+            {/* Financing header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
+                Financing
+              </div>
+            </div>
+            {/* Equity contribution row */}
+            {proforma.sources?.equityPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Equity Contribution
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateEquityContribution(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+            {/* Debt draw row */}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateDebtDraw(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {loanStartMonth}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
               </div>
             )}
 
@@ -838,7 +890,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     (s, v) => s + v.amount,
                     0
                   )
-                ).toLocaleString()}
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
@@ -862,19 +917,32 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     (s, v) => s + v.amount,
                     0
                   ) +
-                  Math.round(sumInterestPayments) +
-                  Math.round(sumPrincipalRepayments)
-                ).toLocaleString()}
+                  sumInterestPayments +
+                  sumPrincipalRepayments
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
             </div>
-            {/* Removed Total Financing from summary */}
+
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={`${styles.totalCell} ${styles.revenue}`}>
                 Net Cash Flow
               </div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>$0</div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateCompleteNetCashFlow(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
             </div>
@@ -1008,46 +1076,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
-
-            {/* Financing spacer rows to align with left labels */}
-            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
-              {Array.from({ length: 120 }, (_, idx) => (
-                <div key={idx} className={styles.separatorCell}></div>
-              ))}
-            </div>
-            {proforma.sources?.equityPct > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateEquityContribution(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {loanTerm > 0 && debtPct > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateDebtDraw(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {/* Removed Total Financing monthly series */}
 
             {/* Expenses spacers */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
@@ -1215,7 +1243,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       key={monthNumber}
                       className={`${styles.sectionTotalCell} ${styles.expense}`}
                     >
-                      {value ? `$${Math.round(value).toLocaleString()}` : ""}
+                      {value
+                        ? `$${value.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : ""}
                     </div>
                   );
                 })}
@@ -1232,7 +1265,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     key={monthNumber}
                     className={`${styles.sectionTotalCell} ${styles.expense}`}
                   >
-                    {value ? `$${Math.round(value).toLocaleString()}` : ""}
+                    {value
+                      ? `$${value.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      : ""}
                   </div>
                 );
               })}
@@ -1252,6 +1290,45 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     <div
                       key={monthNumber}
                       className={`${styles.totalCell} ${styles.expense}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Financing spacer rows to align with left labels */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+            {proforma.sources?.equityPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateEquityContribution(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                    >
+                      {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculateDebtDraw(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
                     >
                       {formatMonthlyCashFlow(value)}
                     </div>

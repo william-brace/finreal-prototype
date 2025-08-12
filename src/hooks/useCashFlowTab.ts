@@ -257,7 +257,10 @@ export function useCashFlowTab(proforma: Proforma) {
   // Helper function to format monthly cash flow values
   const formatMonthlyCashFlow = (value: number) => {
     if (value === 0) return "";
-    return `$${Math.round(value).toLocaleString()}`;
+    return `$${value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   // Helper functions to calculate totals for each month
@@ -320,7 +323,7 @@ export function useCashFlowTab(proforma: Proforma) {
   const equityPct = proforma.sources?.equityPct || 0;
   const payoutType = proforma.sources?.payoutType || "rolledUp";
   const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
-  const constructionDebtAmount = Math.round(
+  const debtAmountRaw = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
   const availableEquity = Math.round(
@@ -420,14 +423,11 @@ export function useCashFlowTab(proforma: Proforma) {
 
       // 4) Update outstanding principal after this month's draws
       outstandingPrincipal += debtDrawByMonth[idx];
-      // Optional: cap by constructionDebtAmount; if exceeded, truncate draws
-      if (
-        constructionDebtAmount > 0 &&
-        outstandingPrincipal > constructionDebtAmount
-      ) {
-        const overflow = outstandingPrincipal - constructionDebtAmount;
+      // Optional: cap by debtAmountRaw; if exceeded, truncate draws
+      if (debtAmountRaw > 0 && outstandingPrincipal > debtAmountRaw) {
+        const overflow = outstandingPrincipal - debtAmountRaw;
         debtDrawByMonth[idx] = Math.max(0, debtDrawByMonth[idx] - overflow);
-        outstandingPrincipal = constructionDebtAmount;
+        outstandingPrincipal = debtAmountRaw;
       }
 
       outstandingByMonth[idx] = outstandingPrincipal;
@@ -444,7 +444,7 @@ export function useCashFlowTab(proforma: Proforma) {
   }, [
     monthlyInterestRate,
     availableEquity,
-    constructionDebtAmount,
+    debtAmountRaw,
     payoutType,
     // Dependencies that influence monthly revenue/expenses schedule
     cashFlowState.landCosts,

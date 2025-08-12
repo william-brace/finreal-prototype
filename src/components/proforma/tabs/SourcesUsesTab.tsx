@@ -94,7 +94,7 @@ export function SourcesUsesTab({
     softCostsTotal,
     totalProjectCost,
     totalProjectCostInclFinancing,
-    constructionDebtAmount,
+    debtAmountRaw,
 
     // Land Costs specific values
     landCost,
@@ -736,10 +736,10 @@ export function SourcesUsesTab({
                   setDebtPct(100 - pct);
                 }}
               />
-              {/* Construction Debt */}
+              {/* Debt */}
               <PercentageRow
-                label="Construction Debt"
-                description="Loan or construction financing"
+                label="Debt"
+                description="Loan or debt financing"
                 baseAmount={totalProjectCost}
                 percentage={debtPct}
                 onChange={(pct) => {
@@ -863,8 +863,8 @@ export function SourcesUsesTab({
               {/* Interest Cost */}
               <PercentageRow
                 label="Interest cost"
-                description="Annual interest rate applied to construction debt"
-                baseAmount={constructionDebtAmount}
+                description="Annual interest rate applied to debt"
+                baseAmount={debtAmountRaw}
                 percentage={interestPct}
                 onChange={setInterestPct}
                 amount={proforma.sources.financingCosts.interestCost}
@@ -876,8 +876,8 @@ export function SourcesUsesTab({
               {/* Broker Fee */}
               <PercentageRow
                 label="Broker fee"
-                description="Fee as a percentage of construction debt"
-                baseAmount={constructionDebtAmount}
+                description="Fee as a percentage of debt"
+                baseAmount={debtAmountRaw}
                 percentage={brokerFeePct}
                 onChange={setBrokerFeePct}
                 amount={proforma.sources.financingCosts.brokerFee}
