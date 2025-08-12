@@ -318,7 +318,6 @@ export function useCashFlowTab(proforma: Proforma) {
     (proforma.sources?.financingCosts?.interestPct || 0) / 100 / 12;
   const debtPct = proforma.sources?.debtPct || 0;
   const equityPct = proforma.sources?.equityPct || 0;
-  const interestOnBasis = proforma.sources?.interestOnBasis || "drawnBalance";
   const payoutType = proforma.sources?.payoutType || "rolledUp";
   const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
   const constructionDebtAmount = Math.round(
@@ -328,118 +327,146 @@ export function useCashFlowTab(proforma: Proforma) {
     (equityPct / 100) * (proforma.totalExpenses || 0)
   );
 
-  // Helper functions to calculate financing draws
-  const calculateEquityContribution = (month: number) => {
-    const monthlyExpenses = calculateExpensesTotal(month);
-    if (monthlyExpenses <= 0) return 0;
-
-    // Calculate cumulative expenses and equity used up to this month
-    let cumulativeEquityUsed = 0;
-
-    for (let m = 1; m <= month; m++) {
-      const expenses = calculateExpensesTotal(m);
-
-      if (m < month) {
-        // Calculate equity used in previous months
-        const equityForThisMonth = Math.min(
-          expenses,
-          Math.max(0, availableEquity - cumulativeEquityUsed)
-        );
-        cumulativeEquityUsed += equityForThisMonth;
-      }
-    }
-
-    // For current month, use equity first up to available limit
-    const remainingEquity = Math.max(0, availableEquity - cumulativeEquityUsed);
-    return Math.min(monthlyExpenses, remainingEquity);
-  };
-
-  const calculateDebtDraw = (month: number) => {
-    const monthlyExpenses = calculateExpensesTotal(month);
-    const equityContribution = calculateEquityContribution(month);
-
-    // Debt draw covers expenses not covered by equity
-    return Math.max(0, monthlyExpenses - equityContribution);
-  };
-
-  const calculateTotalFinancingInflows = (month: number) => {
-    return calculateEquityContribution(month) + calculateDebtDraw(month);
-  };
-
-  // Precompute interest payments for 120 months based on actual debt draws
-  const interestPaymentsByMonth = useMemo(() => {
+  // Financing simulation: dynamic principal repayment and interest accrual
+  const financingSim = useMemo(() => {
     const months = 120;
-    const payments = new Array<number>(months).fill(0);
-    if (monthlyInterestRate <= 0 || debtPct <= 0 || loanTerm <= 0)
-      return payments;
+    const equityByMonth: number[] = new Array(months).fill(0);
+    const debtDrawByMonth: number[] = new Array(months).fill(0);
+    const interestPaymentByMonth: number[] = new Array(months).fill(0);
+    const principalRepaymentByMonth: number[] = new Array(months).fill(0);
+    const outstandingByMonth: number[] = new Array(months).fill(0);
 
-    // Find when expenses (and thus loan draws) first start
-    let loanStartMonth = months + 1; // default to beyond our range
-    for (let month = 1; month <= months; month++) {
-      if (calculateExpensesTotal(month) > 0) {
-        loanStartMonth = month;
-        break;
-      }
-    }
-
-    // If no expenses found, no loan needed
-    if (loanStartMonth > months) return payments;
-
-    // Loan runs for loanTerm months starting from loanStartMonth
-    const loanEndMonth = loanStartMonth + loanTerm - 1;
-
-    let outstandingPrincipal = 0; // principal drawn, excludes accrued interest
-    const accruedByMonth: number[] = new Array(months).fill(0);
+    let outstandingPrincipal = 0;
+    let equityRemaining = Math.max(0, availableEquity);
+    let accruedInterestOutstanding = 0; // for rolled-up interest
 
     for (let idx = 0; idx < months; idx++) {
       const monthNum = idx + 1;
-      const isLoanActive =
-        monthNum >= loanStartMonth && monthNum <= loanEndMonth;
-      const monthlyDraw = isLoanActive ? calculateDebtDraw(monthNum) : 0;
+      const revenue = calculateRevenueTotal(monthNum);
+      const expensesExInterest = calculateExpensesTotal(monthNum);
 
-      // Basis for interest this month
-      const basis = isLoanActive
-        ? interestOnBasis === "entireLoan"
-          ? constructionDebtAmount
-          : outstandingPrincipal + monthlyDraw // average draw during month
-        : 0;
+      // 1) Use operating inflow to repay principal first
+      const principalRepay = Math.min(revenue, outstandingPrincipal);
+      principalRepaymentByMonth[idx] = principalRepay;
+      outstandingPrincipal -= principalRepay;
+      let operatingCashRemaining = revenue - principalRepay;
 
-      const accrual = basis * monthlyInterestRate;
-      accruedByMonth[idx] = accrual;
+      // 2) Fund expenses (exclude interest here)
+      const equityForExpenses = Math.min(expensesExInterest, equityRemaining);
+      equityByMonth[idx] += equityForExpenses;
+      equityRemaining -= equityForExpenses;
+      const expensesLeft = expensesExInterest - equityForExpenses;
+
+      const debtDrawForExpenses = Math.max(0, expensesLeft);
+      debtDrawByMonth[idx] += debtDrawForExpenses;
+
+      // 3) Accrue interest based on outstanding principal and half-month on new draws
+      // Force basis to outstanding principal regardless of interestOnBasis preference
+      const baseForInterest = outstandingPrincipal + 0.5 * debtDrawForExpenses;
+      const interestAccrual =
+        monthlyInterestRate > 0 ? baseForInterest * monthlyInterestRate : 0;
 
       if (payoutType === "serviced") {
-        payments[idx] = isLoanActive ? accrual : 0;
+        // Pay interest this month with priority: operating cash -> equity -> debt
+        let remainingInterest = interestAccrual;
+
+        // a) Use remaining operating cash after principal
+        if (operatingCashRemaining > 0 && remainingInterest > 0) {
+          const used = Math.min(remainingInterest, operatingCashRemaining);
+          interestPaymentByMonth[idx] += used;
+          operatingCashRemaining -= used;
+          remainingInterest -= used;
+        }
+
+        // b) Use remaining equity
+        if (equityRemaining > 0 && remainingInterest > 0) {
+          const equityForInterest = Math.min(
+            remainingInterest,
+            equityRemaining
+          );
+          equityByMonth[idx] += equityForInterest;
+          equityRemaining -= equityForInterest;
+          interestPaymentByMonth[idx] += equityForInterest;
+          remainingInterest -= equityForInterest;
+        }
+
+        // c) Finance the rest with additional debt accounting for half-month interest on the draw
+        if (remainingInterest > 0) {
+          if (monthlyInterestRate > 0) {
+            const additionalDebt =
+              remainingInterest / (1 - 0.5 * monthlyInterestRate);
+            debtDrawByMonth[idx] += additionalDebt;
+            // The amount of interest paid via debt is the additionalDebt drawn
+            interestPaymentByMonth[idx] += additionalDebt;
+          } else {
+            // Zero rate edge-case: draw exactly remaining interest
+            debtDrawByMonth[idx] += remainingInterest;
+            interestPaymentByMonth[idx] += remainingInterest;
+          }
+        }
+
+        // Interest is fully paid each month under serviced structure
       } else {
-        payments[idx] = 0; // rolled-up: paid at end
+        // Rolled-up: accrue interest; use remaining operating cash to reduce it after principal
+        let totalInterestDue = accruedInterestOutstanding + interestAccrual;
+        if (totalInterestDue > 0 && operatingCashRemaining > 0) {
+          const pay = Math.min(operatingCashRemaining, totalInterestDue);
+          interestPaymentByMonth[idx] = pay;
+          totalInterestDue -= pay;
+          operatingCashRemaining -= pay;
+        }
+        accruedInterestOutstanding = totalInterestDue; // carry forward
       }
 
-      // Update outstanding principal after this month's draws
-      outstandingPrincipal += monthlyDraw;
+      // 4) Update outstanding principal after this month's draws
+      outstandingPrincipal += debtDrawByMonth[idx];
+      // Optional: cap by constructionDebtAmount; if exceeded, truncate draws
+      if (
+        constructionDebtAmount > 0 &&
+        outstandingPrincipal > constructionDebtAmount
+      ) {
+        const overflow = outstandingPrincipal - constructionDebtAmount;
+        debtDrawByMonth[idx] = Math.max(0, debtDrawByMonth[idx] - overflow);
+        outstandingPrincipal = constructionDebtAmount;
+      }
+
+      outstandingByMonth[idx] = outstandingPrincipal;
     }
 
-    if (payoutType === "rolledUp") {
-      const totalAccrued = accruedByMonth
-        .slice(loanStartMonth - 1, Math.min(loanEndMonth, months))
-        .reduce((s, v) => s + v, 0);
-      const payIndex = Math.min(loanEndMonth, months) - 1;
-      if (payIndex >= 0) payments[payIndex] = totalAccrued;
-    }
-
-    return payments;
+    return {
+      equityByMonth,
+      debtDrawByMonth,
+      interestPaymentByMonth,
+      principalRepaymentByMonth,
+      outstandingByMonth,
+    } as const;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     monthlyInterestRate,
-    debtPct,
-    equityPct,
     availableEquity,
-    interestOnBasis,
+    constructionDebtAmount,
     payoutType,
-    loanTerm,
-    // Dependencies that influence monthly expenses schedule
+    // Dependencies that influence monthly revenue/expenses schedule
     cashFlowState.landCosts,
     cashFlowState.hardCosts,
     cashFlowState.softCosts,
+    cashFlowState.units,
+    cashFlowState.otherIncome,
   ]);
+
+  // Helper functions to calculate financing draws (from simulation)
+  const calculateEquityContribution = (month: number) => {
+    if (month < 1 || month > 120) return 0;
+    return financingSim.equityByMonth[month - 1] || 0;
+  };
+
+  const calculateDebtDraw = (month: number) => {
+    if (month < 1 || month > 120) return 0;
+    return financingSim.debtDrawByMonth[month - 1] || 0;
+  };
+
+  // Precomputed interest payments from simulation
+  const interestPaymentsByMonth = financingSim.interestPaymentByMonth;
 
   const calculateInterestPayment = (month: number) => {
     if (month < 1 || month > 120) return 0;
@@ -451,35 +478,44 @@ export function useCashFlowTab(proforma: Proforma) {
     [interestPaymentsByMonth]
   );
 
-  // Extend expenses and net cash flow to include interest payments
+  // Principal repayment utilities
+  const calculatePrincipalRepayment = (month: number) => {
+    if (month < 1 || month > 120) return 0;
+    return financingSim.principalRepaymentByMonth[month - 1] || 0;
+  };
+
+  const sumPrincipalRepayments = useMemo(
+    () => financingSim.principalRepaymentByMonth.reduce((s, v) => s + v, 0),
+    [financingSim.principalRepaymentByMonth]
+  );
+
+  // Extend expenses and net cash flow to include interest payments and principal repayments
   const calculateTotalExpensesIncludingInterest = (month: number) => {
-    return calculateExpensesTotal(month) + calculateInterestPayment(month);
+    return (
+      calculateExpensesTotal(month) +
+      calculateInterestPayment(month) +
+      calculatePrincipalRepayment(month)
+    );
   };
 
   const calculateCompleteNetCashFlow = (month: number) => {
     return (
       calculateRevenueTotal(month) +
-      calculateTotalFinancingInflows(month) -
+      calculateDebtDraw(month) -
       calculateTotalExpensesIncludingInterest(month)
     );
   };
 
-  // Calculate loan start month for display purposes
+  // Calculate loan start month for display purposes (first month with a draw)
   const loanStartMonth = useMemo(() => {
-    if (loanTerm <= 0) return 1;
     for (let month = 1; month <= 120; month++) {
-      if (calculateExpensesTotal(month) > 0) {
+      if ((financingSim.debtDrawByMonth[month - 1] || 0) > 0) {
         return month;
       }
     }
+    // fallback if no draws
     return 1;
-  }, [
-    loanTerm,
-    calculateExpensesTotal,
-    cashFlowState.landCosts,
-    cashFlowState.hardCosts,
-    cashFlowState.softCosts,
-  ]);
+  }, [financingSim.debtDrawByMonth]);
 
   // --- IRR & EMx calculations (monthly then annualized) ---
   const unleveredCashFlows = useMemo(() => {
@@ -550,10 +586,12 @@ export function useCashFlowTab(proforma: Proforma) {
   };
 
   const unleveredIrrMonthly = useMemo(() => {
+    console.log("unleveredCashFlows", unleveredCashFlows);
     return computeIRRNewtonRaphson(unleveredCashFlows);
   }, [unleveredCashFlows]);
 
   const leveredIrrMonthly = useMemo(() => {
+    console.log("leveredCashFlows", leveredCashFlows);
     return computeIRRNewtonRaphson(leveredCashFlows);
   }, [leveredCashFlows]);
 
@@ -602,12 +640,14 @@ export function useCashFlowTab(proforma: Proforma) {
     loanStartMonth,
     calculateEquityContribution,
     calculateDebtDraw,
-    calculateTotalFinancingInflows,
     calculateCompleteNetCashFlow,
     // New metrics
     unleveredIrrAnnual,
     leveredIrrAnnual,
     unleveredEMx,
     leveredEMx,
+    // Debt service
+    calculatePrincipalRepayment,
+    sumPrincipalRepayments,
   } as const;
 }
