@@ -162,13 +162,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
           <div className={styles.fixedColumn}>
             {/* Revenue header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
-                Revenue
-              </div>
-            </div>
-            {/* Sub header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={styles.leftHeaderCell}>Item</div>
+              <div className={styles.leftHeaderCell}>Revenue</div>
               <div className={styles.leftHeaderCell}>Amount</div>
               <div className={styles.leftHeaderCell}>Start</div>
               <div className={styles.leftHeaderCell}>Length</div>
@@ -416,9 +410,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
 
             {/* Expenses header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
-                Expenses
-              </div>
+              <div className={styles.leftHeaderCell}>Expenses</div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
             </div>
             {/* Land costs */}
             {Object.keys(cashFlowState.landCosts).length > 0 && (
@@ -839,9 +834,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
 
             {/* Financing header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
-                Financing
-              </div>
+              <div className={styles.leftHeaderCell}>Financing</div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
             </div>
             {/* Equity contribution row */}
             {proforma.sources?.equityPct > 0 && (
@@ -888,9 +884,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
 
             {/* Summary header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.leftHeaderCell} ${styles.spanAll}`}>
-                Cash Flow Summary
-              </div>
+              <div className={styles.leftHeaderCell}>Cash Flow Summary</div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
             </div>
             {/* Summary totals */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -968,14 +965,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
 
           {/* Right content, scrolls with container */}
           <div className={styles.rightColumn}>
-            {/* Blank separator aligning with Revenue header row */}
-            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
-              {Array.from({ length: 120 }, (_, idx) => (
-                <div key={idx} className={styles.separatorCell}></div>
-              ))}
-            </div>
-
-            {/* Month headers (aligns with left subheader) */}
+            {/* Month headers (aligns with Revenue header) */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
                 <div key={idx} className={styles.monthHeaderCell}>
@@ -1095,16 +1085,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
-            {/* Expenses spacers */}
-            {(Object.keys(cashFlowState.landCosts).length > 0 ||
-              Object.keys(cashFlowState.hardCosts).length > 0 ||
-              Object.keys(cashFlowState.softCosts).length > 0) && (
-              <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, idx) => (
-                  <div key={idx} className={styles.separatorCell}></div>
-                ))}
-              </div>
-            )}
+            {/* Grey header row aligning with Expenses header */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.greyHeaderCell}></div>
+              ))}
+            </div>
 
             {/* Land costs monthly rows */}
             {Object.keys(cashFlowState.landCosts).length > 0 && (
@@ -1316,10 +1302,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
-            {/* Financing spacer rows to align with left labels */}
+            {/* Grey header row aligning with Financing header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
-                <div key={idx} className={styles.separatorCell}></div>
+                <div key={idx} className={styles.greyHeaderCell}></div>
               ))}
             </div>
             {proforma.sources?.equityPct > 0 && (
@@ -1355,10 +1341,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
-            {/* Summary spacer */}
+            {/* Grey header row aligning with Summary header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
-                <div key={idx} className={styles.separatorCell}></div>
+                <div key={idx} className={styles.greyHeaderCell}></div>
               ))}
             </div>
             {/* Summary totals monthly */}

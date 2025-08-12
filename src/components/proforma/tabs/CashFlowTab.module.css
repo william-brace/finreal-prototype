@@ -109,6 +109,11 @@
   border: 1px solid var(--cell-border);
 }
 
+.greyHeaderCell {
+  background-color: #f3f4f6;
+  border: none;
+}
+
 .monthCell {
   border: 1px solid var(--cell-border);
   padding-left: 8px;
