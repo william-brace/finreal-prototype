@@ -7,6 +7,7 @@ export type { Project };
 export interface CashFlowTiming {
   start: number;
   length: number;
+  startManuallySet?: boolean;
 }
 
 export interface CashFlowSchedule {

@@ -120,7 +120,7 @@ export function useSourcesUses({
     Math.round((brokerFeePct / 100) * debtAmountRaw)
   );
 
-  // Update proforma and save to session storage when state changes
+  // Update proforma and save to session storagewhen state changes
   useEffect(() => {
     // Calculate financing costs
     const interestCost = Math.round(

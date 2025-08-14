@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   Card,
   CardContent,
@@ -17,9 +18,15 @@ interface CashFlowTabProps {
 }
 
 export function CashFlowTab({ proforma }: CashFlowTabProps) {
+  // Local state to track temporary input values while user is typing
+  const [tempInputValues, setTempInputValues] = React.useState<
+    Record<string, string>
+  >({});
   const {
     cashFlowState,
     updateCashFlowItem,
+    getEffectiveStartValue,
+    markStartAsManuallySet,
     getLandCostDisplayName,
     getHardCostDisplayName,
     getSoftCostDisplayName,
@@ -84,6 +91,24 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     return Math.max(min, Math.min(max, value));
   };
 
+  // Helper to get the display value for an input (temp value or computed value)
+  const getInputDisplayValue = (
+    section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
+    itemId: string,
+    field: "start" | "length"
+  ): string => {
+    const key = `${section}-${itemId}-${field}`;
+    if (tempInputValues[key] !== undefined) {
+      return tempInputValues[key];
+    }
+
+    if (field === "start") {
+      return getEffectiveStartValue(section, itemId).toString();
+    } else {
+      return (cashFlowState[section][itemId]?.length ?? 1).toString();
+    }
+  };
+
   const commitTiming = (
     section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
     itemId: string,
@@ -96,7 +121,34 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     if (Number.isNaN(parsed)) parsed = emptyFallback;
     const clamped = clampTiming(field, parsed);
     if (clamped !== parsed) inputEl.value = String(clamped);
-    updateCashFlowItem(section, itemId, field, clamped);
+
+    // Clear temp value
+    const key = `${section}-${itemId}-${field}`;
+    setTempInputValues((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+    if (field === "start") {
+      // Mark as manually set when user changes start value
+      markStartAsManuallySet(section, itemId, clamped);
+    } else {
+      updateCashFlowItem(section, itemId, field, clamped);
+    }
+  };
+
+  const handleInputChange = (
+    section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
+    itemId: string,
+    field: "start" | "length",
+    value: string
+  ) => {
+    const key = `${section}-${itemId}-${field}`;
+    setTempInputValues((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   return (
@@ -161,7 +213,9 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
           {/* Fixed left column */}
           <div className={styles.fixedColumn}>
             {/* Revenue header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+            <div
+              className={`${styles.leftRow} ${styles.rowHeight} ${styles.stickyHeaderRow}`}
+            >
               <div className={styles.leftHeaderCell}>Revenue</div>
               <div className={styles.leftHeaderCell}>Amount</div>
               <div className={styles.leftHeaderCell}>Start</div>
@@ -198,7 +252,15 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     max={120}
                     step={1}
                     className={styles.inputField}
-                    defaultValue={cashFlowState.units[unitType.id]?.start ?? 1}
+                    value={getInputDisplayValue("units", unitType.id, "start")}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "units",
+                        unitType.id,
+                        "start",
+                        e.target.value
+                      )
+                    }
                     onBlur={(e) =>
                       commitTiming(
                         "units",
@@ -303,8 +365,18 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     max={120}
                     step={1}
                     className={styles.inputField}
-                    defaultValue={
-                      cashFlowState.otherIncome[income.id]?.start ?? 1
+                    value={getInputDisplayValue(
+                      "otherIncome",
+                      income.id,
+                      "start"
+                    )}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "otherIncome",
+                        income.id,
+                        "start",
+                        e.target.value
+                      )
                     }
                     onBlur={(e) =>
                       commitTiming(
