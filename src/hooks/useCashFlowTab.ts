@@ -8,6 +8,7 @@ interface CashFlowItemState {
   start: number;
   length: number;
   startManuallySet?: boolean;
+  lengthManuallySet?: boolean;
 }
 
 interface CashFlowState {
@@ -69,8 +70,9 @@ export function useCashFlowTab(proforma: Proforma) {
         initialState.units[unitType.id] = {
           amount: totalValue,
           start: timing?.start ?? proforma.projectLength + 1,
-          length: timing?.length ?? 1,
+          length: timing?.length ?? proforma.absorptionPeriod,
           startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       });
     }
@@ -82,8 +84,9 @@ export function useCashFlowTab(proforma: Proforma) {
         initialState.otherIncome[income.id] = {
           amount: income.numberOfUnits * income.valuePerUnit,
           start: timing?.start ?? proforma.projectLength + 1,
-          length: timing?.length ?? 1,
+          length: timing?.length ?? proforma.absorptionPeriod,
           startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       });
     }
@@ -96,6 +99,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 1,
         length: timing?.length ?? 1,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.landCosts.closingCost > 0) {
@@ -105,6 +109,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 1,
         length: timing?.length ?? 1,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     proforma.uses.landCosts.additionalCosts?.forEach((cost, index) => {
@@ -116,6 +121,7 @@ export function useCashFlowTab(proforma: Proforma) {
           start: timing?.start ?? 1,
           length: timing?.length ?? 1,
           startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -128,6 +134,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 3,
         length: timing?.length ?? 18,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     proforma.uses.hardCosts.additionalCosts?.forEach((cost, index) => {
@@ -139,6 +146,7 @@ export function useCashFlowTab(proforma: Proforma) {
           start: timing?.start ?? 3,
           length: timing?.length ?? 18,
           startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -151,6 +159,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 2,
         length: timing?.length ?? 12,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.softCosts.consultants > 0) {
@@ -160,6 +169,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 1,
         length: timing?.length ?? 6,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.softCosts.adminMarketing > 0) {
@@ -169,6 +179,7 @@ export function useCashFlowTab(proforma: Proforma) {
         start: timing?.start ?? 1,
         length: timing?.length ?? 24,
         startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     proforma.uses.softCosts.additionalCosts?.forEach((cost, index) => {
@@ -180,6 +191,7 @@ export function useCashFlowTab(proforma: Proforma) {
           start: timing?.start ?? 2,
           length: timing?.length ?? 12,
           startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -197,6 +209,7 @@ export function useCashFlowTab(proforma: Proforma) {
             start: v.start,
             length: v.length,
             startManuallySet: v.startManuallySet,
+            lengthManuallySet: v.lengthManuallySet,
           },
         ])
       );
@@ -231,6 +244,31 @@ export function useCashFlowTab(proforma: Proforma) {
     return item.start;
   };
 
+  // Helper function to get the effective length value (manual or auto)
+  const getEffectiveLengthValue = (
+    section: keyof CashFlowState,
+    itemId: string
+  ): number => {
+    const item = cashFlowState[section][itemId];
+    if (!item)
+      return section === "units" || section === "otherIncome"
+        ? proforma.absorptionPeriod
+        : 1;
+
+    // If manually set, use the stored value
+    if (item.lengthManuallySet) {
+      return item.length;
+    }
+
+    // For units and other income, auto-calculate as absorptionPeriod
+    if (section === "units" || section === "otherIncome") {
+      return proforma.absorptionPeriod;
+    }
+
+    // For other sections, use their stored defaults
+    return item.length;
+  };
+
   // Helper function to mark a start value as manually set
   const markStartAsManuallySet = (
     section: keyof CashFlowState,
@@ -246,6 +284,37 @@ export function useCashFlowTab(proforma: Proforma) {
             ...prev[section][itemId],
             start: startValue,
             startManuallySet: true,
+          },
+        },
+      };
+
+      // Persist timing to session storage via proforma
+      const nextSchedule = buildScheduleFromState(next);
+      const latest = getProforma(proforma.projectId, proforma.id) || proforma;
+      saveProforma(proforma.projectId, {
+        ...latest,
+        cashFlowSchedule: nextSchedule,
+      });
+
+      return next;
+    });
+  };
+
+  // Helper function to mark a length value as manually set
+  const markLengthAsManuallySet = (
+    section: keyof CashFlowState,
+    itemId: string,
+    lengthValue: number
+  ) => {
+    setCashFlowState((prev) => {
+      const next: CashFlowState = {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [itemId]: {
+            ...prev[section][itemId],
+            length: lengthValue,
+            lengthManuallySet: true,
           },
         },
       };
@@ -716,7 +785,9 @@ export function useCashFlowTab(proforma: Proforma) {
     cashFlowState,
     updateCashFlowItem,
     getEffectiveStartValue,
+    getEffectiveLengthValue,
     markStartAsManuallySet,
+    markLengthAsManuallySet,
     getLandCostDisplayName,
     getHardCostDisplayName,
     getSoftCostDisplayName,

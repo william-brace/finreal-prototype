@@ -8,6 +8,7 @@ export interface CashFlowTiming {
   start: number;
   length: number;
   startManuallySet?: boolean;
+  lengthManuallySet?: boolean;
 }
 
 export interface CashFlowSchedule {

@@ -26,7 +26,9 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     cashFlowState,
     updateCashFlowItem,
     getEffectiveStartValue,
+    getEffectiveLengthValue,
     markStartAsManuallySet,
+    markLengthAsManuallySet,
     getLandCostDisplayName,
     getHardCostDisplayName,
     getSoftCostDisplayName,
@@ -105,7 +107,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     if (field === "start") {
       return getEffectiveStartValue(section, itemId).toString();
     } else {
-      return (cashFlowState[section][itemId]?.length ?? 1).toString();
+      return getEffectiveLengthValue(section, itemId).toString();
     }
   };
 
@@ -133,6 +135,9 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     if (field === "start") {
       // Mark as manually set when user changes start value
       markStartAsManuallySet(section, itemId, clamped);
+    } else if (field === "length") {
+      // Mark as manually set when user changes length value
+      markLengthAsManuallySet(section, itemId, clamped);
     } else {
       updateCashFlowItem(section, itemId, field, clamped);
     }
@@ -292,7 +297,15 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     max={120}
                     step={1}
                     className={styles.inputField}
-                    defaultValue={cashFlowState.units[unitType.id]?.length ?? 1}
+                    value={getInputDisplayValue("units", unitType.id, "length")}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "units",
+                        unitType.id,
+                        "length",
+                        e.target.value
+                      )
+                    }
                     onBlur={(e) =>
                       commitTiming(
                         "units",
@@ -409,8 +422,18 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     max={120}
                     step={1}
                     className={styles.inputField}
-                    defaultValue={
-                      cashFlowState.otherIncome[income.id]?.length ?? 1
+                    value={getInputDisplayValue(
+                      "otherIncome",
+                      income.id,
+                      "length"
+                    )}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "otherIncome",
+                        income.id,
+                        "length",
+                        e.target.value
+                      )
                     }
                     onBlur={(e) =>
                       commitTiming(
