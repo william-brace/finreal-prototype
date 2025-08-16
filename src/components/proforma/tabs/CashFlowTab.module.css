@@ -65,6 +65,21 @@
   font-size: 13px;
 }
 
+.leftDataCellIndented {
+  white-space: nowrap;
+  padding-left: 8px; /* Reset to base padding */
+  font-size: 13px;
+  background-color: #fafbfc; /* Slightly different background to emphasize subsection */
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.indentIcon {
+  color: #6b7280; /* Subtle gray color */
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
 .leftAmountCell {
   white-space: nowrap;
   border: 1px solid var(--cell-border);
@@ -84,7 +99,7 @@
 
 .sectionHeader {
   border: 1px solid var(--cell-border);
-  background-color: #f3f4f6;
+  /* background-color: #f3f4f6; */
   padding-left: 8px;
   font-weight: 600;
   font-size: 13px;
@@ -151,7 +166,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: bold;
-  background-color: #f3f4f6;
+  background-color: #e6e6e6;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -168,7 +183,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
-  background-color: #f5f6f7;
+  background-color: #e6e6e6;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -237,20 +252,29 @@
 
 /* Opaque backgrounds for sticky left cells */
 .container .leftDataCell,
+.container .leftDataCellIndented,
 .container .leftAmountCell,
 .container .inputWrap {
   background-color: #f9fafb;
 }
 
+/* Override for indented cells to have slightly different background */
+.container .leftDataCellIndented {
+  background-color: #fafbfc;
+}
+
 .inputField {
   width: 100%;
-  height: 100%;
+  height: 70%;
   border: none;
   background: transparent;
   outline: none;
   font-size: 13px;
   padding: 0 4px;
   box-sizing: border-box;
+  background-color: rgb(233, 232, 232);
+  color: black;
+  border-radius: 4px;
 }
 
 /* Fullscreen styles */

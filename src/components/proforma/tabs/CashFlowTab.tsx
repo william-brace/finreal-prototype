@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useCashFlowTab } from "@/hooks/useCashFlowTab";
 import { Proforma } from "@/lib/session-storage";
-import { Maximize, X } from "lucide-react";
+import { Maximize, X, CornerDownRight } from "lucide-react";
 import styles from "./CashFlowTab.module.css";
 
 interface CashFlowTabProps {
@@ -253,7 +253,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 key={unitType.id}
                 className={`${styles.leftRow} ${styles.rowHeight}`}
               >
-                <div className={`${styles.leftDataCell}`}>{unitType.name}</div>
+                <div className={`${styles.leftDataCellIndented}`}>
+                  <CornerDownRight size={14} className={styles.indentIcon} />
+                  {unitType.name}
+                </div>
                 <div className={`${styles.leftAmountCell}`}>
                   $
                   {(
@@ -390,7 +393,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 key={income.id}
                 className={`${styles.leftRow} ${styles.rowHeight}`}
               >
-                <div className={styles.leftDataCell}>{income.name}</div>
+                <div className={styles.leftDataCellIndented}>
+                  <CornerDownRight size={14} className={styles.indentIcon} />
+                  {income.name}
+                </div>
                 <div className={styles.leftAmountCell}>
                   $
                   {(
@@ -566,7 +572,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getLandCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
@@ -691,7 +701,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getHardCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
@@ -816,7 +830,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getSoftCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
