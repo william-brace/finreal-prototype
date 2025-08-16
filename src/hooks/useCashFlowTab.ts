@@ -583,7 +583,6 @@ export function useCashFlowTab(proforma: Proforma) {
   const debtPct = proforma.sources?.debtPct || 0;
   const equityPct = proforma.sources?.equityPct || 0;
   const payoutType = proforma.sources?.payoutType || "rolledUp";
-  const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
   const debtAmountRaw = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
@@ -736,7 +735,7 @@ export function useCashFlowTab(proforma: Proforma) {
       total += getMonthlyValue(item, month);
     });
     // Add interest payments since interest is now part of soft costs section
-    if (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0) {
+    if (monthlyInterestRate > 0 && debtPct > 0) {
       if (month >= 1 && month <= 120) {
         total += interestPaymentsByMonth[month - 1] || 0;
       }
@@ -958,7 +957,6 @@ export function useCashFlowTab(proforma: Proforma) {
     monthlyInterestRate,
     debtPct,
     equityPct,
-    loanTerm,
     payoutType,
     sumInterestPayments,
     calculateInterestPayment,

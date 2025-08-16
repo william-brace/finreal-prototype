@@ -48,7 +48,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     getOutflowLength,
     monthlyInterestRate,
     debtPct,
-    loanTerm,
     payoutType,
     sumInterestPayments,
     calculateInterestPayment,
@@ -848,7 +847,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 )}
 
                 {/* Interest row */}
-                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+                {monthlyInterestRate > 0 && debtPct > 0 && (
                   <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                     <div className={`${styles.sectionTotalCell}`}>Interest</div>
                     <div className={`${styles.sectionTotalCell}`}>
@@ -861,10 +860,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     <div className={`${styles.sectionTotalCell}`}>
                       {payoutType === "serviced"
                         ? loanStartMonth
-                        : loanStartMonth + loanTerm - 1}
+                        : loanStartMonth + proforma.projectLength - 1}
                     </div>
                     <div className={`${styles.sectionTotalCell}`}>
-                      {payoutType === "serviced" ? loanTerm : 1}
+                      {payoutType === "serviced" ? proforma.projectLength : 1}
                     </div>
                   </div>
                 )}
@@ -880,7 +879,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         (s, v) => s + v.amount,
                         0
                       ) +
-                      (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0
+                      (monthlyInterestRate > 0 && debtPct > 0
                         ? sumInterestPayments
                         : 0)
                     ).toLocaleString("en-US", {
@@ -898,7 +897,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
               Object.keys(cashFlowState.hardCosts).length > 0 ||
               Object.keys(cashFlowState.softCosts).length > 0 ||
-              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
+              (monthlyInterestRate > 0 && debtPct > 0)) && (
               <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                 <div className={`${styles.totalCell} ${styles.expense}`}>
                   Total Expenses
@@ -1051,7 +1050,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
             {/* Debt draw row */}
-            {loanTerm > 0 && debtPct > 0 && (
+            {debtPct > 0 && (
               <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                 <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
                 <div className={`${styles.sectionTotalCell}`}>
@@ -1068,11 +1067,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 <div className={`${styles.sectionTotalCell}`}>
                   {loanStartMonth}
                 </div>
-                <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
               </div>
             )}
             {/* Principal Repayment row */}
-            {loanTerm > 0 && debtPct > 0 && (
+            {debtPct > 0 && (
               <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                 <div className={`${styles.sectionTotalCell}`}>
                   Principal Repayment
@@ -1427,7 +1426,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   )
                 )}
                 {/* Interest monthly */}
-                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+                {monthlyInterestRate > 0 && debtPct > 0 && (
                   <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                     {Array.from({ length: 120 }, (_, m) => {
                       const monthNumber = m + 1;
@@ -1471,7 +1470,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
               Object.keys(cashFlowState.hardCosts).length > 0 ||
               Object.keys(cashFlowState.softCosts).length > 0 ||
-              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
+              (monthlyInterestRate > 0 && debtPct > 0)) && (
               <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                 {Array.from({ length: 120 }, (_, m) => {
                   const monthNumber = m + 1;
@@ -1568,7 +1567,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
-            {loanTerm > 0 && debtPct > 0 && (
+            {debtPct > 0 && (
               <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                 {Array.from({ length: 120 }, (_, m) => {
                   const monthNumber = m + 1;
@@ -1585,7 +1584,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
             {/* Principal Repayment monthly data */}
-            {loanTerm > 0 && debtPct > 0 && (
+            {debtPct > 0 && (
               <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                 {Array.from({ length: 120 }, (_, m) => {
                   const monthNumber = m + 1;
