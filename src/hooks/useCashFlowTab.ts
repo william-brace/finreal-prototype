@@ -583,6 +583,8 @@ export function useCashFlowTab(proforma: Proforma) {
   const debtPct = proforma.sources?.debtPct || 0;
   const equityPct = proforma.sources?.equityPct || 0;
   const payoutType = proforma.sources?.payoutType || "rolledUp";
+  const interestReserveIncludedInLoan =
+    proforma.sources?.interestReserveIncludedInLoan || false;
   const debtAmountRaw = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
@@ -728,14 +730,18 @@ export function useCashFlowTab(proforma: Proforma) {
   // Precomputed interest payments from simulation
   const interestPaymentsByMonth = financingSim.interestPaymentByMonth;
 
-  // Now enhance calculateSoftCostsTotal to include interest payments
+  // Now enhance calculateSoftCostsTotal to include interest payments only when not included in loan
   calculateSoftCostsTotal = (month: number) => {
     let total = 0;
     Object.values(cashFlowState.softCosts).forEach((item) => {
       total += getMonthlyValue(item, month);
     });
-    // Add interest payments since interest is now part of soft costs section
-    if (monthlyInterestRate > 0 && debtPct > 0) {
+    // Add interest payments only if interest is NOT included in loan
+    if (
+      !interestReserveIncludedInLoan &&
+      monthlyInterestRate > 0 &&
+      debtPct > 0
+    ) {
       if (month >= 1 && month <= 120) {
         total += interestPaymentsByMonth[month - 1] || 0;
       }
@@ -746,6 +752,12 @@ export function useCashFlowTab(proforma: Proforma) {
   const calculateInterestPayment = (month: number) => {
     if (month < 1 || month > 120) return 0;
     console.log("interestPaymentsByMonth", interestPaymentsByMonth);
+    return interestPaymentsByMonth[month - 1] || 0;
+  };
+
+  // Calculate interest reserve (when included in loan)
+  const calculateInterestReserve = (month: number) => {
+    if (!interestReserveIncludedInLoan || month < 1 || month > 120) return 0;
     return interestPaymentsByMonth[month - 1] || 0;
   };
 
@@ -958,8 +970,10 @@ export function useCashFlowTab(proforma: Proforma) {
     debtPct,
     equityPct,
     payoutType,
+    interestReserveIncludedInLoan,
     sumInterestPayments,
     calculateInterestPayment,
+    calculateInterestReserve,
     calculateTotalExpensesIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,

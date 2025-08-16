@@ -49,8 +49,10 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     monthlyInterestRate,
     debtPct,
     payoutType,
+    interestReserveIncludedInLoan,
     sumInterestPayments,
     calculateInterestPayment,
+    calculateInterestReserve,
     calculateTotalExpensesIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,
@@ -846,27 +848,31 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   }
                 )}
 
-                {/* Interest row */}
-                {monthlyInterestRate > 0 && debtPct > 0 && (
-                  <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                    <div className={`${styles.sectionTotalCell}`}>Interest</div>
-                    <div className={`${styles.sectionTotalCell}`}>
-                      $
-                      {sumInterestPayments.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                {/* Interest row - only show when NOT included in loan */}
+                {!interestReserveIncludedInLoan &&
+                  monthlyInterestRate > 0 &&
+                  debtPct > 0 && (
+                    <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                      <div className={`${styles.sectionTotalCell}`}>
+                        Interest
+                      </div>
+                      <div className={`${styles.sectionTotalCell}`}>
+                        $
+                        {sumInterestPayments.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className={`${styles.sectionTotalCell}`}>
+                        {payoutType === "serviced"
+                          ? loanStartMonth
+                          : loanStartMonth + proforma.projectLength - 1}
+                      </div>
+                      <div className={`${styles.sectionTotalCell}`}>
+                        {payoutType === "serviced" ? proforma.projectLength : 1}
+                      </div>
                     </div>
-                    <div className={`${styles.sectionTotalCell}`}>
-                      {payoutType === "serviced"
-                        ? loanStartMonth
-                        : loanStartMonth + proforma.projectLength - 1}
-                    </div>
-                    <div className={`${styles.sectionTotalCell}`}>
-                      {payoutType === "serviced" ? proforma.projectLength : 1}
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                   <div className={`${styles.sectionTotalCell}`}>
@@ -879,7 +885,9 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         (s, v) => s + v.amount,
                         0
                       ) +
-                      (monthlyInterestRate > 0 && debtPct > 0
+                      (!interestReserveIncludedInLoan &&
+                      monthlyInterestRate > 0 &&
+                      debtPct > 0
                         ? sumInterestPayments
                         : 0)
                     ).toLocaleString("en-US", {
@@ -1070,6 +1078,31 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 <div className={`${styles.sectionTotalCell}`}>-</div>
               </div>
             )}
+            {/* Interest Reserve row - only show when included in loan */}
+            {interestReserveIncludedInLoan &&
+              monthlyInterestRate > 0 &&
+              debtPct > 0 && (
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Interest Reserve
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    $
+                    {sumInterestPayments.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    {payoutType === "serviced"
+                      ? loanStartMonth
+                      : loanStartMonth + proforma.projectLength - 1}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    {payoutType === "serviced" ? proforma.projectLength : 1}
+                  </div>
+                </div>
+              )}
             {/* Principal Repayment row */}
             {debtPct > 0 && (
               <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -1425,29 +1458,31 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     </div>
                   )
                 )}
-                {/* Interest monthly */}
-                {monthlyInterestRate > 0 && debtPct > 0 && (
-                  <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                    {Array.from({ length: 120 }, (_, m) => {
-                      const monthNumber = m + 1;
-                      const value = calculateInterestPayment(monthNumber);
-                      console.log("value", value);
-                      return (
-                        <div
-                          key={monthNumber}
-                          className={`${styles.sectionTotalCell} ${styles.expense}`}
-                        >
-                          {value
-                            ? `$${value.toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}`
-                            : ""}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                {/* Interest monthly - only show when NOT included in loan */}
+                {!interestReserveIncludedInLoan &&
+                  monthlyInterestRate > 0 &&
+                  debtPct > 0 && (
+                    <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                      {Array.from({ length: 120 }, (_, m) => {
+                        const monthNumber = m + 1;
+                        const value = calculateInterestPayment(monthNumber);
+                        console.log("value", value);
+                        return (
+                          <div
+                            key={monthNumber}
+                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                          >
+                            {value
+                              ? `$${value.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : ""}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                 <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                   {Array.from({ length: 120 }, (_, m) => {
@@ -1583,6 +1618,30 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+            {/* Interest Reserve monthly data - only show when included in loan */}
+            {interestReserveIncludedInLoan &&
+              monthlyInterestRate > 0 &&
+              debtPct > 0 && (
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateInterestReserve(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        {value
+                          ? `$${value.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`
+                          : ""}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             {/* Principal Repayment monthly data */}
             {debtPct > 0 && (
               <div className={`${styles.rightRow} ${styles.rowHeight}`}>
