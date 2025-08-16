@@ -68,6 +68,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     toggleFullscreen,
     getUnitsEarliestStart,
     getUnitsTotalLength,
+    calculateLeveredTotalInflows,
+    calculateLeveredTotalOutflows,
+    getLeveredFirstInflowMonth,
+    getLeveredFirstOutflowMonth,
+    getLeveredInflowLength,
+    getLeveredOutflowLength,
   } = useCashFlowTab(proforma);
 
   // Local refs and scroll sync for the div-based grid
@@ -1200,6 +1206,82 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
             </div>
+
+            {/* Levered Cashflow Summary header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>
+                Levered Cashflow Summary
+              </div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+
+            {/* Total Inflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                Total Inflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateLeveredTotalInflows(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getLeveredFirstInflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getLeveredInflowLength}
+              </div>
+            </div>
+
+            {/* Total Outflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                Total Outflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateLeveredTotalOutflows(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getLeveredFirstOutflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getLeveredOutflowLength}
+              </div>
+            </div>
+
+            {/* Net Cashflow row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell}`}>Net Cashflow</div>
+              <div className={`${styles.totalCell}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateCompleteNetCashFlow(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
+            </div>
           </div>
 
           {/* Right content, scrolls with container */}
@@ -1702,6 +1784,63 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               })}
             </div>
             {/* Removed Total Financing from summary */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateCompleteNetCashFlow(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${
+                      value >= 0 ? styles.revenue : styles.expense
+                    }`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Grey header row aligning with Levered Cashflow Summary header */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.greyHeaderCell}></div>
+              ))}
+            </div>
+
+            {/* Levered Total Inflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateLeveredTotalInflows(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.revenue}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Levered Total Outflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateLeveredTotalOutflows(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.expense}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Levered Net Cashflows monthly */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;

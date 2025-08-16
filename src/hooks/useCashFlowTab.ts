@@ -941,6 +941,71 @@ export function useCashFlowTab(proforma: Proforma) {
     cashFlowState.units,
   ]);
 
+  // Levered cashflow summary helpers
+  const calculateLeveredTotalInflows = (month: number) => {
+    let total = calculateRevenueTotal(month) + calculateDebtDraw(month);
+    // Add interest reserve only if interest is included in loan
+    if (interestReserveIncludedInLoan) {
+      total += calculateInterestReserve(month);
+    }
+    return total;
+  };
+
+  const calculateLeveredTotalOutflows = (month: number) => {
+    return calculateTotalExpensesIncludingInterest(month);
+  };
+
+  const getLeveredFirstInflowMonth = useMemo(() => {
+    // Find the earliest month where levered inflows > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalInflows(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no inflows
+  }, [cashFlowState, financingSim, interestReserveIncludedInLoan]);
+
+  const getLeveredFirstOutflowMonth = useMemo(() => {
+    // Find the earliest month where levered outflows > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalOutflows(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no outflows
+  }, [cashFlowState, financingSim]);
+
+  const getLeveredInflowLength = useMemo(() => {
+    // Find the last month with levered inflows > 0
+    let lastInflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalInflows(month) > 0) {
+        lastInflowMonth = month;
+      }
+    }
+    return lastInflowMonth > 0
+      ? lastInflowMonth - getLeveredFirstInflowMonth + 1
+      : 0;
+  }, [
+    cashFlowState,
+    financingSim,
+    getLeveredFirstInflowMonth,
+    interestReserveIncludedInLoan,
+  ]);
+
+  const getLeveredOutflowLength = useMemo(() => {
+    // Find the last month with levered outflows > 0
+    let lastOutflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalOutflows(month) > 0) {
+        lastOutflowMonth = month;
+      }
+    }
+    return lastOutflowMonth > 0
+      ? lastOutflowMonth - getLeveredFirstOutflowMonth + 1
+      : 0;
+  }, [cashFlowState, financingSim, getLeveredFirstOutflowMonth]);
+
   return {
     cashFlowState,
     updateCashFlowItem,
@@ -993,5 +1058,12 @@ export function useCashFlowTab(proforma: Proforma) {
     // Units total timing helpers
     getUnitsEarliestStart,
     getUnitsTotalLength,
+    // Levered cashflow summary helpers
+    calculateLeveredTotalInflows,
+    calculateLeveredTotalOutflows,
+    getLeveredFirstInflowMonth,
+    getLeveredFirstOutflowMonth,
+    getLeveredInflowLength,
+    getLeveredOutflowLength,
   } as const;
 }
