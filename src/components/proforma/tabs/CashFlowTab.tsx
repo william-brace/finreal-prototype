@@ -367,6 +367,18 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* White space separator between Units Total and Other Income */}
+            {proforma.unitMix &&
+              proforma.unitMix.length > 0 &&
+              proforma.otherIncome &&
+              proforma.otherIncome.length > 0 && (
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div
+                    className={`${styles.separatorCell} ${styles.spanAll}`}
+                  ></div>
+                </div>
+              )}
+
             {/* Other Income header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
@@ -650,6 +662,17 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 </div>
               </>
             )}
+
+            {/* White space separator between Land Costs Total and Hard Costs */}
+            {Object.keys(cashFlowState.landCosts).length > 0 &&
+              Object.keys(cashFlowState.hardCosts).length > 0 && (
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div
+                    className={`${styles.separatorCell} ${styles.spanAll}`}
+                  ></div>
+                </div>
+              )}
+
             {/* Hard costs */}
             {Object.keys(cashFlowState.hardCosts).length > 0 && (
               <>
@@ -764,6 +787,17 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 </div>
               </>
             )}
+
+            {/* White space separator between Hard Costs Total and Soft Costs */}
+            {Object.keys(cashFlowState.hardCosts).length > 0 &&
+              Object.keys(cashFlowState.softCosts).length > 0 && (
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div
+                    className={`${styles.separatorCell} ${styles.spanAll}`}
+                  ></div>
+                </div>
+              )}
+
             {/* Soft costs */}
             {Object.keys(cashFlowState.softCosts).length > 0 && (
               <>
@@ -1289,6 +1323,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+
+            {/* White space separator between Units Total and Other Income */}
+            {proforma.unitMix &&
+              proforma.unitMix.length > 0 &&
+              proforma.otherIncome &&
+              proforma.otherIncome.length > 0 && (
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+              )}
+
             {/* Spacer before Other Income list header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
@@ -1416,6 +1463,16 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
+            {/* White space separator between Land Costs Total and Hard Costs */}
+            {Object.keys(cashFlowState.landCosts).length > 0 &&
+              Object.keys(cashFlowState.hardCosts).length > 0 && (
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+              )}
+
             {/* Hard costs monthly rows */}
             {Object.keys(cashFlowState.hardCosts).length > 0 && (
               <>
@@ -1463,6 +1520,16 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 </div>
               </>
             )}
+
+            {/* White space separator between Hard Costs Total and Soft Costs */}
+            {Object.keys(cashFlowState.hardCosts).length > 0 &&
+              Object.keys(cashFlowState.softCosts).length > 0 && (
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+              )}
 
             {/* Soft costs monthly rows */}
             {Object.keys(cashFlowState.softCosts).length > 0 && (
