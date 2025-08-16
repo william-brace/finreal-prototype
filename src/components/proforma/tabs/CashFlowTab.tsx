@@ -840,45 +840,52 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     );
                   }
                 )}
+
+                {/* Interest row */}
+                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+                  <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                    <div className={`${styles.sectionTotalCell}`}>Interest</div>
+                    <div className={`${styles.sectionTotalCell}`}>
+                      $
+                      {sumInterestPayments.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className={`${styles.sectionTotalCell}`}>
+                      {payoutType === "serviced"
+                        ? loanStartMonth
+                        : loanStartMonth + loanTerm - 1}
+                    </div>
+                    <div className={`${styles.sectionTotalCell}`}>
+                      {payoutType === "serviced" ? loanTerm : 1}
+                    </div>
+                  </div>
+                )}
+
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                   <div className={`${styles.sectionTotalCell}`}>
                     Soft Costs Total
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>
                     $
-                    {Object.values(cashFlowState.softCosts)
-                      .reduce((s, v) => s + v.amount, 0)
-                      .toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    {(
+                      Object.values(cashFlowState.softCosts).reduce(
+                        (s, v) => s + v.amount,
+                        0
+                      ) +
+                      (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0
+                        ? sumInterestPayments
+                        : 0)
+                    ).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                 </div>
               </>
-            )}
-
-            {/* Interest row */}
-            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>Interest</div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {sumInterestPayments.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {payoutType === "serviced"
-                    ? loanStartMonth
-                    : loanStartMonth + loanTerm - 1}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {payoutType === "serviced" ? loanTerm : 1}
-                </div>
-              </div>
             )}
 
             {/* Principal Repayment row */}
@@ -1320,6 +1327,30 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     </div>
                   )
                 )}
+                {/* Interest monthly */}
+                {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
+                  <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                    {Array.from({ length: 120 }, (_, m) => {
+                      const monthNumber = m + 1;
+                      const value = calculateInterestPayment(monthNumber);
+                      console.log("value", value);
+                      return (
+                        <div
+                          key={monthNumber}
+                          className={`${styles.sectionTotalCell} ${styles.expense}`}
+                        >
+                          {value
+                            ? `$${value.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`
+                            : ""}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                   {Array.from({ length: 120 }, (_, m) => {
                     const monthNumber = m + 1;
@@ -1337,30 +1368,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
-            {/* Interest monthly */}
-            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateInterestPayment(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      {value
-                        ? `$${value.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}`
-                        : ""}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Principal Repayment monthly */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;

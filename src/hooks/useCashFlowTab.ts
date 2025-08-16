@@ -506,7 +506,8 @@ export function useCashFlowTab(proforma: Proforma) {
     return total;
   };
 
-  const calculateSoftCostsTotal = (month: number) => {
+  // calculateSoftCostsTotal - will be enhanced after financingSim is available
+  let calculateSoftCostsTotal = (month: number) => {
     let total = 0;
     Object.values(cashFlowState.softCosts).forEach((item) => {
       total += getMonthlyValue(item, month);
@@ -678,8 +679,24 @@ export function useCashFlowTab(proforma: Proforma) {
   // Precomputed interest payments from simulation
   const interestPaymentsByMonth = financingSim.interestPaymentByMonth;
 
+  // Now enhance calculateSoftCostsTotal to include interest payments
+  calculateSoftCostsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.softCosts).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    // Add interest payments since interest is now part of soft costs section
+    if (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0) {
+      if (month >= 1 && month <= 120) {
+        total += interestPaymentsByMonth[month - 1] || 0;
+      }
+    }
+    return total;
+  };
+
   const calculateInterestPayment = (month: number) => {
     if (month < 1 || month > 120) return 0;
+    console.log("interestPaymentsByMonth", interestPaymentsByMonth);
     return interestPaymentsByMonth[month - 1] || 0;
   };
 
