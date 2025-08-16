@@ -10,7 +10,7 @@
   /* shared sizing vars for alignment */
   --row-h: 50px;
   --month-col-w: 130px;
-  --cell-border: rgba(209, 213, 219, 0.35);
+  --cell-border: rgba(217, 217, 217, 0.35);
 }
 
 .fixedColumn {
@@ -18,9 +18,10 @@
   left: 0;
   z-index: 2;
   background-color: #f9fafb;
-  border-right: 1px solid var(--cell-border);
+  /* border-right: 1px solid var(--cell-border); */
   min-width: 520px; /* 4 cols combined */
   flex-shrink: 0;
+  /* box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1); */
 }
 
 .rightColumn {
@@ -50,9 +51,9 @@
 
 /* Left column cells */
 .leftHeaderCell {
-  border: 1px solid var(--cell-border);
+  border: 0.5px solid var(--cell-border);
   padding-left: 8px;
-  background-color: #f3f4f6;
+  /* background-color: #f3f4f6; */
   font-weight: 600;
   font-size: 13px;
   text-align: left;
@@ -67,6 +68,8 @@
 
 .leftDataCellIndented {
   white-space: nowrap;
+  height: 100%;
+  border: 1px solid var(--cell-border);
   padding-left: 8px; /* Reset to base padding */
   font-size: 13px;
   background-color: #fafbfc; /* Slightly different background to emphasize subsection */
@@ -166,7 +169,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: bold;
-  background-color: #e6e6e6;
+  background-color: #f0f0f0;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -183,7 +186,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
-  background-color: #e6e6e6;
+  background-color: #f0f0f0;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -192,6 +195,13 @@
 }
 .sectionTotalCell.expense {
   color: #b91c1c;
+}
+
+.monthCell.revenue {
+  color: #16a34a;
+}
+.monthCell.expense {
+  color: #dc2626;
 }
 
 /* Metrics cards */

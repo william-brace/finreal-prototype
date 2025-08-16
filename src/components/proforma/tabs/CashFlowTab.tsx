@@ -918,22 +918,20 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   monthlyInterestRate > 0 &&
                   debtPct > 0 && (
                     <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                      <div className={`${styles.sectionTotalCell}`}>
-                        Interest
-                      </div>
-                      <div className={`${styles.sectionTotalCell}`}>
+                      <div className={`${styles.leftDataCell}`}>Interest</div>
+                      <div className={`${styles.leftDataCell}`}>
                         $
                         {sumInterestPayments.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
                       </div>
-                      <div className={`${styles.sectionTotalCell}`}>
+                      <div className={`${styles.leftDataCell}`}>
                         {payoutType === "serviced"
                           ? loanStartMonth
                           : loanStartMonth + proforma.projectLength - 1}
                       </div>
-                      <div className={`${styles.sectionTotalCell}`}>
+                      <div className={`${styles.leftDataCell}`}>
                         {payoutType === "serviced" ? proforma.projectLength : 1}
                       </div>
                     </div>
@@ -1162,17 +1160,17 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               monthlyInterestRate > 0 &&
               debtPct > 0 && (
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                  <div className={`${styles.sectionTotalCell}`}>
+                  <div className={`${styles.leftDataCell}`}>
                     Interest Reserve
                   </div>
-                  <div className={`${styles.sectionTotalCell}`}>
+                  <div className={`${styles.leftDataCell}`}>
                     $
                     {sumInterestPayments.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </div>
-                  <div className={`${styles.sectionTotalCell}`}>
+                  <div className={`${styles.leftDataCell}`}>
                     {payoutType === "serviced"
                       ? loanStartMonth
                       : loanStartMonth + proforma.projectLength - 1}
@@ -1592,7 +1590,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         return (
                           <div
                             key={monthNumber}
-                            className={`${styles.sectionTotalCell} ${styles.expense}`}
+                            className={`${styles.monthCell} ${styles.expense}`}
                           >
                             {value
                               ? `$${value.toLocaleString("en-US", {
