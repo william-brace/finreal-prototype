@@ -522,6 +522,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* White space separator between Revenue and Expenses */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
+
             {/* Expenses header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={styles.leftHeaderCell}>Expenses</div>
@@ -943,6 +950,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* White space separator between Total Expenses and Unlevered Cashflow Summary */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
+
             {/* Unlevered Cashflow Summary header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={styles.leftHeaderCell}>
@@ -1033,6 +1047,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
               <div className={`${styles.totalCell}`}>-</div>
               <div className={`${styles.totalCell}`}>-</div>
+            </div>
+
+            {/* White space separator between Net Unlevered Cashflows and Financing */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
             </div>
 
             {/* Financing header */}
@@ -1126,6 +1147,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 <div className={`${styles.sectionTotalCell}`}>-</div>
               </div>
             )}
+
+            {/* White space separator between Principal Repayment and Levered Cashflow Summary */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
 
             {/* Levered Cashflow Summary header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -1326,6 +1354,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* White space separator between Revenue and Expenses */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+
             {/* Grey header row aligning with Expenses header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
@@ -1525,6 +1560,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* White space separator between Total Expenses and Unlevered Cashflow Summary */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+
             {/* Grey header row aligning with Unlevered Cashflow Summary header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
@@ -1580,6 +1622,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   </div>
                 );
               })}
+            </div>
+
+            {/* White space separator between Net Unlevered Cashflows and Financing */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
             </div>
 
             {/* Grey header row aligning with Financing header */}
@@ -1666,6 +1715,13 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+
+            {/* White space separator between Principal Repayment and Levered Cashflow Summary */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
 
             {/* Grey header row aligning with Levered Cashflow Summary header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
