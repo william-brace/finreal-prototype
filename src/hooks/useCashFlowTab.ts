@@ -527,6 +527,56 @@ export function useCashFlowTab(proforma: Proforma) {
     );
   };
 
+  // Unlevered cashflow calculations
+  const calculateUnleveredNetCashFlow = (month: number) => {
+    return calculateRevenueTotal(month) - calculateExpensesTotal(month);
+  };
+
+  // Helper functions to get timing for unlevered cashflow summary
+  const getFirstInflowMonth = useMemo(() => {
+    // Find the earliest month where revenue > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateRevenueTotal(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no inflows
+  }, [cashFlowState]);
+
+  const getFirstOutflowMonth = useMemo(() => {
+    // Find the earliest month where expenses > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no outflows
+  }, [cashFlowState]);
+
+  const getInflowLength = useMemo(() => {
+    // Find the last month with revenue > 0
+    let lastInflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateRevenueTotal(month) > 0) {
+        lastInflowMonth = month;
+      }
+    }
+    return lastInflowMonth > 0 ? lastInflowMonth - getFirstInflowMonth + 1 : 0;
+  }, [cashFlowState, getFirstInflowMonth]);
+
+  const getOutflowLength = useMemo(() => {
+    // Find the last month with expenses > 0
+    let lastOutflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        lastOutflowMonth = month;
+      }
+    }
+    return lastOutflowMonth > 0
+      ? lastOutflowMonth - getFirstOutflowMonth + 1
+      : 0;
+  }, [cashFlowState, getFirstOutflowMonth]);
+
   // Interest calculation helpers
   const monthlyInterestRate =
     (proforma.sources?.financingCosts?.interestPct || 0) / 100 / 12;
@@ -899,6 +949,12 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateSoftCostsTotal,
     calculateRevenueTotal,
     calculateExpensesTotal,
+    // Unlevered cashflow functions
+    calculateUnleveredNetCashFlow,
+    getFirstInflowMonth,
+    getFirstOutflowMonth,
+    getInflowLength,
+    getOutflowLength,
     monthlyInterestRate,
     debtPct,
     equityPct,

@@ -40,6 +40,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     calculateHardCostsTotal,
     calculateSoftCostsTotal,
     calculateRevenueTotal,
+    calculateExpensesTotal,
+    calculateUnleveredNetCashFlow,
+    getFirstInflowMonth,
+    getFirstOutflowMonth,
+    getInflowLength,
+    getOutflowLength,
     monthlyInterestRate,
     debtPct,
     loanTerm,
@@ -940,6 +946,98 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </div>
             )}
 
+            {/* Unlevered Cashflow Summary header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>
+                Unlevered Cashflow Summary
+              </div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+
+            {/* Total Inflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                Total Inflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {(
+                  Object.values(cashFlowState.units).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.otherIncome).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getFirstInflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getInflowLength}
+              </div>
+            </div>
+
+            {/* Total Outflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                Total Outflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                $
+                {(
+                  Object.values(cashFlowState.landCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.hardCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.softCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getFirstOutflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getOutflowLength}
+              </div>
+            </div>
+
+            {/* Net Unlevered Cashflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell}`}>
+                Net Unlevered Cashflows
+              </div>
+              <div className={`${styles.totalCell}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateUnleveredNetCashFlow(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
+            </div>
+
             {/* Financing header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={styles.leftHeaderCell}>Financing</div>
@@ -1409,6 +1507,63 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+
+            {/* Grey header row aligning with Unlevered Cashflow Summary header */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.greyHeaderCell}></div>
+              ))}
+            </div>
+
+            {/* Total Inflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateRevenueTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.revenue}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Total Outflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateExpensesTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.expense}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Net Unlevered Cashflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateUnleveredNetCashFlow(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${
+                      value >= 0 ? styles.revenue : styles.expense
+                    }`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Grey header row aligning with Financing header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
