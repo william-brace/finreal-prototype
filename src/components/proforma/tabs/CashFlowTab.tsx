@@ -894,22 +894,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
-            {/* Principal Repayment row */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.sectionTotalCell}`}>
-                Principal Repayment
-              </div>
-              <div className={`${styles.sectionTotalCell}`}>
-                $
-                {sumPrincipalRepayments.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <div className={`${styles.sectionTotalCell}`}>-</div>
-              <div className={`${styles.sectionTotalCell}`}>-</div>
-            </div>
-
             {/* Total expenses */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
               Object.keys(cashFlowState.hardCosts).length > 0 ||
@@ -1085,6 +1069,23 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   {loanStartMonth}
                 </div>
                 <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
+              </div>
+            )}
+            {/* Principal Repayment row */}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Principal Repayment
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {sumPrincipalRepayments.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
               </div>
             )}
 
@@ -1466,26 +1467,6 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
-            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-              {Array.from({ length: 120 }, (_, m) => {
-                const monthNumber = m + 1;
-                const value = calculatePrincipalRepayment(monthNumber);
-                return (
-                  <div
-                    key={monthNumber}
-                    className={`${styles.sectionTotalCell} ${styles.expense}`}
-                  >
-                    {value
-                      ? `$${value.toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`
-                      : ""}
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Total expenses monthly (including interest) */}
             {(Object.keys(cashFlowState.landCosts).length > 0 ||
               Object.keys(cashFlowState.hardCosts).length > 0 ||
@@ -1598,6 +1579,28 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       className={`${styles.sectionTotalCell} ${styles.revenue}`}
                     >
                       {formatMonthlyCashFlow(value)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Principal Repayment monthly data */}
+            {loanTerm > 0 && debtPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculatePrincipalRepayment(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      {value
+                        ? `$${value.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : ""}
                     </div>
                   );
                 })}
