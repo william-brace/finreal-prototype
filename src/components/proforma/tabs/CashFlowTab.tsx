@@ -59,6 +59,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     sumPrincipalRepayments,
     isFullscreen,
     toggleFullscreen,
+    getUnitsEarliestStart,
+    getUnitsTotalLength,
   } = useCashFlowTab(proforma);
 
   // Local refs and scroll sync for the div-based grid
@@ -343,8 +345,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                       maximumFractionDigits: 2,
                     })}
                 </div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {getUnitsEarliestStart}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {getUnitsTotalLength}
+                </div>
               </div>
             )}
 

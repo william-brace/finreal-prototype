@@ -781,6 +781,28 @@ export function useCashFlowTab(proforma: Proforma) {
     [leveredCashFlows]
   );
 
+  // Helper functions to calculate units total timing
+  const getUnitsEarliestStart = useMemo(() => {
+    const unitStarts = Object.values(cashFlowState.units).map(item => 
+      getEffectiveStartValue('units', Object.keys(cashFlowState.units).find(key => cashFlowState.units[key] === item) || '')
+    );
+    return unitStarts.length > 0 ? Math.min(...unitStarts) : proforma.projectLength + 1;
+  }, [cashFlowState.units, proforma.projectLength]);
+
+  const getUnitsMaxEndPeriod = useMemo(() => {
+    const unitEndPeriods = Object.entries(cashFlowState.units).map(([itemId, item]) => {
+      const start = getEffectiveStartValue('units', itemId);
+      const length = getEffectiveLengthValue('units', itemId);
+      return start + length - 1;
+    });
+    return unitEndPeriods.length > 0 ? Math.max(...unitEndPeriods) : proforma.projectLength + proforma.absorptionPeriod;
+  }, [cashFlowState.units, proforma.projectLength, proforma.absorptionPeriod]);
+
+  const getUnitsTotalLength = useMemo(() => {
+    if (Object.keys(cashFlowState.units).length === 0) return proforma.absorptionPeriod;
+    return getUnitsMaxEndPeriod - getUnitsEarliestStart + 1;
+  }, [getUnitsEarliestStart, getUnitsMaxEndPeriod, proforma.absorptionPeriod, cashFlowState.units]);
+
   return {
     cashFlowState,
     updateCashFlowItem,
@@ -823,5 +845,8 @@ export function useCashFlowTab(proforma: Proforma) {
     // Fullscreen functionality
     isFullscreen,
     toggleFullscreen,
+    // Units total timing helpers
+    getUnitsEarliestStart,
+    getUnitsTotalLength,
   } as const;
 }
