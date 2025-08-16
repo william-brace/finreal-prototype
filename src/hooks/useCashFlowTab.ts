@@ -131,8 +131,27 @@ export function useCashFlowTab(proforma: Proforma) {
       const timing = proforma.cashFlowSchedule?.hardCosts?.["baseCost"];
       initialState.hardCosts["baseCost"] = {
         amount: proforma.uses.hardCosts.baseCost,
-        start: timing?.start ?? 3,
-        length: timing?.length ?? 18,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
+      };
+    }
+    // Add hard cost contingency
+    if (
+      proforma.uses.hardCosts.contingencyPct > 0 &&
+      proforma.uses.hardCosts.baseCost > 0
+    ) {
+      const contingencyAmount = Math.round(
+        (proforma.uses.hardCosts.baseCost *
+          proforma.uses.hardCosts.contingencyPct) /
+          100
+      );
+      const timing = proforma.cashFlowSchedule?.hardCosts?.["contingency"];
+      initialState.hardCosts["contingency"] = {
+        amount: contingencyAmount,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
         startManuallySet: timing?.startManuallySet ?? false,
         lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
@@ -143,8 +162,8 @@ export function useCashFlowTab(proforma: Proforma) {
         const timing = proforma.cashFlowSchedule?.hardCosts?.[key];
         initialState.hardCosts[key] = {
           amount: cost.amount,
-          start: timing?.start ?? 3,
-          length: timing?.length ?? 18,
+          start: timing?.start ?? 2,
+          length: timing?.length ?? proforma.projectLength,
           startManuallySet: timing?.startManuallySet ?? false,
           lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
@@ -157,7 +176,7 @@ export function useCashFlowTab(proforma: Proforma) {
       initialState.softCosts["development"] = {
         amount: proforma.uses.softCosts.development,
         start: timing?.start ?? 2,
-        length: timing?.length ?? 12,
+        length: timing?.length ?? proforma.projectLength,
         startManuallySet: timing?.startManuallySet ?? false,
         lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
@@ -166,8 +185,8 @@ export function useCashFlowTab(proforma: Proforma) {
       const timing = proforma.cashFlowSchedule?.softCosts?.["consultants"];
       initialState.softCosts["consultants"] = {
         amount: proforma.uses.softCosts.consultants,
-        start: timing?.start ?? 1,
-        length: timing?.length ?? 6,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
         startManuallySet: timing?.startManuallySet ?? false,
         lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
@@ -176,11 +195,31 @@ export function useCashFlowTab(proforma: Proforma) {
       const timing = proforma.cashFlowSchedule?.softCosts?.["adminMarketing"];
       initialState.softCosts["adminMarketing"] = {
         amount: proforma.uses.softCosts.adminMarketing,
-        start: timing?.start ?? 1,
-        length: timing?.length ?? 24,
+        start: timing?.start ?? proforma.projectLength - 2,
+        length: timing?.length ?? proforma.absorptionPeriod + 1,
         startManuallySet: timing?.startManuallySet ?? false,
         lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
+    }
+    // Add soft cost contingency
+    if (proforma.uses.softCosts.contingencyPct > 0) {
+      const baseSoftCosts =
+        (proforma.uses.softCosts.development || 0) +
+        (proforma.uses.softCosts.consultants || 0) +
+        (proforma.uses.softCosts.adminMarketing || 0);
+      if (baseSoftCosts > 0) {
+        const contingencyAmount = Math.round(
+          (baseSoftCosts * proforma.uses.softCosts.contingencyPct) / 100
+        );
+        const timing = proforma.cashFlowSchedule?.softCosts?.["contingency"];
+        initialState.softCosts["contingency"] = {
+          amount: contingencyAmount,
+          start: timing?.start ?? 2,
+          length: timing?.length ?? proforma.projectLength,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
+        };
+      }
     }
     proforma.uses.softCosts.additionalCosts?.forEach((cost, index) => {
       if (cost.amount > 0) {
@@ -189,7 +228,7 @@ export function useCashFlowTab(proforma: Proforma) {
         initialState.softCosts[key] = {
           amount: cost.amount,
           start: timing?.start ?? 2,
-          length: timing?.length ?? 12,
+          length: timing?.length ?? proforma.projectLength,
           startManuallySet: timing?.startManuallySet ?? false,
           lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
@@ -383,6 +422,8 @@ export function useCashFlowTab(proforma: Proforma) {
     switch (key) {
       case "baseCost":
         return "Construction";
+      case "contingency":
+        return `Contingency (${proforma.uses.hardCosts.contingencyPct}%)`;
       default:
         if (key.startsWith("additional_") && index !== undefined) {
           return (
@@ -402,6 +443,8 @@ export function useCashFlowTab(proforma: Proforma) {
         return "Consultants";
       case "adminMarketing":
         return "Admin & Marketing";
+      case "contingency":
+        return `Contingency (${proforma.uses.softCosts.contingencyPct}%)`;
       default:
         if (key.startsWith("additional_") && index !== undefined) {
           return (
@@ -783,25 +826,42 @@ export function useCashFlowTab(proforma: Proforma) {
 
   // Helper functions to calculate units total timing
   const getUnitsEarliestStart = useMemo(() => {
-    const unitStarts = Object.values(cashFlowState.units).map(item => 
-      getEffectiveStartValue('units', Object.keys(cashFlowState.units).find(key => cashFlowState.units[key] === item) || '')
+    const unitStarts = Object.values(cashFlowState.units).map((item) =>
+      getEffectiveStartValue(
+        "units",
+        Object.keys(cashFlowState.units).find(
+          (key) => cashFlowState.units[key] === item
+        ) || ""
+      )
     );
-    return unitStarts.length > 0 ? Math.min(...unitStarts) : proforma.projectLength + 1;
+    return unitStarts.length > 0
+      ? Math.min(...unitStarts)
+      : proforma.projectLength + 1;
   }, [cashFlowState.units, proforma.projectLength]);
 
   const getUnitsMaxEndPeriod = useMemo(() => {
-    const unitEndPeriods = Object.entries(cashFlowState.units).map(([itemId, item]) => {
-      const start = getEffectiveStartValue('units', itemId);
-      const length = getEffectiveLengthValue('units', itemId);
-      return start + length - 1;
-    });
-    return unitEndPeriods.length > 0 ? Math.max(...unitEndPeriods) : proforma.projectLength + proforma.absorptionPeriod;
+    const unitEndPeriods = Object.entries(cashFlowState.units).map(
+      ([itemId, item]) => {
+        const start = getEffectiveStartValue("units", itemId);
+        const length = getEffectiveLengthValue("units", itemId);
+        return start + length - 1;
+      }
+    );
+    return unitEndPeriods.length > 0
+      ? Math.max(...unitEndPeriods)
+      : proforma.projectLength + proforma.absorptionPeriod;
   }, [cashFlowState.units, proforma.projectLength, proforma.absorptionPeriod]);
 
   const getUnitsTotalLength = useMemo(() => {
-    if (Object.keys(cashFlowState.units).length === 0) return proforma.absorptionPeriod;
+    if (Object.keys(cashFlowState.units).length === 0)
+      return proforma.absorptionPeriod;
     return getUnitsMaxEndPeriod - getUnitsEarliestStart + 1;
-  }, [getUnitsEarliestStart, getUnitsMaxEndPeriod, proforma.absorptionPeriod, cashFlowState.units]);
+  }, [
+    getUnitsEarliestStart,
+    getUnitsMaxEndPeriod,
+    proforma.absorptionPeriod,
+    cashFlowState.units,
+  ]);
 
   return {
     cashFlowState,

@@ -667,7 +667,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                             max={120}
                             step={1}
                             className={styles.inputField}
-                            defaultValue={hardCost.start ?? 1}
+                            defaultValue={hardCost.start ?? 2}
                             onBlur={(e) =>
                               commitTiming(
                                 "hardCosts",
@@ -699,7 +699,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                             max={120}
                             step={1}
                             className={styles.inputField}
-                            defaultValue={hardCost.length ?? 1}
+                            defaultValue={hardCost.length ?? 2}
                             onBlur={(e) =>
                               commitTiming(
                                 "hardCosts",
