@@ -919,7 +919,7 @@ export function useCashFlowTab(proforma: Proforma) {
 
   const getUnitsMaxEndPeriod = useMemo(() => {
     const unitEndPeriods = Object.entries(cashFlowState.units).map(
-      ([itemId, item]) => {
+      ([itemId]) => {
         const start = getEffectiveStartValue("units", itemId);
         const length = getEffectiveLengthValue("units", itemId);
         return start + length - 1;
