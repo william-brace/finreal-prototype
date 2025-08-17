@@ -10,7 +10,7 @@
   /* shared sizing vars for alignment */
   --row-h: 50px;
   --month-col-w: 130px;
-  --cell-border: rgba(209, 213, 219, 0.35);
+  --cell-border: rgba(217, 217, 217, 0.35);
 }
 
 .fixedColumn {
@@ -18,9 +18,10 @@
   left: 0;
   z-index: 2;
   background-color: #f9fafb;
-  border-right: 1px solid var(--cell-border);
+  /* border-right: 1px solid var(--cell-border); */
   min-width: 520px; /* 4 cols combined */
   flex-shrink: 0;
+  /* box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1); */
 }
 
 .rightColumn {
@@ -50,9 +51,9 @@
 
 /* Left column cells */
 .leftHeaderCell {
-  border: 1px solid var(--cell-border);
+  border: 0.5px solid var(--cell-border);
   padding-left: 8px;
-  background-color: #f3f4f6;
+  /* background-color: #f3f4f6; */
   font-weight: 600;
   font-size: 13px;
   text-align: left;
@@ -63,6 +64,23 @@
   border: 1px solid var(--cell-border);
   padding-left: 8px;
   font-size: 13px;
+}
+
+.leftDataCellIndented {
+  white-space: nowrap;
+  height: 100%;
+  border: 1px solid var(--cell-border);
+  padding-left: 8px; /* Reset to base padding */
+  font-size: 13px;
+  background-color: #fafbfc; /* Slightly different background to emphasize subsection */
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.indentIcon {
+  color: #6b7280; /* Subtle gray color */
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
 .leftAmountCell {
@@ -84,7 +102,7 @@
 
 .sectionHeader {
   border: 1px solid var(--cell-border);
-  background-color: #f3f4f6;
+  /* background-color: #f3f4f6; */
   padding-left: 8px;
   font-weight: 600;
   font-size: 13px;
@@ -107,11 +125,6 @@
 
 .separatorCell {
   border: 1px solid var(--cell-border);
-}
-
-.greyHeaderCell {
-  background-color: #f3f4f6;
-  border: none;
 }
 
 .monthCell {
@@ -156,7 +169,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: bold;
-  background-color: #f3f4f6;
+  background-color: #f0f0f0;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -173,7 +186,7 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
-  background-color: #f5f6f7;
+  background-color: #f0f0f0;
   border-top: 1px solid var(--cell-border);
 }
 
@@ -182,6 +195,13 @@
 }
 .sectionTotalCell.expense {
   color: #b91c1c;
+}
+
+.monthCell.revenue {
+  color: #16a34a;
+}
+.monthCell.expense {
+  color: #dc2626;
 }
 
 /* Metrics cards */
@@ -242,20 +262,29 @@
 
 /* Opaque backgrounds for sticky left cells */
 .container .leftDataCell,
+.container .leftDataCellIndented,
 .container .leftAmountCell,
 .container .inputWrap {
   background-color: #f9fafb;
 }
 
+/* Override for indented cells to have slightly different background */
+.container .leftDataCellIndented {
+  background-color: #fafbfc;
+}
+
 .inputField {
   width: 100%;
-  height: 100%;
+  height: 70%;
   border: none;
   background: transparent;
   outline: none;
   font-size: 13px;
   padding: 0 4px;
   box-sizing: border-box;
+  background-color: rgb(233, 232, 232);
+  color: black;
+  border-radius: 4px;
 }
 
 /* Fullscreen styles */

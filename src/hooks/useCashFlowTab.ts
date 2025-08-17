@@ -7,6 +7,8 @@ interface CashFlowItemState {
   amount: number;
   start: number;
   length: number;
+  startManuallySet?: boolean;
+  lengthManuallySet?: boolean;
 }
 
 interface CashFlowState {
@@ -67,8 +69,10 @@ export function useCashFlowTab(proforma: Proforma) {
         const timing = proforma.cashFlowSchedule?.units?.[unitType.id];
         initialState.units[unitType.id] = {
           amount: totalValue,
-          start: timing?.start ?? 1,
-          length: timing?.length ?? 1,
+          start: timing?.start ?? proforma.projectLength + 1,
+          length: timing?.length ?? proforma.absorptionPeriod,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       });
     }
@@ -79,8 +83,10 @@ export function useCashFlowTab(proforma: Proforma) {
         const timing = proforma.cashFlowSchedule?.otherIncome?.[income.id];
         initialState.otherIncome[income.id] = {
           amount: income.numberOfUnits * income.valuePerUnit,
-          start: timing?.start ?? 1,
-          length: timing?.length ?? 1,
+          start: timing?.start ?? proforma.projectLength + 1,
+          length: timing?.length ?? proforma.absorptionPeriod,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       });
     }
@@ -92,6 +98,8 @@ export function useCashFlowTab(proforma: Proforma) {
         amount: proforma.uses.landCosts.baseCost,
         start: timing?.start ?? 1,
         length: timing?.length ?? 1,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.landCosts.closingCost > 0) {
@@ -100,6 +108,8 @@ export function useCashFlowTab(proforma: Proforma) {
         amount: proforma.uses.landCosts.closingCost,
         start: timing?.start ?? 1,
         length: timing?.length ?? 1,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     proforma.uses.landCosts.additionalCosts?.forEach((cost, index) => {
@@ -110,6 +120,8 @@ export function useCashFlowTab(proforma: Proforma) {
           amount: cost.amount,
           start: timing?.start ?? 1,
           length: timing?.length ?? 1,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -119,8 +131,29 @@ export function useCashFlowTab(proforma: Proforma) {
       const timing = proforma.cashFlowSchedule?.hardCosts?.["baseCost"];
       initialState.hardCosts["baseCost"] = {
         amount: proforma.uses.hardCosts.baseCost,
-        start: timing?.start ?? 3,
-        length: timing?.length ?? 18,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
+      };
+    }
+    // Add hard cost contingency
+    if (
+      proforma.uses.hardCosts.contingencyPct > 0 &&
+      proforma.uses.hardCosts.baseCost > 0
+    ) {
+      const contingencyAmount = Math.round(
+        (proforma.uses.hardCosts.baseCost *
+          proforma.uses.hardCosts.contingencyPct) /
+          100
+      );
+      const timing = proforma.cashFlowSchedule?.hardCosts?.["contingency"];
+      initialState.hardCosts["contingency"] = {
+        amount: contingencyAmount,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     proforma.uses.hardCosts.additionalCosts?.forEach((cost, index) => {
@@ -129,8 +162,10 @@ export function useCashFlowTab(proforma: Proforma) {
         const timing = proforma.cashFlowSchedule?.hardCosts?.[key];
         initialState.hardCosts[key] = {
           amount: cost.amount,
-          start: timing?.start ?? 3,
-          length: timing?.length ?? 18,
+          start: timing?.start ?? 2,
+          length: timing?.length ?? proforma.projectLength,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -141,24 +176,50 @@ export function useCashFlowTab(proforma: Proforma) {
       initialState.softCosts["development"] = {
         amount: proforma.uses.softCosts.development,
         start: timing?.start ?? 2,
-        length: timing?.length ?? 12,
+        length: timing?.length ?? proforma.projectLength,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.softCosts.consultants > 0) {
       const timing = proforma.cashFlowSchedule?.softCosts?.["consultants"];
       initialState.softCosts["consultants"] = {
         amount: proforma.uses.softCosts.consultants,
-        start: timing?.start ?? 1,
-        length: timing?.length ?? 6,
+        start: timing?.start ?? 2,
+        length: timing?.length ?? proforma.projectLength,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
     }
     if (proforma.uses.softCosts.adminMarketing > 0) {
       const timing = proforma.cashFlowSchedule?.softCosts?.["adminMarketing"];
       initialState.softCosts["adminMarketing"] = {
         amount: proforma.uses.softCosts.adminMarketing,
-        start: timing?.start ?? 1,
-        length: timing?.length ?? 24,
+        start: timing?.start ?? proforma.projectLength - 2,
+        length: timing?.length ?? proforma.absorptionPeriod + 1,
+        startManuallySet: timing?.startManuallySet ?? false,
+        lengthManuallySet: timing?.lengthManuallySet ?? false,
       };
+    }
+    // Add soft cost contingency
+    if (proforma.uses.softCosts.contingencyPct > 0) {
+      const baseSoftCosts =
+        (proforma.uses.softCosts.development || 0) +
+        (proforma.uses.softCosts.consultants || 0) +
+        (proforma.uses.softCosts.adminMarketing || 0);
+      if (baseSoftCosts > 0) {
+        const contingencyAmount = Math.round(
+          (baseSoftCosts * proforma.uses.softCosts.contingencyPct) / 100
+        );
+        const timing = proforma.cashFlowSchedule?.softCosts?.["contingency"];
+        initialState.softCosts["contingency"] = {
+          amount: contingencyAmount,
+          start: timing?.start ?? 2,
+          length: timing?.length ?? proforma.projectLength,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
+        };
+      }
     }
     proforma.uses.softCosts.additionalCosts?.forEach((cost, index) => {
       if (cost.amount > 0) {
@@ -167,7 +228,9 @@ export function useCashFlowTab(proforma: Proforma) {
         initialState.softCosts[key] = {
           amount: cost.amount,
           start: timing?.start ?? 2,
-          length: timing?.length ?? 12,
+          length: timing?.length ?? proforma.projectLength,
+          startManuallySet: timing?.startManuallySet ?? false,
+          lengthManuallySet: timing?.lengthManuallySet ?? false,
         };
       }
     });
@@ -181,7 +244,12 @@ export function useCashFlowTab(proforma: Proforma) {
       Object.fromEntries(
         Object.entries(obj).map(([k, v]) => [
           k,
-          { start: v.start, length: v.length },
+          {
+            start: v.start,
+            length: v.length,
+            startManuallySet: v.startManuallySet,
+            lengthManuallySet: v.lengthManuallySet,
+          },
         ])
       );
     return {
@@ -191,6 +259,115 @@ export function useCashFlowTab(proforma: Proforma) {
       hardCosts: pickTiming(state.hardCosts),
       softCosts: pickTiming(state.softCosts),
     } as Proforma["cashFlowSchedule"];
+  };
+
+  // Helper function to get the effective start value (manual or auto)
+  const getEffectiveStartValue = (
+    section: keyof CashFlowState,
+    itemId: string
+  ): number => {
+    const item = cashFlowState[section][itemId];
+    if (!item) return proforma.projectLength + 1;
+
+    // If manually set, use the stored value
+    if (item.startManuallySet) {
+      return item.start;
+    }
+
+    // For units and other income, auto-calculate as projectLength + 1
+    if (section === "units" || section === "otherIncome") {
+      return proforma.projectLength + 1;
+    }
+
+    // For costs, use their stored defaults
+    return item.start;
+  };
+
+  // Helper function to get the effective length value (manual or auto)
+  const getEffectiveLengthValue = (
+    section: keyof CashFlowState,
+    itemId: string
+  ): number => {
+    const item = cashFlowState[section][itemId];
+    if (!item)
+      return section === "units" || section === "otherIncome"
+        ? proforma.absorptionPeriod
+        : 1;
+
+    // If manually set, use the stored value
+    if (item.lengthManuallySet) {
+      return item.length;
+    }
+
+    // For units and other income, auto-calculate as absorptionPeriod
+    if (section === "units" || section === "otherIncome") {
+      return proforma.absorptionPeriod;
+    }
+
+    // For other sections, use their stored defaults
+    return item.length;
+  };
+
+  // Helper function to mark a start value as manually set
+  const markStartAsManuallySet = (
+    section: keyof CashFlowState,
+    itemId: string,
+    startValue: number
+  ) => {
+    setCashFlowState((prev) => {
+      const next: CashFlowState = {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [itemId]: {
+            ...prev[section][itemId],
+            start: startValue,
+            startManuallySet: true,
+          },
+        },
+      };
+
+      // Persist timing to session storage via proforma
+      const nextSchedule = buildScheduleFromState(next);
+      const latest = getProforma(proforma.projectId, proforma.id) || proforma;
+      saveProforma(proforma.projectId, {
+        ...latest,
+        cashFlowSchedule: nextSchedule,
+      });
+
+      return next;
+    });
+  };
+
+  // Helper function to mark a length value as manually set
+  const markLengthAsManuallySet = (
+    section: keyof CashFlowState,
+    itemId: string,
+    lengthValue: number
+  ) => {
+    setCashFlowState((prev) => {
+      const next: CashFlowState = {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [itemId]: {
+            ...prev[section][itemId],
+            length: lengthValue,
+            lengthManuallySet: true,
+          },
+        },
+      };
+
+      // Persist timing to session storage via proforma
+      const nextSchedule = buildScheduleFromState(next);
+      const latest = getProforma(proforma.projectId, proforma.id) || proforma;
+      saveProforma(proforma.projectId, {
+        ...latest,
+        cashFlowSchedule: nextSchedule,
+      });
+
+      return next;
+    });
   };
 
   // Helper function to update cash flow item and persist timing
@@ -245,6 +422,8 @@ export function useCashFlowTab(proforma: Proforma) {
     switch (key) {
       case "baseCost":
         return "Construction";
+      case "contingency":
+        return `Contingency (${proforma.uses.hardCosts.contingencyPct}%)`;
       default:
         if (key.startsWith("additional_") && index !== undefined) {
           return (
@@ -264,6 +443,8 @@ export function useCashFlowTab(proforma: Proforma) {
         return "Consultants";
       case "adminMarketing":
         return "Admin & Marketing";
+      case "contingency":
+        return `Contingency (${proforma.uses.softCosts.contingencyPct}%)`;
       default:
         if (key.startsWith("additional_") && index !== undefined) {
           return (
@@ -325,7 +506,8 @@ export function useCashFlowTab(proforma: Proforma) {
     return total;
   };
 
-  const calculateSoftCostsTotal = (month: number) => {
+  // calculateSoftCostsTotal - will be enhanced after financingSim is available
+  let calculateSoftCostsTotal = (month: number) => {
     let total = 0;
     Object.values(cashFlowState.softCosts).forEach((item) => {
       total += getMonthlyValue(item, month);
@@ -345,13 +527,64 @@ export function useCashFlowTab(proforma: Proforma) {
     );
   };
 
+  // Unlevered cashflow calculations
+  const calculateUnleveredNetCashFlow = (month: number) => {
+    return calculateRevenueTotal(month) - calculateExpensesTotal(month);
+  };
+
+  // Helper functions to get timing for unlevered cashflow summary
+  const getFirstInflowMonth = useMemo(() => {
+    // Find the earliest month where revenue > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateRevenueTotal(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no inflows
+  }, [cashFlowState]);
+
+  const getFirstOutflowMonth = useMemo(() => {
+    // Find the earliest month where expenses > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no outflows
+  }, [cashFlowState]);
+
+  const getInflowLength = useMemo(() => {
+    // Find the last month with revenue > 0
+    let lastInflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateRevenueTotal(month) > 0) {
+        lastInflowMonth = month;
+      }
+    }
+    return lastInflowMonth > 0 ? lastInflowMonth - getFirstInflowMonth + 1 : 0;
+  }, [cashFlowState, getFirstInflowMonth]);
+
+  const getOutflowLength = useMemo(() => {
+    // Find the last month with expenses > 0
+    let lastOutflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateExpensesTotal(month) > 0) {
+        lastOutflowMonth = month;
+      }
+    }
+    return lastOutflowMonth > 0
+      ? lastOutflowMonth - getFirstOutflowMonth + 1
+      : 0;
+  }, [cashFlowState, getFirstOutflowMonth]);
+
   // Interest calculation helpers
   const monthlyInterestRate =
     (proforma.sources?.financingCosts?.interestPct || 0) / 100 / 12;
   const debtPct = proforma.sources?.debtPct || 0;
   const equityPct = proforma.sources?.equityPct || 0;
   const payoutType = proforma.sources?.payoutType || "rolledUp";
-  const loanTerm = proforma.sources?.loanTerms || proforma.projectLength || 0;
+  const interestReserveIncludedInLoan =
+    proforma.sources?.interestReserveIncludedInLoan || false;
   const debtAmountRaw = Math.round(
     (debtPct / 100) * (proforma.totalExpenses || 0)
   );
@@ -497,8 +730,34 @@ export function useCashFlowTab(proforma: Proforma) {
   // Precomputed interest payments from simulation
   const interestPaymentsByMonth = financingSim.interestPaymentByMonth;
 
+  // Now enhance calculateSoftCostsTotal to include interest payments only when not included in loan
+  calculateSoftCostsTotal = (month: number) => {
+    let total = 0;
+    Object.values(cashFlowState.softCosts).forEach((item) => {
+      total += getMonthlyValue(item, month);
+    });
+    // Add interest payments only if interest is NOT included in loan
+    if (
+      !interestReserveIncludedInLoan &&
+      monthlyInterestRate > 0 &&
+      debtPct > 0
+    ) {
+      if (month >= 1 && month <= 120) {
+        total += interestPaymentsByMonth[month - 1] || 0;
+      }
+    }
+    return total;
+  };
+
   const calculateInterestPayment = (month: number) => {
     if (month < 1 || month > 120) return 0;
+    console.log("interestPaymentsByMonth", interestPaymentsByMonth);
+    return interestPaymentsByMonth[month - 1] || 0;
+  };
+
+  // Calculate interest reserve (when included in loan)
+  const calculateInterestReserve = (month: number) => {
+    if (!interestReserveIncludedInLoan || month < 1 || month > 120) return 0;
     return interestPaymentsByMonth[month - 1] || 0;
   };
 
@@ -643,9 +902,117 @@ export function useCashFlowTab(proforma: Proforma) {
     [leveredCashFlows]
   );
 
+  // Helper functions to calculate units total timing
+  const getUnitsEarliestStart = useMemo(() => {
+    const unitStarts = Object.values(cashFlowState.units).map((item) =>
+      getEffectiveStartValue(
+        "units",
+        Object.keys(cashFlowState.units).find(
+          (key) => cashFlowState.units[key] === item
+        ) || ""
+      )
+    );
+    return unitStarts.length > 0
+      ? Math.min(...unitStarts)
+      : proforma.projectLength + 1;
+  }, [cashFlowState.units, proforma.projectLength]);
+
+  const getUnitsMaxEndPeriod = useMemo(() => {
+    const unitEndPeriods = Object.entries(cashFlowState.units).map(
+      ([itemId]) => {
+        const start = getEffectiveStartValue("units", itemId);
+        const length = getEffectiveLengthValue("units", itemId);
+        return start + length - 1;
+      }
+    );
+    return unitEndPeriods.length > 0
+      ? Math.max(...unitEndPeriods)
+      : proforma.projectLength + proforma.absorptionPeriod;
+  }, [cashFlowState.units, proforma.projectLength, proforma.absorptionPeriod]);
+
+  const getUnitsTotalLength = useMemo(() => {
+    if (Object.keys(cashFlowState.units).length === 0)
+      return proforma.absorptionPeriod;
+    return getUnitsMaxEndPeriod - getUnitsEarliestStart + 1;
+  }, [
+    getUnitsEarliestStart,
+    getUnitsMaxEndPeriod,
+    proforma.absorptionPeriod,
+    cashFlowState.units,
+  ]);
+
+  // Levered cashflow summary helpers
+  const calculateLeveredTotalInflows = (month: number) => {
+    let total = calculateRevenueTotal(month) + calculateDebtDraw(month);
+    // Add interest reserve only if interest is included in loan
+    if (interestReserveIncludedInLoan) {
+      total += calculateInterestReserve(month);
+    }
+    return total;
+  };
+
+  const calculateLeveredTotalOutflows = (month: number) => {
+    return calculateTotalExpensesIncludingInterest(month);
+  };
+
+  const getLeveredFirstInflowMonth = useMemo(() => {
+    // Find the earliest month where levered inflows > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalInflows(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no inflows
+  }, [cashFlowState, financingSim, interestReserveIncludedInLoan]);
+
+  const getLeveredFirstOutflowMonth = useMemo(() => {
+    // Find the earliest month where levered outflows > 0
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalOutflows(month) > 0) {
+        return month;
+      }
+    }
+    return 1; // Default to month 1 if no outflows
+  }, [cashFlowState, financingSim]);
+
+  const getLeveredInflowLength = useMemo(() => {
+    // Find the last month with levered inflows > 0
+    let lastInflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalInflows(month) > 0) {
+        lastInflowMonth = month;
+      }
+    }
+    return lastInflowMonth > 0
+      ? lastInflowMonth - getLeveredFirstInflowMonth + 1
+      : 0;
+  }, [
+    cashFlowState,
+    financingSim,
+    getLeveredFirstInflowMonth,
+    interestReserveIncludedInLoan,
+  ]);
+
+  const getLeveredOutflowLength = useMemo(() => {
+    // Find the last month with levered outflows > 0
+    let lastOutflowMonth = 0;
+    for (let month = 1; month <= 120; month++) {
+      if (calculateLeveredTotalOutflows(month) > 0) {
+        lastOutflowMonth = month;
+      }
+    }
+    return lastOutflowMonth > 0
+      ? lastOutflowMonth - getLeveredFirstOutflowMonth + 1
+      : 0;
+  }, [cashFlowState, financingSim, getLeveredFirstOutflowMonth]);
+
   return {
     cashFlowState,
     updateCashFlowItem,
+    getEffectiveStartValue,
+    getEffectiveLengthValue,
+    markStartAsManuallySet,
+    markLengthAsManuallySet,
     getLandCostDisplayName,
     getHardCostDisplayName,
     getSoftCostDisplayName,
@@ -658,13 +1025,20 @@ export function useCashFlowTab(proforma: Proforma) {
     calculateSoftCostsTotal,
     calculateRevenueTotal,
     calculateExpensesTotal,
+    // Unlevered cashflow functions
+    calculateUnleveredNetCashFlow,
+    getFirstInflowMonth,
+    getFirstOutflowMonth,
+    getInflowLength,
+    getOutflowLength,
     monthlyInterestRate,
     debtPct,
     equityPct,
-    loanTerm,
     payoutType,
+    interestReserveIncludedInLoan,
     sumInterestPayments,
     calculateInterestPayment,
+    calculateInterestReserve,
     calculateTotalExpensesIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,
@@ -681,5 +1055,15 @@ export function useCashFlowTab(proforma: Proforma) {
     // Fullscreen functionality
     isFullscreen,
     toggleFullscreen,
+    // Units total timing helpers
+    getUnitsEarliestStart,
+    getUnitsTotalLength,
+    // Levered cashflow summary helpers
+    calculateLeveredTotalInflows,
+    calculateLeveredTotalOutflows,
+    getLeveredFirstInflowMonth,
+    getLeveredFirstOutflowMonth,
+    getLeveredInflowLength,
+    getLeveredOutflowLength,
   } as const;
 }

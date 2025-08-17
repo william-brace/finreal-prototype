@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -81,8 +82,8 @@ export function SourcesUsesTab({
     setInterestOnBasis,
     payoutType,
     setPayoutType,
-    loanTerms,
-    setLoanTerms,
+    interestReserveIncludedInLoan,
+    setInterestReserveIncludedInLoan,
 
     // Handlers
     handleAddCost,
@@ -786,20 +787,19 @@ export function SourcesUsesTab({
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <label
-                    htmlFor="loan-term-months"
-                    className="text-sm font-medium"
-                  >
-                    Term (months)
+                  <label className="text-sm font-medium">
+                    Interest Reserve
                   </label>
-                  <NumberInput
-                    id="loan-term-months"
-                    value={loanTerms || 0}
-                    onChange={(value) => setLoanTerms(Number(value) || 0)}
-                    placeholder="Enter months"
-                    allowDecimals={false}
-                    showCommas={false}
-                  />
+                  <div className="flex items-center h-10">
+                    <Checkbox
+                      id="interest-reserve-included"
+                      checked={interestReserveIncludedInLoan}
+                      onChange={(e) =>
+                        setInterestReserveIncludedInLoan(e.target.checked)
+                      }
+                      label="Included in loan"
+                    />
+                  </div>
                 </div>
               </div>
 

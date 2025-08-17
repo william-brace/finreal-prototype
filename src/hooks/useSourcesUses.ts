@@ -58,9 +58,9 @@ export function useSourcesUses({
   const [payoutType, setPayoutType] = useState<"serviced" | "rolledUp">(
     proforma.sources.payoutType || "rolledUp"
   );
-  const [loanTerms, setLoanTerms] = useState<number>(
-    proforma.sources.loanTerms || 0
-  );
+
+  const [interestReserveIncludedInLoan, setInterestReserveIncludedInLoan] =
+    useState<boolean>(proforma.sources.interestReserveIncludedInLoan || false);
 
   // Land Costs specific state
   const [landCost, setLandCost] = useState(
@@ -120,7 +120,7 @@ export function useSourcesUses({
     Math.round((brokerFeePct / 100) * debtAmountRaw)
   );
 
-  // Update proforma and save to session storage when state changes
+  // Update proforma and save to session storagewhen state changes
   useEffect(() => {
     // Calculate financing costs
     const interestCost = Math.round(
@@ -141,7 +141,7 @@ export function useSourcesUses({
         debtPct,
         payoutType,
         interestOnBasis,
-        loanTerms,
+        interestReserveIncludedInLoan,
         financingCosts: {
           interestPct,
           brokerFeePct,
@@ -187,7 +187,7 @@ export function useSourcesUses({
     brokerFeePct,
     interestOnBasis,
     payoutType,
-    loanTerms,
+    interestReserveIncludedInLoan,
     landCost,
     closingCostPercentage,
     totalProjectCost,
@@ -334,8 +334,8 @@ export function useSourcesUses({
     setInterestOnBasis,
     payoutType,
     setPayoutType,
-    loanTerms,
-    setLoanTerms,
+    interestReserveIncludedInLoan,
+    setInterestReserveIncludedInLoan,
 
     // Handlers
     handleAddCost,

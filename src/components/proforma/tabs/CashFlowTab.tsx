@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   Card,
   CardContent,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useCashFlowTab } from "@/hooks/useCashFlowTab";
 import { Proforma } from "@/lib/session-storage";
-import { Maximize, X } from "lucide-react";
+import { Maximize, X, CornerDownRight } from "lucide-react";
 import styles from "./CashFlowTab.module.css";
 
 interface CashFlowTabProps {
@@ -17,9 +18,17 @@ interface CashFlowTabProps {
 }
 
 export function CashFlowTab({ proforma }: CashFlowTabProps) {
+  // Local state to track temporary input values while user is typing
+  const [tempInputValues, setTempInputValues] = React.useState<
+    Record<string, string>
+  >({});
   const {
     cashFlowState,
     updateCashFlowItem,
+    getEffectiveStartValue,
+    getEffectiveLengthValue,
+    markStartAsManuallySet,
+    markLengthAsManuallySet,
     getLandCostDisplayName,
     getHardCostDisplayName,
     getSoftCostDisplayName,
@@ -31,12 +40,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     calculateHardCostsTotal,
     calculateSoftCostsTotal,
     calculateRevenueTotal,
+    calculateExpensesTotal,
+    calculateUnleveredNetCashFlow,
+    getFirstInflowMonth,
+    getFirstOutflowMonth,
+    getInflowLength,
+    getOutflowLength,
     monthlyInterestRate,
     debtPct,
-    loanTerm,
     payoutType,
+    interestReserveIncludedInLoan,
     sumInterestPayments,
     calculateInterestPayment,
+    calculateInterestReserve,
     calculateTotalExpensesIncludingInterest,
     loanStartMonth,
     calculateEquityContribution,
@@ -50,6 +66,14 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     sumPrincipalRepayments,
     isFullscreen,
     toggleFullscreen,
+    getUnitsEarliestStart,
+    getUnitsTotalLength,
+    calculateLeveredTotalInflows,
+    calculateLeveredTotalOutflows,
+    getLeveredFirstInflowMonth,
+    getLeveredFirstOutflowMonth,
+    getLeveredInflowLength,
+    getLeveredOutflowLength,
   } = useCashFlowTab(proforma);
 
   // Local refs and scroll sync for the div-based grid
@@ -84,6 +108,24 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     return Math.max(min, Math.min(max, value));
   };
 
+  // Helper to get the display value for an input (temp value or computed value)
+  const getInputDisplayValue = (
+    section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
+    itemId: string,
+    field: "start" | "length"
+  ): string => {
+    const key = `${section}-${itemId}-${field}`;
+    if (tempInputValues[key] !== undefined) {
+      return tempInputValues[key];
+    }
+
+    if (field === "start") {
+      return getEffectiveStartValue(section, itemId).toString();
+    } else {
+      return getEffectiveLengthValue(section, itemId).toString();
+    }
+  };
+
   const commitTiming = (
     section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
     itemId: string,
@@ -96,7 +138,37 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
     if (Number.isNaN(parsed)) parsed = emptyFallback;
     const clamped = clampTiming(field, parsed);
     if (clamped !== parsed) inputEl.value = String(clamped);
-    updateCashFlowItem(section, itemId, field, clamped);
+
+    // Clear temp value
+    const key = `${section}-${itemId}-${field}`;
+    setTempInputValues((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+    if (field === "start") {
+      // Mark as manually set when user changes start value
+      markStartAsManuallySet(section, itemId, clamped);
+    } else if (field === "length") {
+      // Mark as manually set when user changes length value
+      markLengthAsManuallySet(section, itemId, clamped);
+    } else {
+      updateCashFlowItem(section, itemId, field, clamped);
+    }
+  };
+
+  const handleInputChange = (
+    section: "units" | "otherIncome" | "landCosts" | "hardCosts" | "softCosts",
+    itemId: string,
+    field: "start" | "length",
+    value: string
+  ) => {
+    const key = `${section}-${itemId}-${field}`;
+    setTempInputValues((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   return (
@@ -161,252 +233,338 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
           {/* Fixed left column */}
           <div className={styles.fixedColumn}>
             {/* Revenue header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+            <div
+              className={`${styles.leftRow} ${styles.rowHeight} ${styles.stickyHeaderRow}`}
+            >
               <div className={styles.leftHeaderCell}>Revenue</div>
               <div className={styles.leftHeaderCell}>Amount</div>
               <div className={styles.leftHeaderCell}>Start</div>
               <div className={styles.leftHeaderCell}>Length</div>
             </div>
-            {/* Units section title */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
-                Units
-              </div>
-            </div>
-            {/* Dynamic unit rows */}
-            {proforma.unitMix?.map((unitType) => (
-              <div
-                key={unitType.id}
-                className={`${styles.leftRow} ${styles.rowHeight}`}
-              >
-                <div className={`${styles.leftDataCell}`}>{unitType.name}</div>
-                <div className={`${styles.leftAmountCell}`}>
-                  $
-                  {(
-                    cashFlowState.units[unitType.id]?.amount || 0
-                  ).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={styles.inputWrap}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min={0}
-                    max={120}
-                    step={1}
-                    className={styles.inputField}
-                    defaultValue={cashFlowState.units[unitType.id]?.start ?? 1}
-                    onBlur={(e) =>
-                      commitTiming(
-                        "units",
-                        unitType.id,
-                        "start",
-                        e.currentTarget
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        commitTiming(
-                          "units",
-                          unitType.id,
-                          "start",
-                          e.currentTarget as HTMLInputElement
-                        );
-                        (e.currentTarget as HTMLInputElement).blur();
-                      }
-                    }}
-                  />
-                </div>
-                <div className={styles.inputWrap}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min={1}
-                    max={120}
-                    step={1}
-                    className={styles.inputField}
-                    defaultValue={cashFlowState.units[unitType.id]?.length ?? 1}
-                    onBlur={(e) =>
-                      commitTiming(
-                        "units",
-                        unitType.id,
-                        "length",
-                        e.currentTarget
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        commitTiming(
-                          "units",
-                          unitType.id,
-                          "length",
-                          e.currentTarget as HTMLInputElement
-                        );
-                        (e.currentTarget as HTMLInputElement).blur();
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            {/* Units total */}
+
+            {/* Units section - only show if units exist */}
             {proforma.unitMix && proforma.unitMix.length > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>Units Total</div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Object.values(cashFlowState.units)
-                    .reduce((s, v) => s + v.amount, 0)
-                    .toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+              <>
+                {/* Units section title */}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                    Units
+                  </div>
                 </div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-              </div>
+                {/* Dynamic unit rows */}
+                {proforma.unitMix.map((unitType) => (
+                  <div
+                    key={unitType.id}
+                    className={`${styles.leftRow} ${styles.rowHeight}`}
+                  >
+                    <div className={`${styles.leftDataCellIndented}`}>
+                      <CornerDownRight
+                        size={14}
+                        className={styles.indentIcon}
+                      />
+                      {unitType.name}
+                    </div>
+                    <div className={`${styles.leftAmountCell}`}>
+                      $
+                      {(
+                        cashFlowState.units[unitType.id]?.amount || 0
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min={0}
+                        max={120}
+                        step={1}
+                        className={styles.inputField}
+                        value={getInputDisplayValue(
+                          "units",
+                          unitType.id,
+                          "start"
+                        )}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "units",
+                            unitType.id,
+                            "start",
+                            e.target.value
+                          )
+                        }
+                        onBlur={(e) =>
+                          commitTiming(
+                            "units",
+                            unitType.id,
+                            "start",
+                            e.currentTarget
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitTiming(
+                              "units",
+                              unitType.id,
+                              "start",
+                              e.currentTarget as HTMLInputElement
+                            );
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min={1}
+                        max={120}
+                        step={1}
+                        className={styles.inputField}
+                        value={getInputDisplayValue(
+                          "units",
+                          unitType.id,
+                          "length"
+                        )}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "units",
+                            unitType.id,
+                            "length",
+                            e.target.value
+                          )
+                        }
+                        onBlur={(e) =>
+                          commitTiming(
+                            "units",
+                            unitType.id,
+                            "length",
+                            e.currentTarget
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitTiming(
+                              "units",
+                              unitType.id,
+                              "length",
+                              e.currentTarget as HTMLInputElement
+                            );
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {/* Units total */}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Units Total
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    $
+                    {Object.values(cashFlowState.units)
+                      .reduce((s, v) => s + v.amount, 0)
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    {getUnitsEarliestStart}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    {getUnitsTotalLength}
+                  </div>
+                </div>
+
+                {/* White space separator between Units Total and Other Income */}
+                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+                  <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                    <div
+                      className={`${styles.separatorCell} ${styles.spanAll}`}
+                    ></div>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Other Income header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
-                Other Income
-              </div>
-            </div>
-            {proforma.otherIncome?.map((income) => (
-              <div
-                key={income.id}
-                className={`${styles.leftRow} ${styles.rowHeight}`}
-              >
-                <div className={styles.leftDataCell}>{income.name}</div>
-                <div className={styles.leftAmountCell}>
-                  $
-                  {(
-                    cashFlowState.otherIncome[income.id]?.amount || 0
-                  ).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={styles.inputWrap}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min={0}
-                    max={120}
-                    step={1}
-                    className={styles.inputField}
-                    defaultValue={
-                      cashFlowState.otherIncome[income.id]?.start ?? 1
-                    }
-                    onBlur={(e) =>
-                      commitTiming(
-                        "otherIncome",
-                        income.id,
-                        "start",
-                        e.currentTarget
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        commitTiming(
-                          "otherIncome",
-                          income.id,
-                          "start",
-                          e.currentTarget as HTMLInputElement
-                        );
-                        (e.currentTarget as HTMLInputElement).blur();
-                      }
-                    }}
-                  />
-                </div>
-                <div className={styles.inputWrap}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min={1}
-                    max={120}
-                    step={1}
-                    className={styles.inputField}
-                    defaultValue={
-                      cashFlowState.otherIncome[income.id]?.length ?? 1
-                    }
-                    onBlur={(e) =>
-                      commitTiming(
-                        "otherIncome",
-                        income.id,
-                        "length",
-                        e.currentTarget
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        commitTiming(
-                          "otherIncome",
-                          income.id,
-                          "length",
-                          e.currentTarget as HTMLInputElement
-                        );
-                        (e.currentTarget as HTMLInputElement).blur();
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+            {/* Other Income section - only show if other income exists */}
             {proforma.otherIncome && proforma.otherIncome.length > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>
-                  Other Income Total
+              <>
+                {/* Other Income header */}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionHeader} ${styles.spanAll}`}>
+                    Other Income
+                  </div>
                 </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Object.values(cashFlowState.otherIncome)
-                    .reduce((s, v) => s + v.amount, 0)
-                    .toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                {proforma.otherIncome.map((income) => (
+                  <div
+                    key={income.id}
+                    className={`${styles.leftRow} ${styles.rowHeight}`}
+                  >
+                    <div className={styles.leftDataCellIndented}>
+                      <CornerDownRight
+                        size={14}
+                        className={styles.indentIcon}
+                      />
+                      {income.name}
+                    </div>
+                    <div className={styles.leftAmountCell}>
+                      $
+                      {(
+                        cashFlowState.otherIncome[income.id]?.amount || 0
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min={0}
+                        max={120}
+                        step={1}
+                        className={styles.inputField}
+                        value={getInputDisplayValue(
+                          "otherIncome",
+                          income.id,
+                          "start"
+                        )}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "otherIncome",
+                            income.id,
+                            "start",
+                            e.target.value
+                          )
+                        }
+                        onBlur={(e) =>
+                          commitTiming(
+                            "otherIncome",
+                            income.id,
+                            "start",
+                            e.currentTarget
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitTiming(
+                              "otherIncome",
+                              income.id,
+                              "start",
+                              e.currentTarget as HTMLInputElement
+                            );
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min={1}
+                        max={120}
+                        step={1}
+                        className={styles.inputField}
+                        value={getInputDisplayValue(
+                          "otherIncome",
+                          income.id,
+                          "length"
+                        )}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "otherIncome",
+                            income.id,
+                            "length",
+                            e.target.value
+                          )
+                        }
+                        onBlur={(e) =>
+                          commitTiming(
+                            "otherIncome",
+                            income.id,
+                            "length",
+                            e.currentTarget
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitTiming(
+                              "otherIncome",
+                              income.id,
+                              "length",
+                              e.currentTarget as HTMLInputElement
+                            );
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {/* Other Income total */}
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    Other Income Total
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    $
+                    {Object.values(cashFlowState.otherIncome)
+                      .reduce((s, v) => s + v.amount, 0)
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
+                  <div className={`${styles.sectionTotalCell}`}>-</div>
                 </div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-              </div>
+              </>
             )}
-            {/* Revenue total */}
-            {((proforma.unitMix && proforma.unitMix.length > 0) ||
-              (proforma.otherIncome && proforma.otherIncome.length > 0)) && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.totalCell}`}>Total Revenue</div>
-                <div className={`${styles.totalCell}`}>
-                  $
-                  {(
-                    Object.values(cashFlowState.units).reduce(
-                      (s, v) => s + v.amount,
-                      0
-                    ) +
-                    Object.values(cashFlowState.otherIncome).reduce(
-                      (s, v) => s + v.amount,
-                      0
-                    )
-                  ).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={`${styles.totalCell}`}>-</div>
-                <div className={`${styles.totalCell}`}>-</div>
+
+            {/* Revenue total - always show */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell}`}>Total Revenue</div>
+              <div className={`${styles.totalCell}`}>
+                $
+                {(
+                  Object.values(cashFlowState.units).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.otherIncome).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
-            )}
+              <div className={`${styles.totalCell}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
+            </div>
+
+            {/* White space separator between Revenue and Expenses */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
 
             {/* Expenses header */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -415,7 +573,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               <div className={styles.leftHeaderCell}>Start</div>
               <div className={styles.leftHeaderCell}>Length</div>
             </div>
-            {/* Land costs */}
+
+            {/* Land costs - only show if land costs exist */}
             {Object.keys(cashFlowState.landCosts).length > 0 && (
               <>
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -433,7 +592,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getLandCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
@@ -527,9 +690,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                 </div>
+
+                {/* White space separator between Land Costs Total and Hard Costs */}
+                {Object.keys(cashFlowState.hardCosts).length > 0 && (
+                  <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                    <div
+                      className={`${styles.separatorCell} ${styles.spanAll}`}
+                    ></div>
+                  </div>
+                )}
               </>
             )}
-            {/* Hard costs */}
+
+            {/* Hard costs - only show if hard costs exist */}
             {Object.keys(cashFlowState.hardCosts).length > 0 && (
               <>
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -547,7 +720,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getHardCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
@@ -566,7 +743,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                             max={120}
                             step={1}
                             className={styles.inputField}
-                            defaultValue={hardCost.start ?? 1}
+                            defaultValue={hardCost.start ?? 2}
                             onBlur={(e) =>
                               commitTiming(
                                 "hardCosts",
@@ -598,7 +775,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                             max={120}
                             step={1}
                             className={styles.inputField}
-                            defaultValue={hardCost.length ?? 1}
+                            defaultValue={hardCost.length ?? 2}
                             onBlur={(e) =>
                               commitTiming(
                                 "hardCosts",
@@ -641,9 +818,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                 </div>
+
+                {/* White space separator between Hard Costs Total and Soft Costs */}
+                {Object.keys(cashFlowState.softCosts).length > 0 && (
+                  <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                    <div
+                      className={`${styles.separatorCell} ${styles.spanAll}`}
+                    ></div>
+                  </div>
+                )}
               </>
             )}
-            {/* Soft costs */}
+
+            {/* Soft costs - only show if soft costs exist */}
             {Object.keys(cashFlowState.softCosts).length > 0 && (
               <>
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
@@ -661,7 +848,11 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                         key={key}
                         className={`${styles.leftRow} ${styles.rowHeight}`}
                       >
-                        <div className={styles.leftDataCell}>
+                        <div className={styles.leftDataCellIndented}>
+                          <CornerDownRight
+                            size={14}
+                            className={styles.indentIcon}
+                          />
                           {getSoftCostDisplayName(key, index)}
                         </div>
                         <div className={styles.leftAmountCell}>
@@ -739,18 +930,51 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     );
                   }
                 )}
+
+                {/* Interest row - only show when NOT included in loan */}
+                {!interestReserveIncludedInLoan &&
+                  monthlyInterestRate > 0 &&
+                  debtPct > 0 && (
+                    <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                      <div className={`${styles.leftDataCell}`}>Interest</div>
+                      <div className={`${styles.leftDataCell}`}>
+                        $
+                        {sumInterestPayments.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className={`${styles.leftDataCell}`}>
+                        {payoutType === "serviced"
+                          ? loanStartMonth
+                          : loanStartMonth + proforma.projectLength - 1}
+                      </div>
+                      <div className={`${styles.leftDataCell}`}>
+                        {payoutType === "serviced" ? proforma.projectLength : 1}
+                      </div>
+                    </div>
+                  )}
+
                 <div className={`${styles.leftRow} ${styles.rowHeight}`}>
                   <div className={`${styles.sectionTotalCell}`}>
                     Soft Costs Total
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>
                     $
-                    {Object.values(cashFlowState.softCosts)
-                      .reduce((s, v) => s + v.amount, 0)
-                      .toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    {(
+                      Object.values(cashFlowState.softCosts).reduce(
+                        (s, v) => s + v.amount,
+                        0
+                      ) +
+                      (!interestReserveIncludedInLoan &&
+                      monthlyInterestRate > 0 &&
+                      debtPct > 0
+                        ? sumInterestPayments
+                        : 0)
+                    ).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
                   <div className={`${styles.sectionTotalCell}`}>-</div>
@@ -758,161 +982,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
-            {/* Interest row */}
-            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>Interest</div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {sumInterestPayments.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {payoutType === "serviced"
-                    ? loanStartMonth
-                    : loanStartMonth + loanTerm - 1}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {payoutType === "serviced" ? loanTerm : 1}
-                </div>
-              </div>
-            )}
-
-            {/* Principal Repayment row */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.sectionTotalCell}`}>
-                Principal Repayment
-              </div>
-              <div className={`${styles.sectionTotalCell}`}>
-                $
-                {sumPrincipalRepayments.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <div className={`${styles.sectionTotalCell}`}>-</div>
-              <div className={`${styles.sectionTotalCell}`}>-</div>
-            </div>
-
-            {/* Total expenses */}
-            {(Object.keys(cashFlowState.landCosts).length > 0 ||
-              Object.keys(cashFlowState.hardCosts).length > 0 ||
-              Object.keys(cashFlowState.softCosts).length > 0 ||
-              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.totalCell} ${styles.expense}`}>
-                  Total Expenses
-                </div>
-                <div className={`${styles.totalCell} ${styles.expense}`}>
-                  $
-                  {(
-                    Object.values(cashFlowState.landCosts).reduce(
-                      (s, v) => s + v.amount,
-                      0
-                    ) +
-                    Object.values(cashFlowState.hardCosts).reduce(
-                      (s, v) => s + v.amount,
-                      0
-                    ) +
-                    Object.values(cashFlowState.softCosts).reduce(
-                      (s, v) => s + v.amount,
-                      0
-                    ) +
-                    sumInterestPayments +
-                    sumPrincipalRepayments
-                  ).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </div>
-                <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
-                <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
-              </div>
-            )}
-
-            {/* Financing header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={styles.leftHeaderCell}>Financing</div>
-              <div className={styles.leftHeaderCell}>Amount</div>
-              <div className={styles.leftHeaderCell}>Start</div>
-              <div className={styles.leftHeaderCell}>Length</div>
-            </div>
-            {/* Equity contribution row */}
-            {proforma.sources?.equityPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>
-                  Equity Contribution
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateEquityContribution(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-                <div className={`${styles.sectionTotalCell}`}>-</div>
-              </div>
-            )}
-            {/* Debt draw row */}
-            {loanTerm > 0 && debtPct > 0 && (
-              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-                <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  $
-                  {Array.from({ length: 120 }, (_, m) =>
-                    calculateDebtDraw(m + 1)
-                  )
-                    .reduce((s, v) => s + v, 0)
-                    .toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>
-                  {loanStartMonth}
-                </div>
-                <div className={`${styles.sectionTotalCell}`}>{loanTerm}</div>
-              </div>
-            )}
-
-            {/* Summary header */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={styles.leftHeaderCell}>Cash Flow Summary</div>
-              <div className={styles.leftHeaderCell}>Amount</div>
-              <div className={styles.leftHeaderCell}>Start</div>
-              <div className={styles.leftHeaderCell}>Length</div>
-            </div>
-            {/* Summary totals */}
-            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>
-                Total Revenue
-              </div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>
-                $
-                {(
-                  Object.values(cashFlowState.units).reduce(
-                    (s, v) => s + v.amount,
-                    0
-                  ) +
-                  Object.values(cashFlowState.otherIncome).reduce(
-                    (s, v) => s + v.amount,
-                    0
-                  )
-                ).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
-            </div>
+            {/* Total expenses - always show */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={`${styles.totalCell} ${styles.expense}`}>
                 Total Expenses
@@ -943,11 +1013,273 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               <div className={`${styles.totalCell} ${styles.expense}`}>-</div>
             </div>
 
+            {/* White space separator between Total Expenses and Unlevered Cashflow Summary */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
+
+            {/* Unlevered Cashflow Summary header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>
+                Unlevered Cashflow Summary
+              </div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+
+            {/* Total Inflows row */}
             <div className={`${styles.leftRow} ${styles.rowHeight}`}>
               <div className={`${styles.totalCell} ${styles.revenue}`}>
-                Net Cash Flow
+                Total Inflows
               </div>
               <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {(
+                  Object.values(cashFlowState.units).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.otherIncome).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getFirstInflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getInflowLength}
+              </div>
+            </div>
+
+            {/* Total Outflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                Total Outflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                $
+                {(
+                  Object.values(cashFlowState.landCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.hardCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  ) +
+                  Object.values(cashFlowState.softCosts).reduce(
+                    (s, v) => s + v.amount,
+                    0
+                  )
+                ).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getFirstOutflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getOutflowLength}
+              </div>
+            </div>
+
+            {/* Net Unlevered Cashflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell}`}>
+                Net Unlevered Cashflows
+              </div>
+              <div className={`${styles.totalCell}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateUnleveredNetCashFlow(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
+            </div>
+
+            {/* White space separator between Net Unlevered Cashflows and Financing */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
+
+            {/* Financing header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>Financing</div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+            {/* Equity contribution row */}
+            {proforma.sources?.equityPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Equity Contribution
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateEquityContribution(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+            {/* Debt draw row */}
+            {debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>Debt Draw</div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {Array.from({ length: 120 }, (_, m) =>
+                    calculateDebtDraw(m + 1)
+                  )
+                    .reduce((s, v) => s + v, 0)
+                    .toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  {loanStartMonth}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+            {/* Interest Reserve row - only show when included in loan */}
+            {interestReserveIncludedInLoan &&
+              monthlyInterestRate > 0 &&
+              debtPct > 0 && (
+                <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                  <div className={`${styles.leftDataCell}`}>
+                    Interest Reserve
+                  </div>
+                  <div className={`${styles.leftDataCell}`}>
+                    $
+                    {sumInterestPayments.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                  <div className={`${styles.leftDataCell}`}>
+                    {payoutType === "serviced"
+                      ? loanStartMonth
+                      : loanStartMonth + proforma.projectLength - 1}
+                  </div>
+                  <div className={`${styles.sectionTotalCell}`}>
+                    {payoutType === "serviced" ? proforma.projectLength : 1}
+                  </div>
+                </div>
+              )}
+            {/* Principal Repayment row */}
+            {debtPct > 0 && (
+              <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+                <div className={`${styles.sectionTotalCell}`}>
+                  Principal Repayment
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>
+                  $
+                  {sumPrincipalRepayments.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+                <div className={`${styles.sectionTotalCell}`}>-</div>
+              </div>
+            )}
+
+            {/* White space separator between Principal Repayment and Levered Cashflow Summary */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div
+                className={`${styles.separatorCell} ${styles.spanAll}`}
+              ></div>
+            </div>
+
+            {/* Levered Cashflow Summary header */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={styles.leftHeaderCell}>
+                Levered Cashflow Summary
+              </div>
+              <div className={styles.leftHeaderCell}>Amount</div>
+              <div className={styles.leftHeaderCell}>Start</div>
+              <div className={styles.leftHeaderCell}>Length</div>
+            </div>
+
+            {/* Total Inflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                Total Inflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateLeveredTotalInflows(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getLeveredFirstInflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.revenue}`}>
+                {getLeveredInflowLength}
+              </div>
+            </div>
+
+            {/* Total Outflows row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                Total Outflows
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                $
+                {Array.from({ length: 120 }, (_, m) =>
+                  calculateLeveredTotalOutflows(m + 1)
+                )
+                  .reduce((sum, value) => sum + value, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getLeveredFirstOutflowMonth}
+              </div>
+              <div className={`${styles.totalCell} ${styles.expense}`}>
+                {getLeveredOutflowLength}
+              </div>
+            </div>
+
+            {/* Net Cashflow row */}
+            <div className={`${styles.leftRow} ${styles.rowHeight}`}>
+              <div className={`${styles.totalCell}`}>Net Cashflow</div>
+              <div className={`${styles.totalCell}`}>
                 $
                 {Array.from({ length: 120 }, (_, m) =>
                   calculateCompleteNetCashFlow(m + 1)
@@ -958,8 +1290,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     maximumFractionDigits: 2,
                   })}
               </div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
-              <div className={`${styles.totalCell} ${styles.revenue}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
+              <div className={`${styles.totalCell}`}>-</div>
             </div>
           </div>
 
@@ -974,116 +1306,141 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               ))}
             </div>
 
-            {/* Units section header spacing */}
-            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
-              {Array.from({ length: 120 }, (_, idx) => (
-                <div key={idx} className={styles.separatorCell}></div>
-              ))}
-            </div>
-            {/* Dynamic Unit monthly rows */}
-            {proforma.unitMix?.map((unitType) => (
-              <div
-                key={unitType.id}
-                className={`${styles.rightRow} ${styles.rowHeight}`}
-              >
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const item = cashFlowState.units[unitType.id];
-                  const value = item ? getMonthlyValue(item, monthNumber) : 0;
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.monthCell} ${getRevenueClass(
-                        value
-                      )}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            {/* Units total row */}
+            {/* Units section - only show if units exist */}
             {proforma.unitMix && proforma.unitMix.length > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateUnitsTotal(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                {/* Units section header spacing */}
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+                {/* Dynamic Unit monthly rows */}
+                {proforma.unitMix.map((unitType) => (
+                  <div
+                    key={unitType.id}
+                    className={`${styles.rightRow} ${styles.rowHeight}`}
+                  >
+                    {Array.from({ length: 120 }, (_, m) => {
+                      const monthNumber = m + 1;
+                      const item = cashFlowState.units[unitType.id];
+                      const value = item
+                        ? getMonthlyValue(item, monthNumber)
+                        : 0;
+                      return (
+                        <div
+                          key={monthNumber}
+                          className={`${styles.monthCell} ${getRevenueClass(
+                            value
+                          )}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                {/* Units total row */}
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateUnitsTotal(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* White space separator between Units Total and Other Income */}
+                {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+                  <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                    {Array.from({ length: 120 }, (_, idx) => (
+                      <div key={idx} className={styles.separatorCell}></div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
-            {/* Spacer before Other Income list header */}
+
+            {/* Other Income section - only show if other income exists */}
+            {proforma.otherIncome && proforma.otherIncome.length > 0 && (
+              <>
+                {/* Spacer before Other Income list header */}
+                <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, idx) => (
+                    <div key={idx} className={styles.separatorCell}></div>
+                  ))}
+                </div>
+                {/* Other Income monthly rows */}
+                {proforma.otherIncome.map((income) => (
+                  <div
+                    key={income.id}
+                    className={`${styles.rightRow} ${styles.rowHeight}`}
+                  >
+                    {Array.from({ length: 120 }, (_, m) => {
+                      const monthNumber = m + 1;
+                      const item = cashFlowState.otherIncome[income.id];
+                      const value = item
+                        ? getMonthlyValue(item, monthNumber)
+                        : 0;
+                      return (
+                        <div
+                          key={monthNumber}
+                          className={`${styles.monthCell} ${getRevenueClass(
+                            value
+                          )}`}
+                        >
+                          {formatMonthlyCashFlow(value)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                {/* Other Income total */}
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateOtherIncomeTotal(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.revenue}`}
+                      >
+                        {formatMonthlyCashFlow(value)}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Revenue total - always show */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateRevenueTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.revenue}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* White space separator between Revenue and Expenses */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
                 <div key={idx} className={styles.separatorCell}></div>
               ))}
             </div>
-            {/* Other Income monthly rows */}
-            {proforma.otherIncome?.map((income) => (
-              <div
-                key={income.id}
-                className={`${styles.rightRow} ${styles.rowHeight}`}
-              >
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const item = cashFlowState.otherIncome[income.id];
-                  const value = item ? getMonthlyValue(item, monthNumber) : 0;
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.monthCell} ${getRevenueClass(
-                        value
-                      )}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            {/* Other Income total */}
-            {proforma.otherIncome && proforma.otherIncome.length > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateOtherIncomeTotal(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {/* Revenue total */}
-            {((proforma.unitMix && proforma.unitMix.length > 0) ||
-              (proforma.otherIncome && proforma.otherIncome.length > 0)) && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateRevenueTotal(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.totalCell} ${styles.revenue}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
 
             {/* Grey header row aligning with Expenses header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
@@ -1092,7 +1449,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               ))}
             </div>
 
-            {/* Land costs monthly rows */}
+            {/* Land costs monthly rows - only show if land costs exist */}
             {Object.keys(cashFlowState.landCosts).length > 0 && (
               <>
                 <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
@@ -1137,10 +1494,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     );
                   })}
                 </div>
+
+                {/* White space separator between Land Costs Total and Hard Costs */}
+                {Object.keys(cashFlowState.hardCosts).length > 0 && (
+                  <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                    {Array.from({ length: 120 }, (_, idx) => (
+                      <div key={idx} className={styles.separatorCell}></div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
-            {/* Hard costs monthly rows */}
+            {/* Hard costs monthly rows - only show if hard costs exist */}
             {Object.keys(cashFlowState.hardCosts).length > 0 && (
               <>
                 <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
@@ -1185,10 +1551,19 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     );
                   })}
                 </div>
+
+                {/* White space separator between Hard Costs Total and Soft Costs */}
+                {Object.keys(cashFlowState.softCosts).length > 0 && (
+                  <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+                    {Array.from({ length: 120 }, (_, idx) => (
+                      <div key={idx} className={styles.separatorCell}></div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
-            {/* Soft costs monthly rows */}
+            {/* Soft costs monthly rows - only show if soft costs exist */}
             {Object.keys(cashFlowState.softCosts).length > 0 && (
               <>
                 <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
@@ -1219,6 +1594,32 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                     </div>
                   )
                 )}
+                {/* Interest monthly - only show when NOT included in loan */}
+                {!interestReserveIncludedInLoan &&
+                  monthlyInterestRate > 0 &&
+                  debtPct > 0 && (
+                    <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                      {Array.from({ length: 120 }, (_, m) => {
+                        const monthNumber = m + 1;
+                        const value = calculateInterestPayment(monthNumber);
+                        console.log("value", value);
+                        return (
+                          <div
+                            key={monthNumber}
+                            className={`${styles.monthCell} ${styles.expense}`}
+                          >
+                            {value
+                              ? `$${value.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : ""}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
                 <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                   {Array.from({ length: 120 }, (_, m) => {
                     const monthNumber = m + 1;
@@ -1236,71 +1637,93 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
               </>
             )}
 
-            {/* Interest monthly */}
-            {loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0 && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value = calculateInterestPayment(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.sectionTotalCell} ${styles.expense}`}
-                    >
-                      {value
-                        ? `$${value.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}`
-                        : ""}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Principal Repayment monthly */}
+            {/* Total expenses monthly (including interest) - always show */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;
-                const value = calculatePrincipalRepayment(monthNumber);
+                const value =
+                  calculateTotalExpensesIncludingInterest(monthNumber);
                 return (
                   <div
                     key={monthNumber}
-                    className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    className={`${styles.totalCell} ${styles.expense}`}
                   >
-                    {value
-                      ? `$${value.toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`
-                      : ""}
+                    {formatMonthlyCashFlow(value)}
                   </div>
                 );
               })}
             </div>
 
-            {/* Total expenses monthly (including interest) */}
-            {(Object.keys(cashFlowState.landCosts).length > 0 ||
-              Object.keys(cashFlowState.hardCosts).length > 0 ||
-              Object.keys(cashFlowState.softCosts).length > 0 ||
-              (loanTerm > 0 && monthlyInterestRate > 0 && debtPct > 0)) && (
-              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
-                {Array.from({ length: 120 }, (_, m) => {
-                  const monthNumber = m + 1;
-                  const value =
-                    calculateTotalExpensesIncludingInterest(monthNumber);
-                  return (
-                    <div
-                      key={monthNumber}
-                      className={`${styles.totalCell} ${styles.expense}`}
-                    >
-                      {formatMonthlyCashFlow(value)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* White space separator between Total Expenses and Unlevered Cashflow Summary */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+
+            {/* Grey header row aligning with Unlevered Cashflow Summary header */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.greyHeaderCell}></div>
+              ))}
+            </div>
+
+            {/* Total Inflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateRevenueTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.revenue}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Total Outflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateExpensesTotal(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${styles.expense}`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Net Unlevered Cashflows monthly */}
+            <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, m) => {
+                const monthNumber = m + 1;
+                const value = calculateUnleveredNetCashFlow(monthNumber);
+                return (
+                  <div
+                    key={monthNumber}
+                    className={`${styles.totalCell} ${
+                      value >= 0 ? styles.revenue : styles.expense
+                    }`}
+                  >
+                    {formatMonthlyCashFlow(value)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* White space separator between Net Unlevered Cashflows and Financing */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
 
             {/* Grey header row aligning with Financing header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
@@ -1324,7 +1747,7 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
-            {loanTerm > 0 && debtPct > 0 && (
+            {debtPct > 0 && (
               <div className={`${styles.rightRow} ${styles.rowHeight}`}>
                 {Array.from({ length: 120 }, (_, m) => {
                   const monthNumber = m + 1;
@@ -1340,18 +1763,72 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 })}
               </div>
             )}
+            {/* Interest Reserve monthly data - only show when included in loan */}
+            {interestReserveIncludedInLoan &&
+              monthlyInterestRate > 0 &&
+              debtPct > 0 && (
+                <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                  {Array.from({ length: 120 }, (_, m) => {
+                    const monthNumber = m + 1;
+                    const value = calculateInterestReserve(monthNumber);
+                    return (
+                      <div
+                        key={monthNumber}
+                        className={`${styles.sectionTotalCell} ${styles.expense}`}
+                      >
+                        {value
+                          ? `$${value.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`
+                          : ""}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            {/* Principal Repayment monthly data */}
+            {debtPct > 0 && (
+              <div className={`${styles.rightRow} ${styles.rowHeight}`}>
+                {Array.from({ length: 120 }, (_, m) => {
+                  const monthNumber = m + 1;
+                  const value = calculatePrincipalRepayment(monthNumber);
+                  return (
+                    <div
+                      key={monthNumber}
+                      className={`${styles.sectionTotalCell} ${styles.expense}`}
+                    >
+                      {value
+                        ? `$${value.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Grey header row aligning with Summary header */}
+            {/* White space separator between Principal Repayment and Levered Cashflow Summary */}
+            <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
+              {Array.from({ length: 120 }, (_, idx) => (
+                <div key={idx} className={styles.separatorCell}></div>
+              ))}
+            </div>
+
+            {/* Grey header row aligning with Levered Cashflow Summary header */}
             <div className={`${styles.separatorRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, idx) => (
                 <div key={idx} className={styles.greyHeaderCell}></div>
               ))}
             </div>
-            {/* Summary totals monthly */}
+
+            {/* Levered Total Inflows monthly */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;
-                const value = calculateRevenueTotal(monthNumber);
+                const value = calculateLeveredTotalInflows(monthNumber);
                 return (
                   <div
                     key={monthNumber}
@@ -1362,11 +1839,12 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 );
               })}
             </div>
+
+            {/* Levered Total Outflows monthly */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;
-                const value =
-                  calculateTotalExpensesIncludingInterest(monthNumber);
+                const value = calculateLeveredTotalOutflows(monthNumber);
                 return (
                   <div
                     key={monthNumber}
@@ -1377,7 +1855,8 @@ export function CashFlowTab({ proforma }: CashFlowTabProps) {
                 );
               })}
             </div>
-            {/* Removed Total Financing from summary */}
+
+            {/* Levered Net Cashflows monthly */}
             <div className={`${styles.rightRow} ${styles.rowHeight}`}>
               {Array.from({ length: 120 }, (_, m) => {
                 const monthNumber = m + 1;
