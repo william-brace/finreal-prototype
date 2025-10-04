@@ -1,8 +1,8 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns The uppercase province code (e.g., "ON", "BC")
  */
 export function formatProvinceCode(provinceCode: string): string {
-  return provinceCode.toUpperCase()
+  return provinceCode.toUpperCase();
 }
 
 /**
@@ -20,7 +20,7 @@ export function formatProvinceCode(provinceCode: string): string {
  * @returns Formatted currency string (e.g., "1,234.56")
  */
 export function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
+  return value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -42,7 +42,7 @@ export function formatCurrencyWithSymbol(value: number): string {
  */
 export function parseCurrency(value: string): number {
   // Remove dollar sign and commas, then parse
-  const cleanValue = value.replace(/[$,]/g, '');
+  const cleanValue = value.replace(/[$,]/g, "");
   const parsed = parseFloat(cleanValue);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -54,4 +54,4 @@ export function parseCurrency(value: string): number {
  */
 export function roundToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
-} 
+}
