@@ -1,6 +1,5 @@
-'use client'
-
-import Link from "next/link"
+import Link from "next/link";
+import { UserProfile } from "./UserProfile";
 
 export function Header() {
   return (
@@ -9,14 +8,16 @@ export function Header() {
         <div className="flex items-center space-x-6">
           <h1 className="text-xl font-semibold">FinReal</h1>
           <nav>
-            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Projects</Link>
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
+              Projects
+            </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">John Doe</span>
-          <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png" alt="Logo" className="h-8 w-8 rounded-full" />
-        </div>
+        <UserProfile />
       </div>
     </header>
-  )
-} 
+  );
+}
