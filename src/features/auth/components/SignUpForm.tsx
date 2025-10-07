@@ -1,9 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { signup } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -12,29 +10,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FormTextInput } from "@/components/ui/FormTextInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useSignUp } from "../hooks/useSignUp";
+import { useActionState } from "react";
+import { useForm } from "react-hook-form";
 import { signUpSchema, type SignUpFormData } from "../model/schema";
 
 export function SignUpForm() {
-  const { signUp, loading, error, success } = useSignUp();
+  const [state, action, pending] = useActionState(signup, null);
 
   const {
     register,
-    handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     mode: "onBlur",
   });
 
-  const onSubmit = async (data: SignUpFormData) => {
-    await signUp({
-      email: data.email,
-      password: data.password,
-      name: data.name,
-    });
-  };
+  const success = state?.success;
+  const error = state?.error;
+  const loading = pending || isSubmitting;
 
   return (
     <>
@@ -60,74 +56,39 @@ export function SignUpForm() {
             </CardDescription>
           </CardHeader>
           <CardContent className=" w-[500px]">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Full Name
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  {...register("name")}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  {...register("password")}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="confirmPassword"
-                  className="text-sm font-medium"
-                >
-                  Confirm Password
-                </label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  {...register("confirmPassword")}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-destructive">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
+            <form action={action} className="space-y-4">
+              <FormTextInput
+                id="name"
+                label="Full Name"
+                type="text"
+                placeholder="Enter your full name"
+                error={errors.name}
+                {...register("name")}
+              />
+              <FormTextInput
+                id="email"
+                label="Email"
+                type="email"
+                placeholder="Enter your email"
+                error={errors.email}
+                {...register("email")}
+              />
+              <FormTextInput
+                id="password"
+                label="Password"
+                type="password"
+                placeholder="Create a password"
+                error={errors.password}
+                {...register("password")}
+              />
+              <FormTextInput
+                id="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                placeholder="Confirm your password"
+                error={errors.confirmPassword}
+                {...register("confirmPassword")}
+              />
 
               {error && (
                 <div className="text-sm text-destructive bg-red-50 p-3 rounded-md">
@@ -135,14 +96,8 @@ export function SignUpForm() {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || isSubmitting}
-              >
-                {loading || isSubmitting
-                  ? "Creating Account..."
-                  : "Create Account"}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
           </CardContent>
