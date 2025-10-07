@@ -38,18 +38,11 @@ export function UserProfile({
     setError(null);
     setIsLoggingOut(true);
 
-    try {
-      const result = await logout();
-      // If we get a result, it means there was an error (successful logout redirects)
-      if (result?.error) {
-        console.log("Logout error:", result.error);
-        setError(result.error);
-        setIsLoggingOut(false);
-      }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+    const result = await logout();
+    // If we get a result, it means there was an error (successful logout redirects)
+    if (result?.error) {
+      setError(result.error);
       setIsLoggingOut(false);
-      console.error("Logout error:", err);
     }
   };
 
