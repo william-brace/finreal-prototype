@@ -69,9 +69,17 @@ export async function signup(
     };
   }
 
-  // Only pass email and password to Supabase (name and confirmPassword not needed)
-  const { email, password } = validationResult.data;
-  const { error } = await supabase.auth.signUp({ email, password });
+  // Pass email, password, and name to Supabase (confirmPassword not needed)
+  const { email, password, name } = validationResult.data;
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: name,
+      },
+    },
+  });
 
   if (error) {
     return { error: error.message };

@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { UserProfile } from "./UserProfile";
+import { createClient } from "@/utils/supabase/server";
 
-export function Header() {
+export async function Header() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const userName = user?.user_metadata.full_name;
+
   return (
     <header className="border-b bg-white">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -16,7 +24,7 @@ export function Header() {
             </Link>
           </nav>
         </div>
-        <UserProfile />
+        <UserProfile userName={userName} />
       </div>
     </header>
   );
