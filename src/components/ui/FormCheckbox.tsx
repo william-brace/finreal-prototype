@@ -7,7 +7,6 @@ interface FormCheckboxProps {
   id: string;
   label: string;
   className?: string;
-  [key: string]: any; // Allow any other props to be passed through
 }
 
 export const FormCheckbox = forwardRef<HTMLInputElement, FormCheckboxProps>(

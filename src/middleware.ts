@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { validateBasicAuth } from "./utils/auth/basicAuth";
 import { updateSession } from "./utils/supabase/middleware";

@@ -11,7 +11,13 @@ import {
 } from "@/features/auth/model/schema";
 import { createClient } from "@/utils/supabase/server";
 
-export async function login(prevState: any, formData: FormData) {
+// Action result types
+type AuthResult = { error?: string; success?: boolean };
+
+export async function login(
+  _prevState: { error?: string } | null,
+  formData: FormData
+): Promise<AuthResult | never> {
   const supabase = await createClient();
 
   // Extract and validate form data
@@ -41,7 +47,10 @@ export async function login(prevState: any, formData: FormData) {
   redirect("/dashboard");
 }
 
-export async function signup(prevState: any, formData: FormData) {
+export async function signup(
+  _prevState: { error?: string; success?: boolean } | null,
+  formData: FormData
+): Promise<AuthResult> {
   const supabase = await createClient();
 
   // Extract and validate form data
@@ -73,9 +82,9 @@ export async function signup(prevState: any, formData: FormData) {
 }
 
 export async function sendResetPasswordEmail(
-  prevState: any,
+  _prevState: { error?: string; success?: boolean } | null,
   formData: FormData
-) {
+): Promise<AuthResult> {
   const supabase = await createClient();
 
   // Extract and validate form data
@@ -102,7 +111,10 @@ export async function sendResetPasswordEmail(
   return { success: true };
 }
 
-export async function updatePassword(prevState: any, formData: FormData) {
+export async function updatePassword(
+  _prevState: { error?: string; success?: boolean } | null,
+  formData: FormData
+): Promise<AuthResult> {
   const supabase = await createClient();
 
   const rawData = {
@@ -133,7 +145,9 @@ export async function updatePassword(prevState: any, formData: FormData) {
   return { success: true };
 }
 
-export async function logout() {
+export async function logout(): Promise<
+  { success: boolean; error?: string } | never
+> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
 

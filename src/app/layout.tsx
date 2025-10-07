@@ -1,8 +1,7 @@
+import "@/app/globals.css";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "@/app/globals.css";
-import { Header } from "@/components/layout/header";
-import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

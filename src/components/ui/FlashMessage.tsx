@@ -11,7 +11,7 @@ export async function FlashMessage({ className = "mb-4" }: FlashMessageProps) {
 
   try {
     if (flashRaw) flash = JSON.parse(flashRaw);
-  } catch (error) {
+  } catch {
     console.warn("Invalid flash cookie JSON:", flashRaw);
   }
 
